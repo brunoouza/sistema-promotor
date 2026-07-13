@@ -1,0 +1,4 @@
+# Cloudflare Pages redirects
+# Qualquer página não encontrada vai para o index
+
+/*    /index.html   404

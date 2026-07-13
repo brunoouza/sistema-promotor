@@ -1,0 +1,4950 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🚀 App Promotor</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .container {
+            max-width: 480px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 24px;
+            min-height: 80vh;
+        }
+        .hidden { display: none !important; }
+
+        /* ===== LOGIN ===== */
+        #telaLogin h1 {
+            font-size: 28px;
+            color: #1a1a2e;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        #telaLogin h1 span { color: #2563eb; }
+        #telaLogin .subtitle {
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 14px;
+            color: #334155;
+            margin-bottom: 4px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+        .form-group input:focus {
+            border-color: #3b82f6;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+        }
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-login:hover { background: #1d4ed8; }
+        #loginMsg {
+            margin-top: 12px;
+            font-size: 14px;
+            text-align: center;
+            color: #ef4444;
+            display: none;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f1f5f9;
+            margin-bottom: 16px;
+        }
+        .header .logo {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+        .header .logo span { color: #2563eb; }
+        .header .user {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #475569;
+        }
+        .header .user .avatar {
+            width: 36px;
+            height: 36px;
+            background: #2563eb;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        .menu-hamburger {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #1a1a2e;
+            padding: 4px 8px;
+        }
+
+        /* ===== MENU LATERAL ===== */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: white;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.1);
+            z-index: 1000;
+            transition: left 0.3s ease;
+            padding: 24px 16px;
+            overflow-y: auto;
+        }
+        .sidebar.open { left: 0; }
+        .sidebar .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #64748b;
+            margin-bottom: 24px;
+        }
+        .sidebar .user-info {
+            padding: 16px 0;
+            border-bottom: 2px solid #f1f5f9;
+            margin-bottom: 16px;
+        }
+        .sidebar .user-info .nome {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+        .sidebar .user-info .email {
+            font-size: 14px;
+            color: #64748b;
+        }
+        .sidebar .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 500;
+            color: #475569;
+            margin-bottom: 4px;
+            text-decoration: none;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-size: 16px;
+        }
+        .sidebar .menu-item:hover { background: #f1f5f9; }
+        .sidebar .menu-item.ativo {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+        .sidebar .menu-item .icon { font-size: 22px; width: 32px; text-align: center; }
+        .sidebar .logout-btn {
+            margin-top: 24px;
+            border-top: 2px solid #f1f5f9;
+            padding-top: 16px;
+            color: #ef4444;
+        }
+        .sidebar .logout-btn:hover { background: #fee2e2; }
+
+        /* ===== OVERLAY ===== */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            z-index: 999;
+            display: none;
+        }
+        .overlay.active { display: block; }
+
+        /* ===== ABA CONTEÚDO ===== */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ===== CARDS ===== */
+        .card-loja {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border-left: 4px solid #2563eb;
+        }
+        .card-loja .nome {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+        .card-loja .endereco {
+            font-size: 14px;
+            color: #64748b;
+            margin: 4px 0;
+        }
+        .card-loja .horario {
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .card-loja .status-gps {
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            flex-wrap: wrap;
+        }
+        .status-gps .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-gps .dot.verde { background: #22c55e; }
+        .status-gps .dot.vermelho { background: #ef4444; }
+        .status-gps .dot.amarelo { background: #eab308; }
+        .status-gps .alerta-gps {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            width: 100%;
+            text-align: center;
+        }
+
+        /* ===== BOTÕES DE PONTO ===== */
+        .grid-pontos {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 16px 0;
+        }
+        .grid-pontos .btn {
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.3s;
+            color: white;
+            position: relative;
+        }
+        .grid-pontos .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .grid-pontos .btn:hover:not(:disabled) { transform: scale(1.02); opacity: 0.9; }
+        .grid-pontos .btn-entrada { background: #22c55e; }
+        .grid-pontos .btn-almoco { background: #eab308; }
+        .grid-pontos .btn-volta { background: #3b82f6; }
+        .grid-pontos .btn-saida { background: #ef4444; }
+        .grid-pontos .btn .badge-foto {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ===== HISTÓRICO ===== */
+        .historico-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+        }
+        .historico-item .tipo { font-weight: 600; width: 120px; }
+        .historico-item .hora { color: #64748b; text-align: center; flex: 1; }
+        .historico-item .status { font-size: 18px; width: 40px; text-align: right; }
+        .historico-item .foto-mini {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            object-fit: cover;
+            cursor: pointer;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* ===== ROTEIRO ===== */
+        .roteiro-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            border-left: 4px solid #94a3b8;
+        }
+        .roteiro-item .dia { font-weight: 600; font-size: 14px; min-width: 70px; }
+        .roteiro-item .info { flex: 1; margin-left: 12px; }
+        .roteiro-item .info .nome { font-weight: 600; font-size: 14px; color: #1a1a2e; }
+        .roteiro-item .status { font-size: 20px; }
+        .roteiro-item.concluido { border-left-color: #22c55e; background: #f0fdf4; }
+        .roteiro-item.pendente { border-left-color: #eab308; background: #fffbeb; }
+
+        /* ===== MODAL MÊS COMPLETO ===== */
+        .modal-mes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+            padding: 20px;
+        }
+        .modal-mes.active { display: flex; }
+        .modal-mes .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-mes .modal-content h3 {
+            margin-bottom: 16px;
+            color: #1a1a2e;
+        }
+        .modal-mes .modal-content .semana-item {
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+        .modal-mes .modal-content .semana-item .semana-titulo {
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .modal-mes .modal-content .semana-item .dia-info {
+            font-size: 13px;
+            color: #64748b;
+        }
+        .modal-mes .modal-content .close-modal {
+            width: 100%;
+            padding: 12px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+
+        /* ===== EXPOSIÇÕES ===== */
+        .form-exposicao {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .form-exposicao .form-group {
+            margin-bottom: 12px;
+        }
+        .form-exposicao .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 14px;
+            color: #334155;
+            margin-bottom: 4px;
+        }
+        .form-exposicao .form-group select,
+        .form-exposicao .form-group input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 14px;
+            background: white;
+        }
+        .form-exposicao .form-group select:focus,
+        .form-exposicao .form-group input:focus {
+            border-color: #3b82f6;
+            outline: none;
+        }
+        .foto-preview {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 12px;
+            margin: 8px 0;
+            display: none;
+        }
+        .btn-enviar {
+            width: 100%;
+            padding: 14px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-enviar:hover { background: #1d4ed8; }
+        .btn-excluir {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .btn-excluir:hover { text-decoration: underline; }
+
+        .exposicao-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+        .exposicao-item .thumb {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            background: #e2e8f0;
+            object-fit: cover;
+        }
+        .exposicao-item .info { flex: 1; }
+        .exposicao-item .info .nome { font-weight: 600; font-size: 14px; }
+        .exposicao-item .info .tipo { font-size: 12px; color: #64748b; }
+        .exposicao-item .info .data { font-size: 12px; color: #94a3b8; }
+
+        /* ===== MATERIAIS ===== */
+        .material-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+        .material-item .icon { font-size: 28px; }
+        .material-item .info { flex: 1; }
+        .material-item .info .nome { font-weight: 600; font-size: 14px; }
+        .material-item .info .desc { font-size: 12px; color: #64748b; }
+        .material-item .btn-visualizar {
+            padding: 6px 16px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .material-item .btn-visualizar:hover { background: #1d4ed8; }
+
+        /* ===== ESPELHO DE PONTO ===== */
+        .espelho-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .espelho-header .periodo {
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .espelho-subtabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            padding: 4px;
+        }
+        .espelho-subtabs button {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.3s;
+            color: #64748b;
+        }
+        .espelho-subtabs button.ativo {
+            background: white;
+            color: #1a1a2e;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .espelho-subtabs button:hover:not(.ativo) {
+            background: rgba(255,255,255,0.5);
+        }
+        .espelho-sub-content { display: none; }
+        .espelho-sub-content.active { display: block; }
+
+        .espelho-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        .espelho-table th {
+            background: #2563eb;
+            color: white;
+            padding: 6px 4px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 10px;
+        }
+        .espelho-table td {
+            padding: 5px 3px;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 10px;
+        }
+        .espelho-table tr:hover { background: #f8fafc; }
+        .espelho-table .ausente { color: #ef4444; font-weight: 600; }
+        .espelho-table .abonado { color: #22c55e; font-weight: 600; }
+        .espelho-table .atraso { color: #eab308; font-weight: 600; }
+        .espelho-table .extra { color: #2563eb; font-weight: 600; }
+        .espelho-table .noturno { color: #8b5cf6; font-weight: 600; }
+
+        .espelho-resumo {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+        .espelho-resumo .item {
+            padding: 8px;
+            background: white;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .espelho-resumo .item .label {
+            font-size: 11px;
+            color: #64748b;
+        }
+        .espelho-resumo .item .valor {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+        .espelho-resumo .item .valor.positivo { color: #22c55e; }
+        .espelho-resumo .item .valor.negativo { color: #ef4444; }
+
+        .filtro-mes {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .filtro-mes select {
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+        }
+        .filtro-mes select:focus {
+            border-color: #3b82f6;
+            outline: none;
+        }
+
+        .btn-pdf {
+            padding: 8px 16px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .btn-pdf:hover { background: #dc2626; }
+
+        /* ===== VALIDADOR ===== */
+        .validador-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .validador-item .info {
+            flex: 1;
+            min-width: 150px;
+        }
+        .validador-item .info .loja {
+            font-weight: 600;
+        }
+        .validador-item .info .status {
+            font-size: 13px;
+            color: #64748b;
+        }
+        .validador-item .info .status .aprovado { color: #22c55e; font-weight: 600; }
+        .validador-item .info .status .pendente { color: #eab308; font-weight: 600; }
+        .validador-item .info .status .rejeitado { color: #ef4444; font-weight: 600; }
+        .validador-item .coords {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .btn-sugerir {
+            padding: 8px 16px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .btn-sugerir:hover { background: #1d4ed8; }
+        .btn-sugerir:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        /* ===== ATESTADOS ===== */
+        .atestado-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+        .atestado-item .info .data { font-weight: 600; }
+        .atestado-item .info .desc { font-size: 13px; color: #64748b; }
+        .atestado-item .btn-ver {
+            padding: 6px 16px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .atestado-item .btn-ver:hover { background: #1d4ed8; }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 1200;
+            display: none;
+            max-width: 90%;
+            text-align: center;
+        }
+        .toast-success { background: #22c55e; }
+        .toast-error { background: #ef4444; }
+        .toast-info { background: #3b82f6; }
+
+        /* ===== LOADING ===== */
+        .loading {
+            text-align: center;
+            padding: 20px 0;
+            color: #94a3b8;
+        }
+        .loading .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 8px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ===== RESPONSIVO ===== */
+        @media (max-width: 480px) {
+            .container { padding: 16px; border-radius: 16px; }
+            .header .logo { font-size: 18px; }
+            .grid-pontos { grid-template-columns: 1fr 1fr; }
+            .espelho-table { font-size: 9px; }
+            .espelho-table th, .espelho-table td { padding: 3px 2px; }
+            .espelho-resumo { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 380px) {
+            .grid-pontos { grid-template-columns: 1fr; }
+        }
+
+        /* ===== PRODUTOS ===== */
+        .produto-card {
+            background: white;
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            transition: 0.2s;
+        }
+        .produto-card:active {
+            transform: scale(0.98);
+        }
+        .produto-card .marca {
+            font-size: 11px;
+            font-weight: 700;
+            color: #2563eb;
+            background: #dbeafe;
+            padding: 2px 10px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+        .produto-card .codigo {
+            font-size: 11px;
+            color: #94a3b8;
+            float: right;
+        }
+        .produto-card .descricao {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin: 4px 0;
+        }
+        .produto-card .precos {
+            display: flex;
+            gap: 16px;
+            margin-top: 6px;
+            font-size: 14px;
+        }
+        .produto-card .preco-venda {
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+        .produto-card .preco-promo {
+            font-weight: 700;
+            color: #22c55e;
+        }
+        .produto-card .economia {
+            font-size: 12px;
+            color: #22c55e;
+            background: #dcfce7;
+            padding: 2px 10px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+        .produto-card .sem-promo {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        /* ===== CHECKLIST (APP) ===== */
+        .checklist-item {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: 0.2s;
+        }
+        .checklist-item.concluido {
+            border-color: #22c55e;
+            background: #f0fdf4;
+        }
+        .checklist-item .titulo {
+            font-weight: 700;
+            font-size: 16px;
+            color: #1a1a2e;
+        }
+        .checklist-item .descricao {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        .checklist-item .meta {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+        .pergunta-container {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid #e2e8f0;
+        }
+        .pergunta-container .pergunta-texto {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 12px;
+        }
+        .pergunta-container .pergunta-imagem {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        .opcao-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+            cursor: pointer;
+            margin-bottom: 6px;
+            transition: 0.2s;
+        }
+        .opcao-item:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        .opcao-item.selecionado {
+            border-color: #2563eb;
+            background: #dbeafe;
+        }
+        .opcao-item input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #2563eb;
+        }
+        .produto-conferencia {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .produto-conferencia .produto-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .botoes-status {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .botoes-status button {
+            flex: 1;
+            min-width: 60px;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            opacity: 0.5;
+        }
+        .botoes-status button:hover { opacity: 0.8; }
+        .botoes-status button.selecionado { opacity: 1; transform: scale(1.05); }
+        .btn-certo { background: #dcfce7; color: #16a34a; }
+        .btn-errado { background: #fee2e2; color: #dc2626; }
+        .btn-sem-preco { background: #fef3c7; color: #ca8a04; }
+        .btn-certo.selecionado { background: #22c55e; color: white; }
+        .btn-errado.selecionado { background: #ef4444; color: white; }
+        .btn-sem-preco.selecionado { background: #eab308; color: white; }
+
+        .preco-corrigido-input {
+            margin-top: 8px;
+            display: none;
+        }
+        .preco-corrigido-input input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .preco-corrigido-input input:focus {
+            border-color: #3b82f6;
+            outline: none;
+        }
+
+        .foto-upload-area {
+            border: 2px dashed #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.3s;
+            background: #f8fafc;
+        }
+        .foto-upload-area:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        .foto-preview-checklist {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 8px;
+            display: none;
+        }
+        .foto-preview-checklist.show { display: block; }
+        .btn-remover-foto {
+            margin-top: 4px;
+            padding: 4px 12px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .btn-remover-foto:hover { background: #dc2626; }
+
+        /* ===== MAPA ===== */
+        .mapa-container {
+            width: 100%;
+            height: 300px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+        }
+
+        /* ===== FOTO PONTO ===== */
+        .foto-ponto-thumb {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            object-fit: cover;
+            cursor: pointer;
+            border: 2px solid #e2e8f0;
+            transition: 0.2s;
+        }
+        .foto-ponto-thumb:hover {
+            border-color: #3b82f6;
+            transform: scale(1.05);
+        }
+
+        /* ===== GPS OBRIGATÓRIO ===== */
+        .gps-obrigatorio {
+            background: #fef3c7;
+            border: 2px solid #eab308;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .gps-obrigatorio .icon { font-size: 32px; }
+        .gps-obrigatorio .texto { font-weight: 600; color: #92400e; margin-top: 4px; }
+        .gps-obrigatorio .subtexto { font-size: 13px; color: #92400e; }
+        .gps-obrigatorio .btn-ativar-gps {
+            margin-top: 8px;
+            padding: 8px 20px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .gps-obrigatorio .btn-ativar-gps:hover { background: #1d4ed8; }
+
+        /* ===== BOTÃO JUSTIFICAR ===== */
+        .btn-justificar {
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        .btn-justificar:hover {
+            background: #1d4ed8;
+            transform: scale(1.05);
+        }
+
+        /* ===== MODAL JUSTIFICATIVA ===== */
+        #modalJustificativa .form-group {
+            margin-bottom: 16px;
+        }
+        #modalJustificativa .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 14px;
+            color: #334155;
+            margin-bottom: 4px;
+        }
+        #modalJustificativa .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 14px;
+            resize: vertical;
+        }
+        #modalJustificativa .form-group textarea:focus {
+            border-color: #3b82f6;
+            outline: none;
+        }
+
+        /* ===== STATUS DA JUSTIFICATIVA NO ESPELHO ===== */
+        .status-justificativa-pendente {
+            color: #eab308;
+            font-weight: 600;
+            font-size: 11px;
+        }
+        .status-justificativa-aprovado {
+            color: #22c55e;
+            font-weight: 600;
+            font-size: 11px;
+        }
+        .status-justificativa-rejeitado {
+            color: #ef4444;
+            font-weight: 600;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== TOAST ===== -->
+<div id="toast" class="toast"></div>
+
+<!-- ===== MODAL MÊS COMPLETO ===== -->
+<div id="modalMesCompleto" class="modal-mes">
+    <div class="modal-content">
+        <h3>📅 Roteiro Completo</h3>
+        <div id="conteudoMesCompleto">
+            <div class="loading"><div class="spinner"></div>Carregando...</div>
+        </div>
+        <button class="close-modal" onclick="fecharModalMes()">Fechar</button>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL FILTROS PRODUTOS -->
+<!-- ========================================== -->
+<div id="modalFiltrosProdutos" class="modal-mes">
+    <div class="modal-content" style="max-width:400px;">
+        <h3 style="margin-bottom:16px;">🔍 Filtros</h3>
+        
+        <div class="form-group">
+            <label>🏷️ Marca</label>
+            <select id="filtroMarcaModal" style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:10px;">
+                <option value="">Todas</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>💰 Faixa de Preço</label>
+            <div style="display:flex;gap:8px;">
+                <input type="number" id="filtroPrecoMin" placeholder="Mínimo" 
+                       style="flex:1;padding:10px;border:2px solid #e2e8f0;border-radius:10px;">
+                <input type="number" id="filtroPrecoMax" placeholder="Máximo" 
+                       style="flex:1;padding:10px;border:2px solid #e2e8f0;border-radius:10px;">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>💲 Promoção</label>
+            <select id="filtroPromocao" style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:10px;">
+                <option value="todos">Todos</option>
+                <option value="promocao">Apenas com promoção</option>
+                <option value="sem_promocao">Sem promoção</option>
+            </select>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:16px;">
+            <button class="close-modal" onclick="aplicarFiltrosProdutos()" style="flex:1;background:#2563eb;">✅ Aplicar</button>
+            <button class="close-modal" onclick="limparFiltrosProdutos()" style="flex:1;background:#eab308;">🔄 Limpar</button>
+            <button class="close-modal" onclick="fecharModalFiltrosProdutos()" style="flex:1;background:#ef4444;">❌ Fechar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL RESPOSTA CHECKLIST -->
+<!-- ========================================== -->
+<div id="modalChecklistResposta" class="modal-mes">
+    <div class="modal-content" style="max-width:700px;max-height:85vh;overflow-y:auto;">
+        <div class="flex-between" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 id="modalRespostaTitulo">📋 Responder Checklist</h3>
+            <button class="btn btn-danger btn-sm" onclick="fecharModalChecklistResposta()" style="padding:6px 14px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;">✕ Fechar</button>
+        </div>
+        <div id="modalRespostaConteudo">
+            <div class="loading"><div class="spinner"></div>Carregando perguntas...</div>
+        </div>
+        <div style="margin-top:16px;">
+            <button class="btn-enviar" onclick="enviarRespostasChecklist()" id="btnEnviarChecklist">📤 Enviar Respostas</button>
+        </div>
+        <div id="modalRespostaStatus" style="margin-top:12px;font-size:14px;color:#64748b;"></div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL FOTO PONTO -->
+<!-- ========================================== -->
+<div id="modalFotoPonto" class="modal-mes">
+    <div class="modal-content" style="max-width:500px;">
+        <div class="flex-between" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 id="modalFotoPontoTitulo">📸 Foto do Registro</h3>
+            <button class="btn btn-danger btn-sm" onclick="fecharModalFotoPonto()" style="padding:6px 14px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;">✕ Fechar</button>
+        </div>
+        <div style="text-align:center;">
+            <img id="modalFotoPontoImg" src="" alt="Foto do ponto" style="max-width:100%;max-height:60vh;border-radius:8px;">
+            <div id="modalFotoPontoInfo" style="margin-top:12px;font-size:14px;color:#64748b;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL MAPA RELATÓRIO -->
+<!-- ========================================== -->
+<div id="modalMapaRelatorio" class="modal-mes">
+    <div class="modal-content" style="max-width:600px;">
+        <div class="flex-between" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 id="modalMapaRelatorioTitulo">🗺️ Localização</h3>
+            <button class="btn btn-danger btn-sm" onclick="fecharModalMapaRelatorio()" style="padding:6px 14px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;">✕ Fechar</button>
+        </div>
+        <div id="mapaRelatorioContainer" class="mapa-container"></div>
+        <div id="modalMapaRelatorioInfo" style="margin-top:12px;font-size:14px;color:#64748b;"></div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL JUSTIFICATIVA (PROMOTOR) -->
+<!-- ========================================== -->
+<div id="modalJustificativa" class="modal-mes">
+    <div class="modal-content" style="max-width:500px;">
+        <div class="flex-between" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 id="modalJustificativaTitulo">📋 Justificar - <span id="justificativaData"></span></h3>
+            <button class="btn btn-danger btn-sm" onclick="fecharModalJustificativa()" style="padding:6px 14px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;">✕ Fechar</button>
+        </div>
+
+        <div style="margin-bottom:16px;background:#f8fafc;padding:12px;border-radius:8px;">
+            <div style="font-size:13px;color:#64748b;">
+                <strong>🏪 Loja do dia:</strong> <span id="justificativaLoja">Carregando...</span>
+            </div>
+            <div style="font-size:13px;color:#64748b;margin-top:4px;">
+                <strong>📅 Data:</strong> <span id="justificativaDataDetalhe">Carregando...</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>📝 Motivo da justificativa *</label>
+            <textarea id="justificativaMotivo" rows="4" placeholder="Descreva o motivo do atraso, falta ou justificativa..." style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;resize:vertical;"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>📎 Anexar Arquivo (opcional)</label>
+            <button class="btn-enviar" onclick="anexarArquivoJustificativa()" style="background:#8b5cf6;padding:10px;font-size:14px;">📤 Selecionar Arquivo</button>
+            <div id="justificativaArquivoNome" style="font-size:12px;color:#64748b;margin-top:4px;display:none;"></div>
+        </div>
+
+        <input type="hidden" id="justificativaDataInput">
+        <input type="hidden" id="justificativaArquivoUrl">
+
+        <div class="btn-group" style="margin-top:16px;display:flex;gap:8px;">
+            <button class="btn btn-success" onclick="enviarJustificativa()" style="flex:1;padding:12px;background:#22c55e;color:white;border:none;border-radius:10px;font-weight:700;font-size:16px;cursor:pointer;">📤 Enviar Justificativa</button>
+            <button class="btn btn-danger" onclick="fecharModalJustificativa()" style="flex:1;padding:12px;background:#ef4444;color:white;border:none;border-radius:10px;font-weight:700;font-size:16px;cursor:pointer;">Cancelar</button>
+        </div>
+
+        <div id="justificativaStatus" style="margin-top:12px;font-size:14px;text-align:center;"></div>
+    </div>
+</div>
+
+<!-- ===== OVERLAY ===== -->
+<div id="overlay" class="overlay" onclick="fecharMenu()"></div>
+
+<!-- ===== MENU LATERAL ===== -->
+<div id="sidebar" class="sidebar">
+    <button class="close-btn" onclick="fecharMenu()">✕</button>
+    <div class="user-info">
+        <div class="nome" id="sidebarNome">Carregando...</div>
+        <div class="email" id="sidebarEmail">carregando@email.com</div>
+    </div>
+    <button class="menu-item ativo" onclick="abrirAba('tabPonto')">
+        <span class="icon">🏠</span> Ponto
+    </button>
+    <button class="menu-item" onclick="abrirAba('tabChecklistApp')">
+        <span class="icon">✅</span> Check-list
+    </button>
+    <button class="menu-item" onclick="abrirAba('tabRoteiro')">
+        <span class="icon">📋</span> Roteiro
+    </button>
+    <button class="menu-item" onclick="abrirAba('tabExposicoes')">
+        <span class="icon">📸</span> Exposições
+    </button>
+    <button class="menu-item" onclick="abrirAba('tabValidador')">
+        <span class="icon">📍</span> Validador
+    </button>
+    <button class="menu-item" onclick="abrirAba('tabEspelho')">
+        <span class="icon">📊</span> Espelho Ponto
+    </button>
+    <button class="menu-item" onclick="abrirAba('tabAtestados')">
+        <span class="icon">📋</span> Atestados
+    </button>
+    <button class="menu-item" onclick="abrirAba('tabMateriais')">
+        <span class="icon">📁</span> Materiais
+    </button>
+    <button class="menu-item" onclick="abrirAba('tabProdutos')">
+        <span class="icon">📦</span> Produtos
+    </button>
+    <button class="menu-item logout-btn" onclick="fazerLogout()">
+        <span class="icon">🚪</span> Sair
+    </button>
+</div>
+
+<!-- ===== CONTAINER PRINCIPAL ===== -->
+<div class="container" id="app">
+
+    <!-- ========================================== -->
+    <!-- TELA DE LOGIN -->
+    <!-- ========================================== -->
+    <div id="telaLogin">
+        <h1>🚀 <span>App</span> Promotor</h1>
+        <p class="subtitle">Faça login para acessar seu roteiro</p>
+
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="inputEmail" placeholder="seu@email.com" value="">
+        </div>
+        <div class="form-group">
+            <label>Senha</label>
+            <input type="password" id="inputSenha" placeholder="••••••••" value="">
+        </div>
+
+        <button class="btn-login" onclick="fazerLogin()">🔓 Entrar</button>
+        <div id="loginMsg"></div>
+    </div>
+
+    <!-- ===== PAINEL PRINCIPAL (APÓS LOGIN) ===== -->
+    <div id="painelPrincipal" class="hidden">
+
+        <!-- ===== HEADER ===== -->
+        <div class="header">
+            <div>
+                <button class="menu-hamburger" onclick="abrirMenu()">☰</button>
+                <span class="logo">🚀 <span>App</span> Promotor</span>
+            </div>
+            <div class="user">
+                <span id="headerNome">Carregando...</span>
+                <div class="avatar" id="headerAvatar">J</div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- ABA 1: PONTO (COM GPS OBRIGATÓRIO E FOTO) -->
+        <!-- ========================================== -->
+        <div id="tabPonto" class="tab-content active">
+
+            <!-- ALERTA GPS OBRIGATÓRIO -->
+            <div id="gpsAlerta" class="gps-obrigatorio" style="display:none;">
+                <div class="icon">📍</div>
+                <div class="texto">GPS Obrigatório!</div>
+                <div class="subtexto">Ative o GPS para registrar seu ponto de trabalho</div>
+                <button class="btn-ativar-gps" onclick="ativarGPS()">🔓 Ativar GPS</button>
+            </div>
+
+            <!-- LOJA DO DIA -->
+            <div id="cardLojaDia">
+                <div class="card-loja">
+                    <div class="nome" id="lojaNome">Carregando...</div>
+                    <div class="endereco" id="lojaEndereco">Carregando...</div>
+                    <div class="horario" id="lojaHorario">Carregando...</div>
+                    <div class="status-gps">
+                        <span class="dot amarelo" id="gpsDot"></span>
+                        <span id="gpsStatus">📍 Aguardando localização...</span>
+                        <span id="gpsRaio" style="font-size:13px;color:#64748b;margin-left:8px;"></span>
+                    </div>
+                    <div style="font-size:12px;color:#94a3b8;margin-top:4px;" id="gpsCoords">Lat: - | Lon: -</div>
+                </div>
+            </div>
+
+            <!-- BOTÕES DE PONTO -->
+            <div class="grid-pontos">
+                <button class="btn btn-entrada" onclick="registrarPonto('entrada')" id="btnEntrada">🟢 ENTRADA</button>
+                <button class="btn btn-almoco" onclick="registrarPonto('inicio_almoco')" id="btnAlmoco">🍽️ ALMOÇO</button>
+                <button class="btn btn-volta" onclick="registrarPonto('fim_almoco')" id="btnVolta">✅ VOLTA ALMOÇO</button>
+                <button class="btn btn-saida" onclick="registrarPonto('saida')" id="btnSaida">🔴 SAÍDA</button>
+            </div>
+
+            <!-- MENSAGEM DE FEEDBACK -->
+            <div id="mensagemPonto" style="display:none;padding:12px;border-radius:12px;margin-bottom:16px;font-weight:600;"></div>
+
+            <!-- HISTÓRICO DO DIA -->
+            <div style="margin-top:16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span style="font-weight:700;font-size:16px;color:#1a1a2e;">📋 Histórico de Hoje</span>
+                </div>
+                <div id="historicoHoje">
+                    <p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum registro hoje</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- ABA: CHECKLIST (EXECUÇÃO) -->
+        <!-- ========================================== -->
+        <div id="tabChecklistApp" class="tab-content">
+            <h3 style="color:#1a1a2e;margin-bottom:12px;">✅ Check-list do Dia</h3>
+            
+            <!-- LOJA ATUAL -->
+            <div id="checklistLojaAtual" style="background:#f8fafc;border-radius:12px;padding:16px;margin-bottom:16px;border-left:4px solid #2563eb;">
+                <div style="font-weight:700;font-size:16px;color:#1a1a2e;" id="checklistLojaNome">Carregando...</div>
+                <div style="font-size:13px;color:#64748b;" id="checklistLojaEndereco">Carregando...</div>
+            </div>
+            
+            <!-- LISTA DE CHECKLISTS DISPONÍVEIS -->
+            <div id="checklistsDisponiveis">
+                <div class="loading"><div class="spinner"></div>Carregando checklists...</div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- ABA 2: ROTEIRO -->
+        <!-- ========================================== -->
+        <div id="tabRoteiro" class="tab-content">
+            <h3 style="color:#1a1a2e;margin-bottom:12px;" id="roteiroTitulo">📋 Meu Roteiro</h3>
+            <div id="listaRoteiro">
+                <p style="color:#94a3b8;text-align:center;padding:20px 0;">Carregando roteiro...</p>
+            </div>
+            <div style="margin-top:12px;text-align:center;">
+                <button class="btn-enviar" style="width:auto;padding:10px 24px;font-size:14px;background:#64748b;" onclick="abrirModalMes()">📅 Ver Mês Completo</button>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- ABA 3: EXPOSIÇÕES -->
+        <!-- ========================================== -->
+        <div id="tabExposicoes" class="tab-content">
+            <h3 style="color:#1a1a2e;margin-bottom:12px;">📸 Exposições</h3>
+
+            <!-- FORMULÁRIO -->
+            <div class="form-exposicao">
+                <div class="form-group">
+                    <label>🏪 Loja</label>
+                    <select id="expLoja"></select>
+                </div>
+                <div class="form-group">
+                    <label>📌 Tipo de Exposição</label>
+                    <select id="expTipo">
+                        <option value="ponta">Ponta de Gondola</option>
+                        <option value="check">Check Stand</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>🔢 Número</label>
+                    <select id="expNumero">
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                        <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                        <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                        <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                        <option value="13">13</option><option value="14">14</option><option value="15">15</option>
+                        <option value="16">16</option><option value="17">17</option><option value="18">18</option>
+                        <option value="19">19</option><option value="20">20</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>📷 Foto</label>
+                    <button class="btn-enviar" onclick="enviarExposicao()" style="background:#8b5cf6;">📸 Selecionar Foto</button>
+                    <img id="expPreview" class="foto-preview" alt="Pré-visualização">
+                </div>
+            </div>
+
+            <!-- LISTA DE EXPOSIÇÕES -->
+            <div id="listaExposicoes">
+                <p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhuma exposição registrada</p>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- ABA 4: VALIDADOR -->
+        <!-- ========================================== -->
+        <div id="tabValidador" class="tab-content">
+            <h3 style="color:#1a1a2e;margin-bottom:12px;">📍 Validador</h3>
+            <p style="color:#64748b;font-size:14px;margin-bottom:16px;">Sugira coordenadas para as lojas do seu roteiro</p>
+            <div id="listaValidador">
+                <div class="loading"><div class="spinner"></div>Carregando lojas...</div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- ABA 5: ESPELHO DE PONTO -->
+        <!-- ========================================== -->
+        <div id="tabEspelho" class="tab-content">
+            <div class="espelho-header">
+                <h3 style="color:#1a1a2e;">📊 Espelho de Ponto</h3>
+                <span class="periodo" id="periodoEspelho">Carregando...</span>
+            </div>
+
+            <!-- Sub-abas -->
+            <div class="espelho-subtabs">
+                <button class="ativo" onclick="abrirSubTab('subMarcacoes')">📋 Marcações</button>
+                <button onclick="abrirSubTab('subTotal')">📊 Total</button>
+            </div>
+
+            <!-- SUB-ABA: MARCAÇÕES -->
+            <div id="subMarcacoes" class="espelho-sub-content active">
+                <!-- Filtro de mês -->
+                <div class="filtro-mes">
+                    <select id="filtroMesEspelho" onchange="carregarEspelhoPonto()">
+                        <option value="0">Mês atual</option>
+                    </select>
+                    <button class="btn-pdf" onclick="gerarPDFEspelho()">📄 Baixar PDF</button>
+                </div>
+                <div id="espelhoContainer">
+                    <div class="loading"><div class="spinner"></div>Carregando dados...</div>
+                </div>
+            </div>
+
+            <!-- SUB-ABA: TOTAL -->
+            <div id="subTotal" class="espelho-sub-content">
+                <div id="espelhoTotalContainer">
+                    <div class="loading"><div class="spinner"></div>Carregando...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- ABA 6: ATESTADOS -->
+        <!-- ========================================== -->
+        <div id="tabAtestados" class="tab-content">
+            <h3 style="color:#1a1a2e;margin-bottom:12px;">📋 Atestados</h3>
+
+            <div class="form-exposicao">
+                <div class="form-group">
+                    <label>📅 Data de Ausência</label>
+                    <input type="date" id="atestadoData">
+                </div>
+                <div class="form-group">
+                    <label>📄 Arquivo (PDF, JPG, PNG)</label>
+                    <button class="btn-enviar" onclick="enviarAtestado()" style="background:#8b5cf6;">📤 Selecionar Arquivo</button>
+                </div>
+            </div>
+
+            <div id="listaAtestados">
+                <p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum atestado cadastrado</p>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- ABA 7: MATERIAIS -->
+        <!-- ========================================== -->
+        <div id="tabMateriais" class="tab-content">
+            <h3 style="color:#1a1a2e;margin-bottom:12px;">📁 Materiais</h3>
+            <p style="color:#64748b;font-size:14px;margin-bottom:16px;">Materiais de referência para as exposições</p>
+            <div id="listaMateriais">
+                <p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum material disponível</p>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- ABA: PRODUTOS (Visualização) -->
+        <!-- ========================================== -->
+        <div id="tabProdutos" class="tab-content">
+            <h3 style="color:#1a1a2e;margin-bottom:12px;">📦 Catálogo de Produtos</h3>
+
+            <!-- BARRA DE BUSCA -->
+            <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:150px;">
+                    <input type="text" id="produtoBusca" placeholder="🔍 Buscar produto..." 
+                           style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;"
+                           oninput="carregarProdutosApp()">
+                </div>
+                <button class="btn btn-primary" onclick="abrirFiltrosProdutos()" 
+                        style="padding:10px 16px;background:#64748b;border:none;border-radius:10px;color:white;font-weight:600;cursor:pointer;">
+                    🔽 Filtros
+                </button>
+                <button class="btn btn-primary" onclick="carregarProdutosApp()" 
+                        style="padding:10px 16px;background:#2563eb;border:none;border-radius:10px;color:white;font-weight:600;cursor:pointer;">
+                    🔄
+                </button>
+            </div>
+
+            <!-- FILTROS RÁPIDOS -->
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+                <select id="filtroMarcaApp" onchange="carregarProdutosApp()" 
+                        style="padding:8px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:13px;background:white;flex:1;min-width:120px;">
+                    <option value="">Todas as Marcas</option>
+                </select>
+                <select id="filtroOrdenacaoApp" onchange="carregarProdutosApp()" 
+                        style="padding:8px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:13px;background:white;flex:1;min-width:120px;">
+                    <option value="nome_asc">Nome (A-Z)</option>
+                    <option value="nome_desc">Nome (Z-A)</option>
+                    <option value="preco_asc">Menor Preço</option>
+                    <option value="preco_desc">Maior Preço</option>
+                    <option value="codigo_asc">Código (Crescente)</option>
+                </select>
+            </div>
+
+            <!-- CONTADOR -->
+            <div style="font-size:13px;color:#64748b;margin-bottom:12px;" id="contadorProdutosApp">
+                Carregando produtos...
+            </div>
+
+            <!-- LISTA DE PRODUTOS -->
+            <div id="listaProdutosApp">
+                <div class="loading"><div class="spinner"></div>Carregando produtos...</div>
+            </div>
+
+            <!-- PAGINAÇÃO -->
+            <div id="paginacaoProdutosApp" style="display:flex;justify-content:center;gap:6px;margin-top:16px;flex-wrap:wrap;">
+            </div>
+        </div>
+
+    </div><!-- fim painelPrincipal -->
+</div>
+
+<script>
+// ============================================
+// CONFIGURAÇÃO SUPABASE
+// ============================================
+const SUPABASE_URL = 'https://ncifiwldqcegwxzoypbk.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ut1As4DmUMGCw-XUbAdjTw_dQ-uXEoo';
+
+// ============================================
+// VARIÁVEIS GLOBAIS
+// ============================================
+let promotorLogado = null;
+let localizacaoAtual = null;
+let gpsAtivo = false;
+let fotoPontoBase64 = null;
+let fotoPontoUrl = null;
+let mapaRelatorio = null;
+let fotoPontoTipo = null;
+
+// ============================================
+// FUNÇÕES DE API
+// ============================================
+async function apiFetch(endpoint, metodo = 'GET', dados = null) {
+    const headers = {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json'
+    };
+    const config = { method: metodo, headers: headers };
+    if (dados && (metodo === 'POST' || metodo === 'PATCH' || metodo === 'PUT')) {
+        config.body = JSON.stringify(dados);
+    }
+    const res = await fetch(`${SUPABASE_URL}${endpoint}`, config);
+    if (!res.ok) {
+        const texto = await res.text();
+        throw new Error(`Erro ${res.status}: ${texto}`);
+    }
+    const texto = await res.text();
+    if (!texto || texto.trim() === '') return {};
+    return JSON.parse(texto);
+}
+
+// ============================================
+// TOAST
+// ============================================
+function showToast(mensagem, tipo = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = mensagem;
+    toast.className = `toast toast-${tipo}`;
+    toast.style.display = 'block';
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 4000);
+}
+
+// ============================================
+// MENU LATERAL
+// ============================================
+function abrirMenu() {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('overlay').classList.add('active');
+}
+function fecharMenu() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('active');
+}
+
+function abrirAba(abaId) {
+    fecharMenu();
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(abaId).classList.add('active');
+    document.querySelectorAll('.sidebar .menu-item').forEach(el => el.classList.remove('ativo'));
+    const item = document.querySelector(`.sidebar .menu-item[onclick*="${abaId}"]`);
+    if (item) item.classList.add('ativo');
+    if (abaId === 'tabChecklistApp') { carregarChecklistsApp(); }
+    if (abaId === 'tabExposicoes') { carregarLojasExposicao(); carregarExposicoes(); }
+    if (abaId === 'tabValidador') carregarValidador();
+    if (abaId === 'tabEspelho') carregarEspelhoPonto();
+    if (abaId === 'tabAtestados') carregarAtestados();
+    if (abaId === 'tabMateriais') carregarMateriais();
+    if (abaId === 'tabProdutos') { carregarProdutosApp(); }
+    if (abaId === 'tabPonto') { verificarGPS(); }
+}
+
+function abrirSubTab(tabId) {
+    document.querySelectorAll('.espelho-sub-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.querySelectorAll('.espelho-subtabs button').forEach(el => el.classList.remove('ativo'));
+    const btn = document.querySelector(`.espelho-subtabs button[onclick="abrirSubTab('${tabId}')"]`);
+    if (btn) btn.classList.add('ativo');
+}
+
+// ============================================
+// HASH DE SENHAS (SEGURANÇA)
+// ============================================
+async function hashSenha(senha) {
+    try {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(senha);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (erro) {
+        console.warn('⚠️ crypto.subtle não disponível, usando fallback');
+        let hash = 0;
+        for (let i = 0; i < senha.length; i++) {
+            const char = senha.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return hash.toString(16);
+    }
+}
+
+async function verificarSenha(senhaDigitada, hashArmazenado) {
+    const hashDigitado = await hashSenha(senhaDigitada);
+    return hashDigitado === hashArmazenado;
+}
+
+// ============================================
+// LOGIN
+// ============================================
+async function fazerLogin() {
+    const email = document.getElementById('inputEmail').value.trim();
+    const senha = document.getElementById('inputSenha').value.trim();
+    const msgDiv = document.getElementById('loginMsg');
+
+    if (!email || !senha) {
+        msgDiv.textContent = '⚠️ Preencha email e senha!';
+        msgDiv.style.display = 'block';
+        return;
+    }
+
+    msgDiv.style.display = 'none';
+
+    try {
+        const dados = await apiFetch(`/rest/v1/promotores?email=eq.${email}&tipo=eq.promotor&select=id,nome,email,senha,ativo,estado,ctps,pis,matricula,admissao,funcao,departamento,data_nascimento,logo_url,validador_habilitado,ferias_inicio,ferias_fim,banco_horas`);
+        if (dados.length === 0) {
+            msgDiv.textContent = '❌ Usuário não encontrado!';
+            msgDiv.style.display = 'block';
+            return;
+        }
+        
+        const promotor = dados[0];
+        
+        const senhaCorreta = await verificarSenha(senha, promotor.senha);
+        if (!senhaCorreta) {
+            msgDiv.textContent = '❌ Senha incorreta!';
+            msgDiv.style.display = 'block';
+            return;
+        }
+        
+        if (!promotor.ativo) {
+            msgDiv.textContent = '⛔ Promotor inativo!';
+            msgDiv.style.display = 'block';
+            return;
+        }
+
+        promotorLogado = promotor;
+        document.getElementById('telaLogin').classList.add('hidden');
+        document.getElementById('painelPrincipal').classList.remove('hidden');
+        document.getElementById('headerNome').textContent = promotor.nome;
+        document.getElementById('headerAvatar').textContent = promotor.nome.charAt(0).toUpperCase();
+        document.getElementById('sidebarNome').textContent = promotor.nome;
+        document.getElementById('sidebarEmail').textContent = promotor.email;
+
+        showToast('✅ Bem-vindo, ' + promotor.nome + '!');
+        carregarDadosIniciais();
+        
+    } catch (erro) {
+        msgDiv.textContent = '❌ Erro: ' + erro.message;
+        msgDiv.style.display = 'block';
+        console.error('Erro no login:', erro);
+    }
+}
+
+function fazerLogout() {
+    promotorLogado = null;
+    localizacaoAtual = null;
+    gpsAtivo = false;
+    fotoPontoBase64 = null;
+    fotoPontoUrl = null;
+    document.getElementById('painelPrincipal').classList.add('hidden');
+    document.getElementById('telaLogin').classList.remove('hidden');
+    document.getElementById('inputSenha').value = '';
+    showToast('👋 Até logo!');
+}
+
+// ============================================
+// VERIFICAR GPS OBRIGATÓRIO
+// ============================================
+function verificarGPS() {
+    const alerta = document.getElementById('gpsAlerta');
+    if (!navigator.geolocation) {
+        alerta.style.display = 'block';
+        alerta.querySelector('.texto').textContent = '❌ Navegador não suporta GPS';
+        return;
+    }
+    
+    if (gpsAtivo && localizacaoAtual) {
+        alerta.style.display = 'none';
+        return;
+    }
+    
+    alerta.style.display = 'block';
+    alerta.querySelector('.texto').textContent = '📍 GPS Obrigatório!';
+    alerta.querySelector('.subtexto').textContent = 'Ative o GPS para registrar seu ponto de trabalho';
+}
+
+function ativarGPS() {
+    const alerta = document.getElementById('gpsAlerta');
+    alerta.querySelector('.texto').textContent = '⏳ Buscando localização...';
+    alerta.querySelector('.subtexto').textContent = 'Aguarde...';
+    
+    navigator.geolocation.getCurrentPosition(
+        function(posicao) {
+            localizacaoAtual = {
+                lat: posicao.coords.latitude,
+                lon: posicao.coords.longitude
+            };
+            gpsAtivo = true;
+            alerta.style.display = 'none';
+            
+            document.getElementById('gpsCoords').textContent = `Lat: ${localizacaoAtual.lat.toFixed(6)} | Lon: ${localizacaoAtual.lon.toFixed(6)}`;
+            document.getElementById('gpsStatus').textContent = '📍 Localização capturada';
+            document.getElementById('gpsDot').className = 'dot verde';
+            
+            showToast('✅ GPS ativado com sucesso!', 'success');
+            verificarRaio();
+        },
+        function(erro) {
+            alerta.querySelector('.texto').textContent = '❌ Erro ao ativar GPS';
+            alerta.querySelector('.subtexto').textContent = erro.message + ' | Tente novamente';
+            alerta.querySelector('.btn-ativar-gps').textContent = '🔄 Tentar Novamente';
+            showToast('❌ Erro ao ativar GPS: ' + erro.message, 'error');
+        },
+        { enableHighAccuracy: true, timeout: 15000 }
+    );
+}
+
+// ============================================
+// CARREGAR DADOS INICIAIS
+// ============================================
+async function carregarDadosIniciais() {
+    if (!promotorLogado) return;
+    try {
+        verificarGPS();
+        await Promise.all([
+            carregarLojaDoDia(),
+            carregarRoteiroSemana(),
+            carregarHistoricoHoje(),
+            carregarLojasExposicao(),
+            carregarValidador(),
+            carregarEspelhoPonto(),
+            carregarAtestados(),
+            carregarFiltroMeses(),
+            carregarChecklistsApp(),
+            carregarJustificativas()
+        ]);
+        console.log('✅ Todos os dados carregados em paralelo!');
+    } catch (erro) {
+        console.warn('⚠️ Alguns dados podem não ter carregado:', erro);
+    }
+}
+
+// ============================================
+// FILTRO DE MESES
+// ============================================
+async function carregarFiltroMeses() {
+    const select = document.getElementById('filtroMesEspelho');
+    try {
+        const hoje = new Date();
+        const mesAtual = hoje.getMonth() + 1;
+        const anoAtual = hoje.getFullYear();
+        select.innerHTML = '';
+        for (let i = 0; i < 6; i++) {
+            let mes = mesAtual - i;
+            let ano = anoAtual;
+            if (mes <= 0) { mes += 12; ano--; }
+            const label = `${String(mes).padStart(2,'0')}/${ano}`;
+            const value = `${ano}-${String(mes).padStart(2,'0')}`;
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = label;
+            if (i === 0) option.selected = true;
+            select.appendChild(option);
+        }
+    } catch (erro) {
+        console.error('Erro ao carregar filtro:', erro);
+    }
+}
+
+// ============================================
+// GPS - PEGAR LOCALIZAÇÃO
+// ============================================
+function pegarGPS() {
+    const statusDiv = document.getElementById('gpsStatus');
+    const dot = document.getElementById('gpsDot');
+    const coordsDiv = document.getElementById('gpsCoords');
+    const raioDiv = document.getElementById('gpsRaio');
+
+    if (!navigator.geolocation) {
+        statusDiv.textContent = '❌ Navegador não suporta GPS';
+        dot.className = 'dot vermelho';
+        return;
+    }
+
+    // Se já tiver localização, não busca novamente
+    if (gpsAtivo && localizacaoAtual) {
+        statusDiv.textContent = '📍 Localização ativa';
+        dot.className = 'dot verde';
+        coordsDiv.textContent = `Lat: ${localizacaoAtual.lat.toFixed(6)} | Lon: ${localizacaoAtual.lon.toFixed(6)}`;
+        return;
+    }
+
+    statusDiv.textContent = '⏳ Buscando localização...';
+    dot.className = 'dot amarelo';
+    raioDiv.textContent = '';
+
+    navigator.geolocation.getCurrentPosition(
+        function(posicao) {
+            localizacaoAtual = {
+                lat: posicao.coords.latitude,
+                lon: posicao.coords.longitude
+            };
+            gpsAtivo = true;
+            coordsDiv.textContent = `Lat: ${localizacaoAtual.lat.toFixed(6)} | Lon: ${localizacaoAtual.lon.toFixed(6)}`;
+            statusDiv.textContent = '📍 Localização capturada';
+            dot.className = 'dot verde';
+            document.getElementById('gpsAlerta').style.display = 'none';
+            verificarRaio();
+        },
+        function(erro) {
+            statusDiv.textContent = '❌ Erro: ' + erro.message;
+            dot.className = 'dot vermelho';
+            gpsAtivo = false;
+            verificarGPS();
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
+
+async function verificarRaio() {
+    const raioDiv = document.getElementById('gpsRaio');
+    if (!promotorLogado || !localizacaoAtual) return;
+
+    try {
+        const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+        const hoje = new Date();
+        const diaSemana = diasSemana[hoje.getDay()];
+        const roteiros = await apiFetch(
+            `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&dia_semana=eq.${diaSemana}&select=*,lojas(*)`
+        );
+
+        if (roteiros.length === 0 || !roteiros[0].lojas) {
+            raioDiv.textContent = '';
+            return;
+        }
+
+        const loja = roteiros[0].lojas;
+        if (!loja.latitude || !loja.longitude) {
+            raioDiv.textContent = '📍 Sem coordenadas da loja';
+            return;
+        }
+
+        const distancia = calcularDistancia(
+            localizacaoAtual.lat,
+            localizacaoAtual.lon,
+            parseFloat(loja.latitude),
+            parseFloat(loja.longitude)
+        );
+
+        if (distancia <= 50) {
+            raioDiv.textContent = '✅ Dentro do raio (50m)';
+            raioDiv.style.color = '#22c55e';
+        } else {
+            raioDiv.textContent = `❌ Fora do raio (${Math.round(distancia)}m)`;
+            raioDiv.style.color = '#ef4444';
+        }
+    } catch (erro) {
+        console.error('Erro ao verificar raio:', erro);
+        raioDiv.textContent = '';
+    }
+}
+
+function calcularDistancia(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c * 1000;
+}
+
+// ============================================
+// LOJA DO DIA
+// ============================================
+async function carregarLojaDoDia() {
+    if (!promotorLogado) return;
+
+    const nomeEl = document.getElementById('lojaNome');
+    const enderecoEl = document.getElementById('lojaEndereco');
+    const horarioEl = document.getElementById('lojaHorario');
+
+    try {
+        const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+        const hoje = new Date();
+        const diaSemana = diasSemana[hoje.getDay()];
+        const dataHoje = hoje.toISOString().split('T')[0];
+
+        const feriados = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=eq.${promotorLogado.estado}`);
+        const feriadoNacional = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=is.null`);
+
+        if (feriados.length > 0 || feriadoNacional.length > 0) {
+            nomeEl.textContent = '🎉 Hoje é feriado!';
+            enderecoEl.textContent = 'Bom descanso! 😊';
+            horarioEl.textContent = '';
+            return;
+        }
+
+        const roteiros = await apiFetch(
+            `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&dia_semana=eq.${diaSemana}&select=*,lojas(*)`
+        );
+
+        if (roteiros.length === 0 || !roteiros[0].lojas) {
+            nomeEl.textContent = '📭 Nenhuma loja agendada';
+            enderecoEl.textContent = 'Hoje você não tem visita';
+            horarioEl.textContent = '';
+            return;
+        }
+
+        const loja = roteiros[0].lojas;
+        nomeEl.textContent = loja.nome || 'Loja não identificada';
+        enderecoEl.textContent = loja.endereco || 'Endereço não informado';
+        horarioEl.textContent = '';
+
+    } catch (erro) {
+        console.error('Erro ao carregar loja do dia:', erro);
+        nomeEl.textContent = '❌ Erro ao carregar';
+        enderecoEl.textContent = 'Tente novamente mais tarde';
+        horarioEl.textContent = '';
+    }
+}
+
+// ============================================
+// REGISTRAR PONTO (COM FOTO OBRIGATÓRIA)
+// ============================================
+async function registrarPonto(tipo) {
+    const msgDiv = document.getElementById('mensagemPonto');
+
+    if (!promotorLogado) {
+        msgDiv.style.display = 'block';
+        msgDiv.style.background = '#fee2e2';
+        msgDiv.style.color = '#991b1b';
+        msgDiv.textContent = '❌ Faça login primeiro!';
+        return;
+    }
+
+    // VERIFICAR GPS OBRIGATÓRIO
+    if (!gpsAtivo || !localizacaoAtual) {
+        msgDiv.style.display = 'block';
+        msgDiv.style.background = '#fee2e2';
+        msgDiv.style.color = '#991b1b';
+        msgDiv.textContent = '📍 Ative o GPS para registrar o ponto!';
+        verificarGPS();
+        return;
+    }
+
+    // FOTO OBRIGATÓRIA (ENTRADA E SAÍDA)
+    if (tipo === 'entrada' || tipo === 'saida') {
+        fotoPontoTipo = tipo;
+        await tirarFotoPonto(tipo);
+        return;
+    }
+
+    // Para almoço e volta, não precisa de foto
+    await executarRegistroPonto(tipo, null);
+}
+
+// ============================================
+// TIRAR FOTO PARA O PONTO
+// ============================================
+function tirarFotoPonto(tipo) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    // 🔥 REMOVEMOS O CAPTURE PARA ABRIR A CÂMERA CORRETAMENTE
+    // input.capture = 'environment';  ← REMOVIDO
+    
+    showToast('📸 Tire uma selfie para registrar o ponto', 'info');
+    
+    input.onchange = async function(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            showToast('⚠️ Foto não foi tirada! Tente novamente.', 'error');
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            showToast('⚠️ Foto muito grande! Máximo 10MB.', 'error');
+            return;
+        }
+
+        try {
+            // Upload da foto para o Cloudinary
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', 'promotor_app');
+            formData.append('folder', 'pontos');
+
+            const response = await fetch(
+                `https://api.cloudinary.com/v1_1/zv2yyqo2/image/upload`,
+                { method: 'POST', body: formData }
+            );
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error?.message || 'Erro no upload');
+            }
+
+            fotoPontoUrl = data.secure_url;
+            showToast('✅ Foto enviada! Registrando ponto...', 'success');
+            
+            await executarRegistroPonto(tipo, fotoPontoUrl);
+            
+        } catch (erro) {
+            showToast('❌ Erro ao enviar foto: ' + erro.message, 'error');
+            console.error(erro);
+        }
+    };
+    
+    input.click();
+}
+
+// ============================================
+// EXECUTAR REGISTRO DE PONTO (COMPLETO)
+// ============================================
+async function executarRegistroPonto(tipo, fotoUrl) {
+    const msgDiv = document.getElementById('mensagemPonto');
+
+    // ===== 1. VERIFICAR DOMINGO =====
+    const hoje = new Date();
+    const diaSemanaNumero = hoje.getDay(); // 0 = Domingo
+    
+    if (diaSemanaNumero === 0) {
+        msgDiv.style.display = 'block';
+        msgDiv.style.background = '#fef3c7';
+        msgDiv.style.color = '#92400e';
+        msgDiv.textContent = '📅 Hoje é domingo! Não é possível registrar ponto.';
+        return;
+    }
+
+    // ===== 2. VERIFICAR FERIADO =====
+    const dataHoje = hoje.toISOString().split('T')[0];
+    const feriados = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=eq.${promotorLogado.estado}`);
+    const feriadoNacional = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=is.null`);
+
+    if (feriados.length > 0 || feriadoNacional.length > 0) {
+        msgDiv.style.display = 'block';
+        msgDiv.style.background = '#fef3c7';
+        msgDiv.style.color = '#92400e';
+        msgDiv.textContent = '🎉 Hoje é feriado! Não é possível registrar ponto.';
+        return;
+    }
+
+    // ===== 3. VERIFICAR FÉRIAS =====
+    if (promotorLogado.ferias_inicio && promotorLogado.ferias_fim) {
+        const inicioFerias = new Date(promotorLogado.ferias_inicio + 'T00:00:00');
+        const fimFerias = new Date(promotorLogado.ferias_fim + 'T00:00:00');
+        
+        if (hoje >= inicioFerias && hoje <= fimFerias) {
+            msgDiv.style.display = 'block';
+            msgDiv.style.background = '#fef3c7';
+            msgDiv.style.color = '#92400e';
+            msgDiv.textContent = '🌴 Você está de férias! Não é possível registrar ponto.';
+            return;
+        }
+    }
+
+    // ===== 4. VERIFICAR GPS =====
+    if (!promotorLogado || !localizacaoAtual) {
+        msgDiv.style.display = 'block';
+        msgDiv.style.background = '#fee2e2';
+        msgDiv.style.color = '#991b1b';
+        msgDiv.textContent = '❌ Dados de localização não disponíveis!';
+        return;
+    }
+
+    // ===== 5. CONTINUAR COM O REGISTRO =====
+    const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+    const diaSemana = diasSemana[hoje.getDay()];
+    const data = hoje.toISOString().split('T')[0];
+
+    try {
+        const roteiros = await apiFetch(
+            `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&dia_semana=eq.${diaSemana}&select=*,lojas(*)`
+        );
+
+        if (roteiros.length === 0) {
+            msgDiv.style.display = 'block';
+            msgDiv.style.background = '#fee2e2';
+            msgDiv.style.color = '#991b1b';
+            msgDiv.textContent = '📅 Você não tem roteiro para hoje!';
+            return;
+        }
+
+        const roteiro = roteiros[0];
+        const loja = roteiro.lojas;
+        const horario = new Date().toTimeString().slice(0, 5);
+
+        let dentroRaio = false;
+        let distanciaMetros = 0;
+        let distanciaTexto = '';
+
+        if (loja.latitude && loja.longitude) {
+            distanciaMetros = calcularDistancia(
+                localizacaoAtual.lat,
+                localizacaoAtual.lon,
+                parseFloat(loja.latitude),
+                parseFloat(loja.longitude)
+            );
+            dentroRaio = distanciaMetros <= 50;
+            distanciaTexto = `${Math.round(distanciaMetros)}m`;
+        } else {
+            dentroRaio = true;
+            distanciaTexto = 'Sem coordenadas';
+        }
+
+        const registro = {
+            promotor_id: promotorLogado.id,
+            roteiro_id: roteiro.id,
+            tipo: tipo,
+            latitude: localizacaoAtual.lat,
+            longitude: localizacaoAtual.lon,
+            dentro_raio: dentroRaio,
+            horario_previsto: roteiro.horario_visita || '09:00',
+            horario_real: horario,
+            data: data,
+            foto_url: fotoUrl || null,
+            foto_tipo: fotoUrl ? tipo : null
+        };
+
+        await apiFetch('/rest/v1/pontos', 'POST', registro);
+
+        const emojis = {
+            entrada: '🟢 Entrada',
+            inicio_almoco: '🍽️ Início Almoço',
+            fim_almoco: '✅ Volta Almoço',
+            saida: '🔴 Saída'
+        };
+
+        const statusEmoji = dentroRaio ? '✅' : '❌';
+        const statusTexto = dentroRaio ? 'Dentro do raio' : `Fora do raio (${distanciaTexto})`;
+
+        msgDiv.style.display = 'block';
+        if (dentroRaio) {
+            msgDiv.style.background = '#dcfce7';
+            msgDiv.style.color = '#166534';
+        } else {
+            msgDiv.style.background = '#fee2e2';
+            msgDiv.style.color = '#991b1b';
+        }
+        msgDiv.innerHTML = `
+            ${emojis[tipo] || tipo} registrada! 🕐 ${horario}
+            <br>📍 ${statusEmoji} ${statusTexto}
+            ${fotoUrl ? '<br>📸 Foto registrada!' : ''}
+        `;
+
+        fotoPontoUrl = null;
+        fotoPontoTipo = null;
+
+        carregarHistoricoHoje();
+
+        setTimeout(() => {
+            msgDiv.style.display = 'none';
+        }, 5000);
+
+    } catch (erro) {
+        msgDiv.style.display = 'block';
+        msgDiv.style.background = '#fee2e2';
+        msgDiv.style.color = '#991b1b';
+        msgDiv.textContent = '❌ Erro: ' + erro.message;
+        console.error(erro);
+    }
+}
+
+// ============================================
+// ABRIR FOTO DO PONTO (Modal)
+// ============================================
+function abrirFotoPonto(url, tipo, nome, data) {
+    const modal = document.getElementById('modalFotoPonto');
+    document.getElementById('modalFotoPontoTitulo').textContent = `📸 ${tipo === 'entrada' ? '🟢 Entrada' : '🔴 Saída'}`;
+    document.getElementById('modalFotoPontoImg').src = url;
+    document.getElementById('modalFotoPontoInfo').textContent = `👤 ${nome || 'Promotor'} • 🕐 ${data || ''}`;
+    modal.classList.add('active');
+}
+
+function fecharModalFotoPonto() {
+    document.getElementById('modalFotoPonto').classList.remove('active');
+}
+
+// ============================================
+// HISTÓRICO DO DIA (COM FOTOS)
+// ============================================
+async function carregarHistoricoHoje() {
+    if (!promotorLogado) return;
+
+    const div = document.getElementById('historicoHoje');
+    const hoje = new Date().toISOString().split('T')[0];
+
+    try {
+        const pontos = await apiFetch(
+            `/rest/v1/pontos?promotor_id=eq.${promotorLogado.id}&data=eq.${hoje}&order=horario_real.asc`
+        );
+
+        if (pontos.length === 0) {
+            div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum registro hoje</p>';
+            return;
+        }
+
+        const tipoMap = {
+            entrada: '🟢 Entrada',
+            inicio_almoco: '🍽️ Início Almoço',
+            fim_almoco: '✅ Volta Almoço',
+            saida: '🔴 Saída'
+        };
+
+        let html = '';
+        pontos.forEach(p => {
+            const dentro = p.dentro_raio ? '✅' : '❌';
+            const fotoHtml = p.foto_url ? 
+                `<img src="${p.foto_url}" class="foto-ponto-thumb" onclick="abrirFotoPonto('${p.foto_url}', '${p.tipo}', '${promotorLogado.nome}', '${p.data} ${p.horario_real}')" alt="Foto">` : 
+                '<span style="color:#94a3b8;font-size:11px;">Sem foto</span>';
+            html += `
+                <div class="historico-item">
+                    <span class="tipo">${tipoMap[p.tipo] || p.tipo}</span>
+                    <span class="hora">${p.horario_real}</span>
+                    <span class="status">${dentro}</span>
+                    <span style="width:50px;text-align:right;">${fotoHtml}</span>
+                </div>
+            `;
+        });
+        div.innerHTML = html;
+
+    } catch (erro) {
+        console.error('Erro ao carregar histórico:', erro);
+        div.innerHTML = '<p style="color:#ef4444;text-align:center;">❌ Erro ao carregar histórico</p>';
+    }
+}
+
+// ============================================
+// ROTEIRO DA SEMANA
+// ============================================
+async function carregarRoteiroSemana() {
+    if (!promotorLogado) return;
+
+    const div = document.getElementById('listaRoteiro');
+
+    try {
+        const diasSemana = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+        const diasNomes = { segunda: 'Segunda', terca: 'Terça', quarta: 'Quarta', quinta: 'Quinta', sexta: 'Sexta', sabado: 'Sábado' };
+
+        const hoje = new Date();
+        const mes = hoje.getMonth() + 1;
+        const ano = hoje.getFullYear();
+
+        // ============================================
+        // BUSCAR ROTEIROS (INCLUINDO RECORRENTES)
+        // ============================================
+        // Primeiro, tentar buscar roteiros do mês atual
+        let roteiros = await apiFetch(
+            `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&mes=eq.${mes}&ano=eq.${ano}&select=*,lojas(*)`
+        );
+
+        // Se não houver roteiro no mês atual, buscar o roteiro recorrente
+        if (roteiros.length === 0) {
+            // Buscar roteiros recorrentes de meses anteriores
+            const recorrentes = await apiFetch(
+                `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&roteiro_recorrente=eq.true&select=*,lojas(*)`
+            );
+    
+            // Se encontrar um roteiro recorrente, usar ele
+            if (recorrentes.length > 0) {
+                roteiros = recorrentes;
+                console.log('🔄 Usando roteiro recorrente!');
+            }
+        }
+
+        if (roteiros.length === 0) {
+            div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum roteiro para este mês</p>';
+            return;
+        }
+
+        const primeiroDia = new Date(ano, mes - 1, 1);
+        const offset = (primeiroDia.getDay() === 0) ? 6 : primeiroDia.getDay() - 1;
+        const semanaHoje = Math.floor((hoje.getDate() + offset - 1) / 7) + 1;
+
+        const diasSemanaAtual = roteiros.filter(r => r.semana === semanaHoje);
+
+        if (diasSemanaAtual.length === 0) {
+            div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhuma visita para esta semana</p>';
+            return;
+        }
+
+        const diasSemanaMap = {};
+        diasSemanaAtual.forEach(r => {
+            diasSemanaMap[r.dia_semana] = r;
+        });
+
+        let html = '';
+        diasSemana.forEach(dia => {
+            const registro = diasSemanaMap[dia];
+            const classes = registro ? 'roteiro-item concluido' : 'roteiro-item pendente';
+            const status = registro ? '✅' : '⏳';
+            const nome = registro?.lojas?.nome || '-';
+
+            const hojeDia = new Date().getDay();
+            const diaNumero = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'].indexOf(dia);
+            const isHoje = diaNumero === hojeDia;
+
+            html += `
+                <div class="${classes}" style="${isHoje ? 'border-left-color: #2563eb; background: #dbeafe;' : ''}">
+                    <span class="dia">${isHoje ? '🔵' : ''} ${diasNomes[dia]}</span>
+                    <div class="info">
+                        <div class="nome">${nome}</div>
+                    </div>
+                    <span class="status">${status}</span>
+                </div>
+            `;
+        });
+
+        document.getElementById('roteiroTitulo').textContent = `📋 Meu Roteiro - Semana ${semanaHoje}`;
+        div.innerHTML = html;
+
+    } catch (erro) {
+        console.error('Erro ao carregar roteiro:', erro);
+        div.innerHTML = '<p style="color:#ef4444;text-align:center;">❌ Erro ao carregar roteiro</p>';
+    }
+}
+
+// ============================================
+// MODAL MÊS COMPLETO (VISUAL ADMIN - SEM EDIÇÃO)
+// ============================================
+async function abrirModalMes() {
+    const modal = document.getElementById('modalMesCompleto');
+    const content = document.getElementById('conteudoMesCompleto');
+    modal.classList.add('active');
+    content.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+
+    try {
+        const hoje = new Date();
+        const mes = hoje.getMonth() + 1;
+        const ano = hoje.getFullYear();
+        const nomeMes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][mes - 1];
+
+        // ===== BUSCAR ROTEIROS =====
+        let roteiros = await apiFetch(
+            `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&mes=eq.${mes}&ano=eq.${ano}&select=*,lojas(*)`
+        );
+
+        if (roteiros.length === 0) {
+            const recorrentes = await apiFetch(
+                `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&roteiro_recorrente=eq.true&select=*,lojas(*)`
+            );
+            if (recorrentes.length > 0) {
+                roteiros = recorrentes;
+            }
+        }
+
+        if (roteiros.length === 0) {
+            content.innerHTML = `
+                <div style="text-align:center;padding:40px 20px;color:#94a3b8;">
+                    <div style="font-size:48px;margin-bottom:12px;">📭</div>
+                    <p>Nenhum roteiro para este mês</p>
+                </div>
+            `;
+            return;
+        }
+
+        const diasNomes = {
+            segunda: 'Segunda',
+            terca: 'Terça',
+            quarta: 'Quarta',
+            quinta: 'Quinta',
+            sexta: 'Sexta',
+            sabado: 'Sábado'
+        };
+
+        const diasSemana = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+        const isRecorrente = roteiros.some(r => r.roteiro_recorrente);
+
+        // ===== ORGANIZAR POR SEMANA =====
+        const semanas = {};
+        for (let s = 1; s <= 4; s++) {
+            semanas[s] = {};
+            diasSemana.forEach(dia => {
+                semanas[s][dia] = [];
+            });
+        }
+
+        roteiros.forEach(r => {
+            const semana = r.semana || 1;
+            const dia = r.dia_semana;
+            if (dia && semanas[semana] && semanas[semana][dia]) {
+                if (r.lojas) {
+                    const jaExiste = semanas[semana][dia].some(l => l.id === r.lojas.id);
+                    if (!jaExiste) {
+                        semanas[semana][dia].push({
+                            loja: r.lojas,
+                            turno: r.turno || 'manha',
+                            horario: r.horario_visita || null
+                        });
+                    }
+                }
+            }
+        });
+
+        // ===== VERIFICAR SEMANAS COM LOJAS =====
+        const semanasAtivas = [];
+        for (let s = 1; s <= 4; s++) {
+            const temLojas = Object.values(semanas[s]).some(arr => arr.length > 0);
+            if (temLojas) {
+                semanasAtivas.push(s);
+            }
+        }
+
+        // ===== CONSTRUIR HTML =====
+        let html = '';
+
+        // ===== CABEÇALHO =====
+        html += `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+                <div style="font-size:18px;font-weight:700;color:#1a1a2e;">
+                    📅 ${nomeMes} ${ano}
+                </div>
+                ${isRecorrente ? `
+                    <span style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">
+                        🔄 Recorrente
+                    </span>
+                ` : ''}
+            </div>
+        `;
+
+        // ===== ABAS DAS SEMANAS =====
+        if (semanasAtivas.length > 1) {
+            html += `<div style="display:flex;gap:4px;margin-bottom:16px;background:#f1f5f9;border-radius:10px;padding:4px;flex-wrap:wrap;">`;
+
+            semanasAtivas.forEach((s, index) => {
+                const isActive = index === 0 ? 'active' : '';
+                const dataInicio = new Date(ano, mes - 1, 1 + (s - 1) * 7);
+                const dataFim = new Date(dataInicio);
+                dataFim.setDate(dataFim.getDate() + 6);
+                const label = `${String(dataInicio.getDate()).padStart(2,'0')}/${String(dataInicio.getMonth()+1).padStart(2,'0')} - ${String(dataFim.getDate()).padStart(2,'0')}/${String(dataFim.getMonth()+1).padStart(2,'0')}`;
+
+                html += `
+                    <button class="aba-semana-btn ${isActive}" 
+                            onclick="abrirAbaSemana(${s})" 
+                            style="flex:1;padding:8px 12px;border:none;border-radius:8px;font-weight:600;font-size:12px;cursor:pointer;transition:0.3s;background:${isActive ? '#2563eb' : 'transparent'};color:${isActive ? 'white' : '#64748b'};min-width:60px;">
+                        Sem ${s}
+                        <span style="font-weight:400;font-size:10px;display:block;opacity:0.7;">${label}</span>
+                    </button>
+                `;
+            });
+
+            html += `</div>`;
+        }
+
+        // ===== CONTEÚDO DAS ABAS =====
+        html += `<div id="conteudoAbasSemanas">`;
+
+        semanasAtivas.forEach((s, index) => {
+            const isActive = index === 0 ? 'block' : 'none';
+            const turnoLabel = { manha: '🌄 Manhã', tarde: '🌅 Tarde' };
+
+            html += `<div id="abaSemana${s}" style="display:${isActive};max-height:450px;overflow-y:auto;padding-right:4px;">`;
+
+            const diasComLojas = diasSemana.filter(dia => semanas[s][dia].length > 0);
+
+            if (diasComLojas.length === 0) {
+                html += `
+                    <div style="text-align:center;padding:30px 0;color:#94a3b8;">
+                        <div style="font-size:32px;margin-bottom:8px;">📭</div>
+                        <p>Nenhuma loja nesta semana</p>
+                    </div>
+                `;
+            } else {
+                diasComLojas.forEach(dia => {
+                    const itens = semanas[s][dia];
+                    html += `
+                        <div style="background:#f8fafc;border-radius:12px;padding:12px 16px;margin-bottom:12px;border-left:4px solid #2563eb;">
+                            <div style="font-weight:700;font-size:14px;color:#1a1a2e;margin-bottom:8px;">
+                                📅 ${diasNomes[dia]}
+                            </div>
+                            ${itens.map(item => {
+                                const loja = item.loja;
+                                const turno = turnoLabel[item.turno] || '🌄 Manhã';
+                                return `
+                                    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:white;border-radius:8px;margin-bottom:4px;border:1px solid #e2e8f0;">
+                                        <div style="display:flex;align-items:center;gap:8px;">
+                                            <span>🏪</span>
+                                            <span style="font-weight:500;font-size:13px;color:#1a1a2e;">
+                                                ${loja.nome}
+                                                ${loja.codigo_loja ? ` <span style="color:#94a3b8;font-weight:400;">(${loja.codigo_loja})</span>` : ''}
+                                            </span>
+                                        </div>
+                                        <div style="display:flex;align-items:center;gap:8px;">
+                                            <span style="font-size:12px;color:#64748b;">${turno}</span>
+                                            ${item.horario ? `<span style="font-size:11px;color:#94a3b8;">🕐 ${item.horario}</span>` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                });
+            }
+
+            html += `</div>`;
+        });
+
+        html += `</div>`;
+
+        // ===== INFO RECORRENTE =====
+        if (isRecorrente) {
+            html += `
+                <div style="margin-top:16px;padding:12px;background:#fef3c7;border-radius:8px;font-size:13px;color:#92400e;text-align:center;border:1px solid #fde68a;">
+                    🔄 Este roteiro é recorrente e se aplica a todos os meses.
+                </div>
+            `;
+        }
+
+        content.innerHTML = html;
+
+        // ===== FUNÇÃO PARA TROCAR ABAS =====
+        window.abrirAbaSemana = function(semana) {
+            document.querySelectorAll('[id^="abaSemana"]').forEach(el => {
+                el.style.display = 'none';
+            });
+            const aba = document.getElementById(`abaSemana${semana}`);
+            if (aba) aba.style.display = 'block';
+
+            document.querySelectorAll('.aba-semana-btn').forEach(btn => {
+                btn.style.background = 'transparent';
+                btn.style.color = '#64748b';
+            });
+            const btnAtivo = document.querySelector(`.aba-semana-btn[onclick="abrirAbaSemana(${semana})"]`);
+            if (btnAtivo) {
+                btnAtivo.style.background = '#2563eb';
+                btnAtivo.style.color = 'white';
+            }
+        };
+
+    } catch (erro) {
+        console.error('Erro ao carregar modal:', erro);
+        content.innerHTML = `
+            <div style="text-align:center;padding:30px 0;color:#ef4444;">
+                <div style="font-size:32px;margin-bottom:8px;">❌</div>
+                <p>Erro ao carregar roteiro</p>
+                <p style="font-size:13px;color:#94a3b8;margin-top:4px;">${erro.message}</p>
+            </div>
+        `;
+    }
+}
+
+function fecharModalMes() {
+    document.getElementById('modalMesCompleto').classList.remove('active');
+}
+
+// ============================================
+// EXPOSIÇÕES
+// ============================================
+async function carregarLojasExposicao() {
+    const select = document.getElementById('expLoja');
+    select.innerHTML = '<option value="">Selecione uma loja...</option>';
+    try {
+        const lojas = await apiFetch('/rest/v1/lojas?select=id,nome&order=nome');
+        lojas.forEach(l => {
+            select.innerHTML += `<option value="${l.id}">${l.nome}</option>`;
+        });
+    } catch (erro) {
+        console.error('Erro ao carregar lojas:', erro);
+    }
+}
+
+// ============================================
+// FUNÇÃO CORRIGIDA: enviarExposicao
+// ============================================
+async function enviarExposicao() {
+    const lojaId = document.getElementById('expLoja').value;
+    const tipo = document.getElementById('expTipo').value;
+    const numero = document.getElementById('expNumero').value;
+
+    if (!lojaId) {
+        showToast('⚠️ Selecione uma loja!', 'error');
+        return;
+    }
+
+    // 🔥 1. CRIAR O INPUT DE ARQUIVO
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png,image/gif,image/webp'; // ✅ MAIS ESPECÍFICO
+    input.capture = 'environment'; // ✅ Isso só funciona em mobile
+
+    // 🔥 2. QUANDO O USUÁRIO SELECIONAR UM ARQUIVO
+    input.onchange = async function(event) {
+        const file = event.target.files[0];
+        
+        // 🔥 3. VERIFICAR SE HÁ ARQUIVO
+        if (!file) {
+            showToast('⚠️ Nenhum arquivo selecionado!', 'error');
+            return;
+        }
+
+        // 🔥 4. VALIDAR TAMANHO (MANTIDO)
+        if (file.size > 10 * 1024 * 1024) {
+            showToast('⚠️ Foto muito grande! Máximo 10MB.', 'error');
+            return;
+        }
+
+        // 🔥 5. VALIDAR TIPO MIME REAL (NOVO!)
+        // O que é MIME? É o tipo real do arquivo, detectado pelo navegador
+        const tiposPermitidos = [
+            'image/jpeg',  // .jpg, .jpeg
+            'image/png',   // .png
+            'image/gif',   // .gif
+            'image/webp'   // .webp
+        ];
+        
+        if (!tiposPermitidos.includes(file.type)) {
+            showToast('⚠️ Apenas imagens JPG, PNG, GIF ou WEBP!', 'error');
+            return;
+        }
+
+        // 🔥 6. VALIDAR EXTENSÃO REAL (NOVO!)
+        // Por que validar a extensão? Segurança extra!
+        const extensoesPermitidas = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+        const nomeArquivo = file.name.toLowerCase();
+        const extensao = nomeArquivo.substring(nomeArquivo.lastIndexOf('.'));
+        
+        if (!extensoesPermitidas.includes(extensao)) {
+            showToast(`⚠️ Extensão "${extensao}" não permitida! Use JPG, PNG, GIF ou WEBP.`, 'error');
+            return;
+        }
+
+        // 🔥 7. VALIDAR NOME DO ARQUIVO (NOVO!)
+        // Remover caracteres perigosos do nome
+        const nomeLimpo = nomeArquivo.replace(/[^a-zA-Z0-9._-]/g, '');
+        if (nomeLimpo !== nomeArquivo) {
+            showToast('⚠️ O nome do arquivo contém caracteres especiais. Renomeie e tente novamente.', 'error');
+            return;
+        }
+
+        // 🔥 8. ENVIAR PARA O CLOUDINARY
+        showToast('⏳ Enviando foto...', 'info');
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', 'promotor_app');
+
+            const response = await fetch(
+                `https://api.cloudinary.com/v1_1/zv2yyqo2/image/upload`,
+                { method: 'POST', body: formData }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error?.message || 'Erro no upload');
+            }
+
+            const fotoUrl = data.secure_url;
+            await salvarExposicao(lojaId, tipo, numero, fotoUrl);
+
+        } catch (erro) {
+            showToast('❌ Erro: ' + erro.message, 'error');
+            console.error('Erro detalhado:', erro);
+        }
+    };
+
+    // 🔥 9. ABRIR O SELETOR DE ARQUIVO
+    input.click();
+}
+
+async function salvarExposicao(lojaId, tipo, numero, fotoUrl) {
+    showToast('⏳ Salvando exposição...', 'info');
+
+    try {
+        const hoje = new Date();
+        const data = hoje.toISOString().split('T')[0];
+        const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+        const diaSemana = diasSemana[hoje.getDay()];
+
+        const roteirosResponse = await fetch(`${SUPABASE_URL}/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&dia_semana=eq.${diaSemana}&select=id`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+
+        if (!roteirosResponse.ok) {
+            const erro = await roteirosResponse.text();
+            throw new Error(`Erro ao buscar roteiro: ${erro}`);
+        }
+
+        const roteiros = await roteirosResponse.json();
+
+        if (roteiros.length === 0) {
+            showToast('📅 Você não tem roteiro para hoje!', 'error');
+            return;
+        }
+
+        const roteiroId = roteiros[0].id;
+
+        const dados = {
+            promotor_id: promotorLogado.id,
+            roteiro_id: roteiroId,
+            foto_url: fotoUrl,
+            data: data,
+            tipo_exposicao: tipo + '_' + numero
+        };
+
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/exposicoes`, {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(dados)
+        });
+
+        if (!response.ok) {
+            const erro = await response.text();
+            throw new Error(`Erro ao salvar: ${erro}`);
+        }
+
+        showToast('✅ Exposição enviada com sucesso!', 'success');
+        document.getElementById('expLoja').value = '';
+        document.getElementById('expPreview').style.display = 'none';
+        carregarExposicoes();
+
+    } catch (erro) {
+        showToast('❌ Erro ao salvar: ' + erro.message, 'error');
+        console.error('Erro detalhado:', erro);
+    }
+}
+
+async function carregarExposicoes() {
+    if (!promotorLogado) return;
+
+    const div = document.getElementById('listaExposicoes');
+
+    try {
+        const dados = await apiFetch(
+            `/rest/v1/exposicoes?promotor_id=eq.${promotorLogado.id}&select=*,roteiro_id&order=created_at.desc`
+        );
+
+        if (dados.length === 0) {
+            div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhuma exposição registrada</p>';
+            return;
+        }
+
+        for (const exp of dados) {
+            if (exp.roteiro_id) {
+                try {
+                    const roteiro = await apiFetch(`/rest/v1/roteiros?id=eq.${exp.roteiro_id}&select=lojas(nome)`);
+                    if (roteiro && roteiro.length > 0 && roteiro[0].lojas) {
+                        exp._loja_nome = roteiro[0].lojas.nome;
+                    } else {
+                        exp._loja_nome = 'Loja não identificada';
+                    }
+                } catch (e) {
+                    exp._loja_nome = 'Loja não identificada';
+                }
+            } else {
+                exp._loja_nome = 'Loja não identificada';
+            }
+        }
+
+        const tipoLabels = {};
+        for (let i = 1; i <= 20; i++) {
+            tipoLabels['ponta_' + i] = `Ponta de Gondola ${i}`;
+            tipoLabels['check_' + i] = `Check Stand ${i}`;
+        }
+
+        let html = '';
+        dados.forEach(exp => {
+            const nomeLoja = exp._loja_nome || 'Loja não identificada';
+            const tipoLabel = tipoLabels[exp.tipo_exposicao] || exp.tipo_exposicao || 'Tipo não definido';
+            const dataFormat = exp.data || 'Data não informada';
+            html += `
+                <div class="exposicao-item">
+                    <img class="thumb" src="${exp.foto_url || 'https://via.placeholder.com/50/2563eb/ffffff?text=📸'}" alt="Exposição">
+                    <div class="info">
+                        <div class="nome">${nomeLoja}</div>
+                        <div class="tipo">${tipoLabel}</div>
+                        <div class="data">${dataFormat}</div>
+                    </div>
+                    <button class="btn-excluir" onclick="excluirExposicao(${exp.id})">Excluir</button>
+                </div>
+            `;
+        });
+        div.innerHTML = html;
+
+    } catch (erro) {
+        console.error('Erro ao carregar exposições:', erro);
+        div.innerHTML = '<p style="color:#ef4444;text-align:center;">❌ Erro ao carregar exposições</p>';
+    }
+}
+
+async function excluirExposicao(id) {
+    if (!confirm('⚠️ Tem certeza que quer excluir esta exposição?')) return;
+    try {
+        await apiFetch(`/rest/v1/exposicoes?id=eq.${id}`, 'DELETE');
+        showToast('🗑️ Exposição excluída!');
+        carregarExposicoes();
+    } catch (erro) {
+        showToast('❌ Erro: ' + erro.message, 'error');
+    }
+}
+
+// ============================================
+// VALIDADOR
+// ============================================
+async function carregarValidador() {
+    if (!promotorLogado) return;
+
+    const div = document.getElementById('listaValidador');
+
+    try {
+        const hoje = new Date();
+        const mes = hoje.getMonth() + 1;
+        const ano = hoje.getFullYear();
+
+        const roteiros = await apiFetch(
+            `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&mes=eq.${mes}&ano=eq.${ano}&select=*,lojas(*)`
+        );
+
+        const sugestoes = await apiFetch(
+            `/rest/v1/sugestoes_coordenadas?promotor_id=eq.${promotorLogado.id}&select=*`
+        );
+
+        const sugestoesMap = {};
+        sugestoes.forEach(s => {
+            sugestoesMap[s.loja_id] = s;
+        });
+
+        if (roteiros.length === 0) {
+            div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum roteiro para sugerir coordenadas</p>';
+            return;
+        }
+
+        const lojasVistas = {};
+        const lojasUnicas = [];
+        roteiros.forEach(r => {
+            if (r.lojas && !lojasVistas[r.lojas.id]) {
+                lojasVistas[r.lojas.id] = true;
+                lojasUnicas.push(r.lojas);
+            }
+        });
+
+        if (lojasUnicas.length === 0) {
+            div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhuma loja disponível</p>';
+            return;
+        }
+
+        let html = '';
+        lojasUnicas.forEach(loja => {
+            const sugerido = sugestoesMap[loja.id];
+            let statusText = '';
+            let statusClass = '';
+            let btnDisabled = false;
+            let btnText = '📌 Sugerir Coordenada';
+
+            if (sugerido) {
+                if (sugerido.status === 'pendente') {
+                    statusText = '⏳ Aguardando aprovação';
+                    statusClass = 'pendente';
+                    btnDisabled = true;
+                    btnText = '⏳ Aguardando...';
+                } else if (sugerido.status === 'aprovado') {
+                    statusText = '✅ Aprovado';
+                    statusClass = 'aprovado';
+                    btnDisabled = true;
+                    btnText = '✅ Aprovado';
+                } else if (sugerido.status === 'rejeitado') {
+                    statusText = '❌ Rejeitado - Tente novamente';
+                    statusClass = 'rejeitado';
+                    btnDisabled = false;
+                    btnText = '📌 Sugerir Novamente';
+                }
+            }
+
+            const coordsAtuais = loja.latitude && loja.longitude ? 
+                `${loja.latitude.toFixed(6)}, ${loja.longitude.toFixed(6)}` : 
+                'Não definida';
+
+            html += `
+                <div class="validador-item">
+                    <div class="info">
+                        <div class="loja">${loja.nome}</div>
+                        <div class="coords">📍 Atual: ${coordsAtuais}</div>
+                        <div class="status">
+                            Status: <span class="${statusClass}">${statusText || 'Sem solicitação'}</span>
+                        </div>
+                    </div>
+                    <button class="btn-sugerir" onclick="sugerirCoordenada(${loja.id})" ${btnDisabled ? 'disabled' : ''}>
+                        ${btnText}
+                    </button>
+                </div>
+            `;
+        });
+
+        div.innerHTML = html;
+
+    } catch (erro) {
+        console.error('Erro ao carregar validador:', erro);
+        div.innerHTML = '<p style="color:#ef4444;text-align:center;">❌ Erro ao carregar</p>';
+    }
+}
+
+async function sugerirCoordenada(lojaId) {
+    if (!localizacaoAtual) {
+        showToast('📍 Aguarde o GPS carregar!', 'error');
+        return;
+    }
+
+    if (!promotorLogado) {
+        showToast('❌ Faça login primeiro!', 'error');
+        return;
+    }
+
+    try {
+        const promotorData = await apiFetch(`/rest/v1/promotores?id=eq.${promotorLogado.id}&select=validador_habilitado`);
+        if (promotorData.length === 0) return;
+        if (!promotorData[0].validador_habilitado) {
+            showToast('⛔ Você não está habilitado para sugerir coordenadas.', 'error');
+            return;
+        }
+    } catch (erro) {
+        showToast('❌ Erro ao verificar permissão: ' + erro.message, 'error');
+        return;
+    }
+
+    if (!confirm(
+        `📍 Sugerir coordenada para esta loja?\n\n` +
+        `Posição atual:\n` +
+        `Latitude: ${localizacaoAtual.lat.toFixed(6)}\n` +
+        `Longitude: ${localizacaoAtual.lon.toFixed(6)}\n\n` +
+        `⚠️ O administrador irá aprovar ou rejeitar esta sugestão.`
+    )) return;
+
+    try {
+        const dados = {
+            promotor_id: promotorLogado.id,
+            loja_id: lojaId,
+            latitude_sugerida: localizacaoAtual.lat,
+            longitude_sugerida: localizacaoAtual.lon,
+            status: 'pendente'
+        };
+
+        await apiFetch('/rest/v1/sugestoes_coordenadas', 'POST', dados);
+        showToast('✅ Sugestão enviada! Aguarde a aprovação do administrador.', 'success');
+        carregarValidador();
+    } catch (erro) {
+        showToast('❌ Erro: ' + erro.message, 'error');
+        console.error(erro);
+    }
+}
+
+// ============================================
+// ATESTADOS
+// ============================================
+async function carregarAtestados() {
+    if (!promotorLogado) return;
+
+    const div = document.getElementById('listaAtestados');
+
+    try {
+        const dados = await apiFetch(
+            `/rest/v1/atestados?promotor_id=eq.${promotorLogado.id}&order=data.desc`
+        );
+
+        if (dados.length === 0) {
+            div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum atestado cadastrado</p>';
+            return;
+        }
+
+        let html = '';
+        dados.forEach(a => {
+            html += `
+                <div class="atestado-item">
+                    <div class="info">
+                        <div class="data">📅 ${a.data}</div>
+                        <div class="desc">${a.descricao || 'Atestado'}</div>
+                    </div>
+                    <button class="btn-ver" onclick="visualizarAtestado('${a.arquivo_url}')">👁️ Ver</button>
+                </div>
+            `;
+        });
+        div.innerHTML = html;
+
+    } catch (erro) {
+        console.error('Erro ao carregar atestados:', erro);
+        div.innerHTML = '<p style="color:#ef4444;text-align:center;">❌ Erro ao carregar atestados</p>';
+    }
+}
+
+function visualizarAtestado(url) {
+    if (url) {
+        window.open(url, '_blank');
+    } else {
+        showToast('📄 Atestado não disponível', 'info');
+    }
+}
+
+// CÓDIGO CORRIGIDO PARA ATESTADO
+async function enviarAtestado() {
+    const data = document.getElementById('atestadoData').value;
+    
+    if (!data) {
+        showToast('⚠️ Selecione a data de ausência!', 'error');
+        return;
+    }
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.jpg,.jpeg,.png'; // ✅ Especificar extensões
+
+    input.onchange = async function(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            showToast('⚠️ Nenhum arquivo selecionado!', 'error');
+            return;
+        }
+
+        // ✅ VALIDAR TAMANHO (Atestados podem ser maiores)
+        if (file.size > 5 * 1024 * 1024) { // 5MB
+            showToast('⚠️ Arquivo muito grande! Máximo 5MB.', 'error');
+            return;
+        }
+
+        // ✅ VALIDAR TIPO MIME (PDF ou IMAGEM)
+        const tiposPermitidos = [
+            'application/pdf',  // PDF
+            'image/jpeg',       // JPG
+            'image/png',        // PNG
+            'image/gif'         // GIF
+        ];
+        
+        if (!tiposPermitidos.includes(file.type)) {
+            showToast('⚠️ Apenas PDF, JPG, PNG ou GIF!', 'error');
+            return;
+        }
+
+        // ✅ VALIDAR EXTENSÃO
+        const extensoesPermitidas = ['.pdf', '.jpg', '.jpeg', '.png', '.gif'];
+        const nomeArquivo = file.name.toLowerCase();
+        const extensao = nomeArquivo.substring(nomeArquivo.lastIndexOf('.'));
+        
+        if (!extensoesPermitidas.includes(extensao)) {
+            showToast(`⚠️ Extensão "${extensao}" não permitida! Use PDF, JPG, PNG ou GIF.`, 'error');
+            return;
+        }
+
+        // ... RESTO DO CÓDIGO IGUAL (upload para Cloudinary)
+        showToast('⏳ Enviando atestado...', 'info');
+
+        try {
+            // ... (mesmo código de upload que você já tem)
+        } catch (erro) {
+            showToast('❌ Erro: ' + erro.message, 'error');
+        }
+    };
+
+    input.click();
+}
+
+// ============================================
+// MATERIAIS
+// ============================================
+async function carregarMateriais() {
+    const div = document.getElementById('listaMateriais');
+
+    try {
+        const dados = await apiFetch('/rest/v1/materiais?order=data_upload.desc');
+
+        if (dados.length === 0) {
+            div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum material disponível</p>';
+            return;
+        }
+
+        let html = '';
+        dados.forEach(mat => {
+            html += `
+                <div class="material-item">
+                    <span class="icon">📄</span>
+                    <div class="info">
+                        <div class="nome">${mat.nome}</div>
+                        <div class="desc">${mat.descricao || 'Sem descrição'} • ${mat.data_upload || ''}</div>
+                    </div>
+                    <button class="btn-visualizar" onclick="visualizarMaterial('${mat.arquivo_url}')">👁️ Visualizar</button>
+                </div>
+            `;
+        });
+        div.innerHTML = html;
+
+    } catch (erro) {
+        console.error('Erro ao carregar materiais:', erro);
+        div.innerHTML = '<p style="color:#ef4444;text-align:center;">❌ Erro ao carregar materiais</p>';
+    }
+}
+
+function visualizarMaterial(url) {
+    if (url) {
+        window.open(url, '_blank');
+    } else {
+        showToast('📄 Material não disponível', 'info');
+    }
+}
+
+// ============================================
+// ESPELHO DE PONTO
+// ============================================
+let dadosEspelho = null;
+
+async function carregarEspelhoPonto() {
+    if (!promotorLogado) return;
+
+    const container = document.getElementById('espelhoContainer');
+    const totalContainer = document.getElementById('espelhoTotalContainer');
+    const periodoEl = document.getElementById('periodoEspelho');
+
+    container.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando dados...</div>';
+    totalContainer.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+
+    try {
+        const hoje = new Date();
+        let mesInicio = hoje.getMonth() + 1;
+        let anoInicio = hoje.getFullYear();
+        let mesFim = mesInicio + 1;
+        let anoFim = anoInicio;
+
+        if (hoje.getDate() >= 21) {
+            mesFim = mesInicio + 1;
+            if (mesFim > 12) { mesFim = 1; anoFim = anoInicio + 1; }
+        } else {
+            mesInicio = mesInicio - 1;
+            if (mesInicio < 1) { mesInicio = 12; anoInicio = anoInicio - 1; }
+            mesFim = mesInicio + 1;
+            if (mesFim > 12) { mesFim = 1; anoFim = anoInicio + 1; }
+        }
+
+        const filtro = document.getElementById('filtroMesEspelho');
+        if (filtro && filtro.value !== '0') {
+            const [anoFiltro, mesFiltro] = filtro.value.split('-').map(Number);
+            mesInicio = mesFiltro;
+            anoInicio = anoFiltro;
+            mesFim = mesInicio + 1;
+            anoFim = anoInicio;
+            if (mesFim > 12) { mesFim = 1; anoFim = anoInicio + 1; }
+        }
+
+        periodoEl.textContent = `${String(mesInicio).padStart(2,'0')}/${anoInicio} a ${String(mesFim).padStart(2,'0')}/${anoFim}`;
+
+        const dataInicio = `${anoInicio}-${String(mesInicio).padStart(2,'0')}-21`;
+        const dataFim = `${anoFim}-${String(mesFim).padStart(2,'0')}-20`;
+
+        const pontos = await apiFetch(
+            `/rest/v1/pontos?promotor_id=eq.${promotorLogado.id}&data=gte.${dataInicio}&data=lte.${dataFim}&order=data.asc,horario_real.asc`
+        );
+
+        const atestados = await apiFetch(
+            `/rest/v1/atestados?promotor_id=eq.${promotorLogado.id}&data=gte.${dataInicio}&data=lte.${dataFim}`
+        );
+
+        const atestadosMap = {};
+        atestados.forEach(a => {
+            atestadosMap[a.data] = a;
+        });
+
+        const dias = {};
+        pontos.forEach(p => {
+            if (!dias[p.data]) dias[p.data] = {};
+            dias[p.data][p.tipo] = p;
+        });
+
+        const dataAtual = new Date(dataInicio);
+        const dataFimObj = new Date(dataFim);
+        const diasArray = [];
+        while (dataAtual <= dataFimObj) {
+            diasArray.push(dataAtual.toISOString().split('T')[0]);
+            dataAtual.setDate(dataAtual.getDate() + 1);
+        }
+
+        const dadosProcessados = [];
+        let totalHorasSegundos = 0;
+        let totalAtrasos = 0;
+        let totalExtrasSegundos = 0;
+        let totalNoturnoSegundos = 0;
+        let totalFaltas = 0;
+
+        // ============================================
+        // LOOP PARA CADA DIA
+        // ============================================
+        for (const dataStr of diasArray) {
+            const diaObj = dias[dataStr] || {};
+            const entrada = diaObj.entrada;
+            const almoco = diaObj.inicio_almoco;
+            const volta = diaObj.fim_almoco;
+            const saida = diaObj.saida;
+            const temAtestado = atestadosMap[dataStr];
+
+            // ============================================
+            // VERIFICAR SE O DIA É FUTURO
+            // ============================================
+            const hoje = new Date();
+            const dataAtual = new Date(dataStr + 'T00:00:00');
+            const isDiaFuturo = dataAtual > hoje;
+
+            if (isDiaFuturo) {
+                const diaNum = parseInt(dataStr.split('-')[2]);
+                const mesReal = new Date(dataStr + 'T00:00:00').getMonth() + 1;
+                const diaNome = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'][new Date(dataStr + 'T00:00:00').getDay()];
+                const dataFormat = `${String(diaNum).padStart(2,'0')}/${String(mesReal).padStart(2,'0')} ${diaNome}`;
+                
+                dadosProcessados.push({ 
+                    data: dataStr, 
+                    dataFormat, 
+                    batidas: '', 
+                    situacao: '-', 
+                    faltas: 0, 
+                    atraso: 0, 
+                    horaExtra: 0, 
+                    noturno: 0, 
+                    totalMinutos: 0 
+                });
+                continue;
+            }
+
+            // ============================================
+            // VERIFICAR SE É FERIADO
+            // ============================================
+            const feriados = await apiFetch(`/rest/v1/feriados?data=eq.${dataStr}&estado=eq.${promotorLogado.estado}`);
+            const feriadoNacional = await apiFetch(`/rest/v1/feriados?data=eq.${dataStr}&estado=is.null`);
+
+            if (feriados.length > 0 || feriadoNacional.length > 0) {
+                const feriadoNome = feriados.length > 0 ? feriados[0].descricao : feriadoNacional[0].descricao;
+                const diaNum = parseInt(dataStr.split('-')[2]);
+                const mesReal = new Date(dataStr + 'T00:00:00').getMonth() + 1;
+                const diaNome = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'][new Date(dataStr + 'T00:00:00').getDay()];
+                const dataFormat = `${String(diaNum).padStart(2,'0')}/${String(mesReal).padStart(2,'0')} ${diaNome}`;
+                
+                dadosProcessados.push({ 
+                    data: dataStr, 
+                    dataFormat, 
+                    batidas: '', 
+                    situacao: `FERIADO - ABONADO (${feriadoNome})`, 
+                    faltas: 0, 
+                    atraso: 0, 
+                    horaExtra: 0, 
+                    noturno: 0, 
+                    totalMinutos: 0 
+                });
+                continue;
+            }
+
+            // ============================================
+            // VERIFICAR SE É FÉRIAS
+            // ============================================
+            if (promotorLogado.ferias_inicio && promotorLogado.ferias_fim) {
+                const dataAtualFerias = new Date(dataStr + 'T00:00:00');
+                const inicioFerias = new Date(promotorLogado.ferias_inicio + 'T00:00:00');
+                const fimFerias = new Date(promotorLogado.ferias_fim + 'T00:00:00');
+                
+                if (dataAtualFerias >= inicioFerias && dataAtualFerias <= fimFerias) {
+                    const diaNum = parseInt(dataStr.split('-')[2]);
+                    const mesReal = new Date(dataStr + 'T00:00:00').getMonth() + 1;
+                    const diaNome = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'][new Date(dataStr + 'T00:00:00').getDay()];
+                    const dataFormat = `${String(diaNum).padStart(2,'0')}/${String(mesReal).padStart(2,'0')} ${diaNome}`;
+                    
+                    dadosProcessados.push({ 
+                        data: dataStr, 
+                        dataFormat, 
+                        batidas: '', 
+                        situacao: '🌴 FÉRIAS - ABONADO', 
+                        faltas: 0, 
+                        atraso: 0, 
+                        horaExtra: 0, 
+                        noturno: 0, 
+                        totalMinutos: 0 
+                    });
+                    continue;
+                }
+            }
+
+            const diaSemana = new Date(dataStr + 'T00:00:00').getDay();
+            const isDomingo = diaSemana === 0;
+            const diaNum = parseInt(dataStr.split('-')[2]);
+            const mesReal = new Date(dataStr + 'T00:00:00').getMonth() + 1;
+            const diaNome = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'][diaSemana];
+            const dataFormat = `${String(diaNum).padStart(2,'0')}/${String(mesReal).padStart(2,'0')} ${diaNome}`;
+
+            let batidas = '';
+            let situacao = '';
+            let faltas = 0;
+            let atraso = 0;
+            let horaExtra = 0;
+            let noturno = 0;
+            let totalMinutos = 0;
+
+            if (isDomingo) {
+                batidas = '';
+                situacao = 'DOMINGO';
+                dadosProcessados.push({ data: dataStr, dataFormat, batidas, situacao, faltas, atraso, horaExtra, noturno, totalMinutos });
+                continue;
+            }
+
+            if (temAtestado) {
+                batidas = '';
+                situacao = 'ABONADO/ ATESTADO MÉDICO';
+                dadosProcessados.push({ data: dataStr, dataFormat, batidas, situacao, faltas, atraso, horaExtra, noturno, totalMinutos });
+                continue;
+            }
+
+            if (!entrada) {
+                batidas = '';
+                const diaSemanaNome = ['domingo','segunda','terca','quarta','quinta','sexta','sabado'][diaSemana];
+                let minutosFalta = 440; // 7h20 padrão
+                
+                try {
+                    // CÓDIGO CORRIGIDO
+                    const carga = await apiFetch(`/rest/v1/carga_horaria?dia_semana=eq.${diaSemanaNome}&select=*`);
+
+                    // 🔥 VERIFICAÇÃO SEGURA
+                    if (carga && carga.length > 0 && carga[0]) {
+                        minutosFalta = calcularMinutosCarga(carga[0]);
+                    } else {
+                        // 🔥 VALOR PADRÃO: 7h20 (440 minutos)
+                        minutosFalta = 440;
+                        console.log(`⚠️ Carga horária não encontrada para ${diaSemanaNome}, usando padrão 7h20`);
+                    }
+                } catch (e) {
+                    console.warn('Erro ao buscar carga horária, usando padrão 7h20:', e);
+                }
+                
+                totalHorasSegundos -= minutosFalta * 60;
+                const horasStr = formatarHoras(minutosFalta);
+                situacao = `FALTA NÃO JUSTIFICADA (${horasStr})`;
+                faltas = 1;
+                totalFaltas++;
+                dadosProcessados.push({ 
+                    data: dataStr, 
+                    dataFormat, 
+                    batidas, 
+                    situacao, 
+                    faltas, 
+                    atraso, 
+                    horaExtra, 
+                    noturno, 
+                    totalMinutos: -minutosFalta 
+                });
+                continue;
+            }
+
+            batidas = entrada ? entrada.horario_real : '';
+            batidas += almoco ? ` ${almoco.horario_real}` : '';
+            batidas += volta ? ` ${volta.horario_real}` : '';
+            batidas += saida ? ` ${saida.horario_real}` : '';
+
+            if (entrada && saida) {
+                const entradaH = parseInt(entrada.horario_real.split(':')[0]);
+                const entradaM = parseInt(entrada.horario_real.split(':')[1]);
+                const saidaH = parseInt(saida.horario_real.split(':')[0]);
+                const saidaM = parseInt(saida.horario_real.split(':')[1]);
+
+                let totalMin = (saidaH * 60 + saidaM) - (entradaH * 60 + entradaM);
+
+                if (almoco && volta) {
+                    const almocoH = parseInt(almoco.horario_real.split(':')[0]);
+                    const almocoM = parseInt(almoco.horario_real.split(':')[1]);
+                    const voltaH = parseInt(volta.horario_real.split(':')[0]);
+                    const voltaM = parseInt(volta.horario_real.split(':')[1]);
+                    const almocoMin = (voltaH * 60 + voltaM) - (almocoH * 60 + almocoM);
+                    if (almocoMin > 0) totalMin -= almocoMin;
+                }
+
+                const tolerancia = 10;
+                const entradaEsperada = 9 * 60;
+                const saidaEsperada = 17 * 60 + 20;
+
+                const atrasoMin = Math.max(0, (entradaH * 60 + entradaM) - entradaEsperada - tolerancia);
+                if (atrasoMin > 0) {
+                    atraso = atrasoMin;
+                    totalAtrasos += atrasoMin;
+                }
+
+                const extraMin = Math.max(0, totalMin - 500);
+                if (extraMin > 0) {
+                    horaExtra = extraMin;
+                    totalExtrasSegundos += extraMin * 60;
+                }
+
+                if (saidaH >= 22 || saidaH < 5) {
+                    let noturnoMin = 0;
+                    if (saidaH >= 22) {
+                        noturnoMin = (saidaH - 22) * 60 + saidaM;
+                    } else if (saidaH < 5) {
+                        noturnoMin = (5 - saidaH) * 60 - saidaM;
+                    }
+                    if (noturnoMin > 0) {
+                        noturno = noturnoMin;
+                        totalNoturnoSegundos += noturnoMin * 60;
+                    }
+                }
+
+                totalMinutos = totalMin;
+                totalHorasSegundos += totalMin * 60;
+
+                const horas = Math.floor(totalMin / 60);
+                const minutos = totalMin % 60;
+                situacao = `${String(horas).padStart(2,'0')}:${String(minutos).padStart(2,'0')} TRABALHADAS`;
+
+                if (atraso > 0) {
+                    const atrH = Math.floor(atraso / 60);
+                    const atrM = atraso % 60;
+                    situacao += ` / -${String(atrH).padStart(2,'0')}:${String(atrM).padStart(2,'0')} ATRASO`;
+                }
+                if (horaExtra > 0) {
+                    const extH = Math.floor(horaExtra / 60);
+                    const extM = horaExtra % 60;
+                    situacao += ` / +${String(extH).padStart(2,'0')}:${String(extM).padStart(2,'0')} HORA EXTRA`;
+                }
+                if (noturno > 0) {
+                    const notH = Math.floor(noturno / 60);
+                    const notM = noturno % 60;
+                    situacao += ` / ${String(notH).padStart(2,'0')}:${String(notM).padStart(2,'0')} ADICIONAL NOTURNO`;
+                }
+            }
+
+            dadosProcessados.push({ 
+                data: dataStr, 
+                dataFormat, 
+                batidas, 
+                situacao,
+                faltas,
+                atraso,
+                horaExtra,
+                noturno,
+                totalMinutos
+            });
+        }  // ← FIM DO LOOP FOR
+
+        // ============================================
+        // CÁLCULO DOS TOTAIS
+        // ============================================
+        dadosEspelho = dadosProcessados;
+
+        const totalHoras = Math.floor(totalHorasSegundos / 3600);
+        const totalMinutosCalc = Math.floor((totalHorasSegundos % 3600) / 60);
+        const totalHorasExtra = Math.floor(totalExtrasSegundos / 3600);
+        const totalMinutosExtra = Math.floor((totalExtrasSegundos % 3600) / 60);
+        const totalHorasNoturno = Math.floor(totalNoturnoSegundos / 3600);
+        const totalMinutosNoturno = Math.floor((totalNoturnoSegundos % 3600) / 60);
+        const totalHorasAtraso = Math.floor(totalAtrasos / 60);
+        const totalMinutosAtraso = totalAtrasos % 60;
+
+        const diasUteis = dadosProcessados.filter(d => d.batidas !== '' && d.situacao !== 'DOMINGO' && d.situacao !== 'ABONADO/ ATESTADO MÉDICO' && d.situacao !== 'FALTA NÃO JUSTIFICADA');
+        const horasEsperadas = diasUteis.length * 500;
+        const saldoMes = Math.floor(totalHorasSegundos / 60) - horasEsperadas;
+
+        const saldoAnterior = promotorLogado.saldo_anterior || 0;
+        const bancoHorasTotal = Math.floor(saldoAnterior + saldoMes);
+
+        window._dadosEspelho = {
+            dadosProcessados,
+            totalHoras,
+            totalMinutosCalc,
+            totalHorasExtra,
+            totalMinutosExtra,
+            totalHorasAtraso,
+            totalMinutosAtraso,
+            totalHorasNoturno,
+            totalMinutosNoturno,
+            totalFaltas,
+            saldoMes,
+            bancoHorasTotal,
+            saldoAnterior,
+            periodo: `${String(mesInicio).padStart(2,'0')}/${anoInicio} a ${String(mesFim).padStart(2,'0')}/${anoFim}`
+        };
+
+        renderizarMarcacoes(dadosProcessados);
+        renderizarTotais();
+
+    } catch (erro) {
+        console.error('Erro ao carregar espelho:', erro);
+        container.innerHTML = '<p style="color:#ef4444;text-align:center;">❌ Erro ao carregar dados</p>';
+        totalContainer.innerHTML = '<p style="color:#ef4444;text-align:center;">❌ Erro ao carregar totais</p>';
+    }
+}  // ← FIM DA FUNÇÃO 
+
+function renderizarMarcacoes(dados) {
+    const container = document.getElementById('espelhoContainer');
+    
+    if (dados.length === 0) {
+        container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum registro encontrado</p>';
+        return;
+    }
+
+    let html = `<div style="overflow-x:auto;"><table class="espelho-table">
+        <thead>
+            <tr>
+                <th>DIA</th>
+                <th>BATIDAS</th>
+                <th>SITUAÇÕES</th>
+                <th style="min-width:80px;">JUSTIFICAR</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+    dados.forEach(d => {
+        // Verificar se o dia precisa de justificativa (falta, atraso, etc.)
+        const precisaJustificar = d.situacao && (
+            d.situacao.includes('FALTA') || 
+            d.situacao.includes('ATRASO') ||
+            d.situacao === 'ABONADO/ ATESTADO MÉDICO'
+        );
+        
+        // Verificar se já existe justificativa para este dia
+        const temJustificativa = window.justificativasCache && window.justificativasCache[d.data];
+        const statusJustificativa = temJustificativa ? window.justificativasCache[d.data].status : null;
+        
+        let justificativaHtml = '';
+        if (temJustificativa) {
+            const statusLabels = {
+                'pendente': '⏳ Pendente',
+                'aprovado': '✅ Aprovado',
+                'rejeitado': '❌ Rejeitado'
+            };
+            justificativaHtml = `<span style="font-size:11px;color:${statusJustificativa === 'aprovado' ? '#22c55e' : statusJustificativa === 'rejeitado' ? '#ef4444' : '#eab308'};">${statusLabels[statusJustificativa] || '📋 Enviado'}</span>`;
+        } else if (precisaJustificar) {
+            justificativaHtml = `<button class="btn-justificar" onclick="abrirModalJustificativa('${d.data}')" style="background:#2563eb;color:white;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600;">📋 Justificar</button>`;
+        } else {
+            justificativaHtml = '<span style="color:#94a3b8;font-size:11px;">-</span>';
+        }
+
+        let situacaoClass = '';
+        if (d.situacao.includes('ATRASO')) situacaoClass = 'atraso';
+        if (d.situacao.includes('HORA EXTRA')) situacaoClass = 'extra';
+        if (d.situacao.includes('NOTURNO')) situacaoClass = 'noturno';
+        if (d.situacao === 'FALTA NÃO JUSTIFICADA') situacaoClass = 'ausente';
+        if (d.situacao === 'ABONADO/ ATESTADO MÉDICO') situacaoClass = 'abonado';
+        if (d.situacao === 'DOMINGO') situacaoClass = '';
+        if (d.situacao.includes('FERIADO')) situacaoClass = 'abonado';
+        if (d.situacao.includes('FÉRIAS')) situacaoClass = 'abonado';
+
+        html += `<tr>
+            <td><strong>${d.dataFormat}</strong></td>
+            <td>${d.batidas || '-'}</td>
+            <td class="${situacaoClass}">${d.situacao || '-'}</td>
+            <td style="text-align:center;">${justificativaHtml}</td>
+        </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+}
+
+function renderizarTotais() {
+    const container = document.getElementById('espelhoTotalContainer');
+    const dados = window._dadosEspelho;
+    
+    if (!dados) {
+        container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum dado disponível</p>';
+        return;
+    }
+
+    const totalTrabalhadas = `${String(dados.totalHoras).padStart(2,'0')}h${String(dados.totalMinutosCalc).padStart(2,'0')}m`;
+    const totalExtra = `${String(dados.totalHorasExtra).padStart(2,'0')}h${String(dados.totalMinutosExtra).padStart(2,'0')}m`;
+    const totalAtraso = `${String(dados.totalHorasAtraso).padStart(2,'0')}h${String(dados.totalMinutosAtraso).padStart(2,'0')}m`;
+    const totalNoturno = `${String(dados.totalHorasNoturno).padStart(2,'0')}h${String(dados.totalMinutosNoturno).padStart(2,'0')}m`;
+    const saldoMesStr = `${String(Math.floor(dados.saldoMes / 60)).padStart(2,'0')}h${String(dados.saldoMes % 60).padStart(2,'0')}m`;
+    const bancoHorasStr = `${String(Math.floor(dados.bancoHorasTotal / 60)).padStart(2,'0')}h${String(dados.bancoHorasTotal % 60).padStart(2,'0')}m`;
+
+    const isPositivo = dados.bancoHorasTotal >= 0;
+
+    let html = `
+        <div class="espelho-resumo">
+            <div class="item">
+                <div class="label">📊 TRABALHADAS NO MÊS</div>
+                <div class="valor">${totalTrabalhadas}</div>
+            </div>
+            <div class="item">
+                <div class="label">⏰ TOTAL HORA EXTRA</div>
+                <div class="valor positivo">${totalExtra}</div>
+            </div>
+            <div class="item">
+                <div class="label">⏳ TOTAL ATRASO</div>
+                <div class="valor negativo">-${totalAtraso}</div>
+            </div>
+            <div class="item">
+                <div class="label">🌙 ADICIONAL NOTURNO</div>
+                <div class="valor">${totalNoturno}</div>
+            </div>
+            <div class="item">
+                <div class="label">📋 TOTAL FALTAS</div>
+                <div class="valor">${dados.totalFaltas}</div>
+            </div>
+            <div class="item">
+                <div class="label">📋 TOTAL ABONO</div>
+                <div class="valor">0</div>
+            </div>
+            <div class="item">
+                <div class="label">📋 ATENDIMENTO MÉDICO</div>
+                <div class="valor">0</div>
+            </div>
+            <div class="item">
+                <div class="label">🏦 SALDO DO MÊS</div>
+                <div class="valor ${dados.saldoMes >= 0 ? 'positivo' : 'negativo'}">${saldoMesStr}</div>
+            </div>
+            <div class="item" style="grid-column: 1 / -1; background: #dbeafe;">
+                <div class="label">💰 BANCO DE HORAS (Saldo Anterior + Saldo do Mês)</div>
+                <div class="valor ${isPositivo ? 'positivo' : 'negativo'}">${bancoHorasStr}</div>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+function gerarPDFEspelho() {
+    const dados = window._dadosEspelho;
+    if (!dados) {
+        showToast('⚠️ Carregue os dados primeiro!', 'error');
+        return;
+    }
+
+    showToast('📄 Gerando PDF...', 'info');
+
+    const win = window.open('', '_blank');
+    if (!win) {
+        showToast('❌ Permita pop-ups para gerar o PDF', 'error');
+        return;
+    }
+
+    const totalTrabalhadas = `${String(dados.totalHoras).padStart(2,'0')}h${String(dados.totalMinutosCalc).padStart(2,'0')}m`;
+    const totalExtra = `${String(dados.totalHorasExtra).padStart(2,'0')}h${String(dados.totalMinutosExtra).padStart(2,'0')}m`;
+    const totalAtraso = `${String(dados.totalHorasAtraso).padStart(2,'0')}h${String(dados.totalMinutosAtraso).padStart(2,'0')}m`;
+    const totalNoturno = `${String(dados.totalHorasNoturno).padStart(2,'0')}h${String(dados.totalMinutosNoturno).padStart(2,'0')}m`;
+    const saldoMesStr = `${String(Math.floor(dados.saldoMes / 60)).padStart(2,'0')}h${String(dados.saldoMes % 60).padStart(2,'0')}m`;
+    const bancoHorasStr = `${String(Math.floor(dados.bancoHorasTotal / 60)).padStart(2,'0')}h${String(dados.bancoHorasTotal % 60).padStart(2,'0')}m`;
+
+    let tabelaHtml = '';
+    dados.dadosProcessados.forEach(d => {
+        tabelaHtml += `
+            <tr>
+                <td style="border:1px solid #000;padding:4px;font-size:10px;">${d.dataFormat}</td>
+                <td style="border:1px solid #000;padding:4px;font-size:10px;">${d.batidas || ''}</td>
+                <td style="border:1px solid #000;padding:4px;font-size:10px;">${d.faltas}</td>
+                <td style="border:1px solid #000;padding:4px;font-size:10px;">${d.atraso ? `${Math.floor(d.atraso/60)}h${d.atraso%60}m` : ''}</td>
+                <td style="border:1px solid #000;padding:4px;font-size:10px;">${d.horaExtra ? `${Math.floor(d.horaExtra/60)}h${d.horaExtra%60}m` : ''}</td>
+                <td style="border:1px solid #000;padding:4px;font-size:10px;">${d.noturno ? `${Math.floor(d.noturno/60)}h${d.noturno%60}m` : ''}</td>
+                <td style="border:1px solid #000;padding:4px;font-size:10px;">0</td>
+                <td style="border:1px solid #000;padding:4px;font-size:10px;">0</td>
+                <td style="border:1px solid #000;padding:4px;font-size:10px;">0</td>
+            </tr>
+        `;
+    });
+
+    win.document.write(`
+        <html>
+        <head>
+            <title>Espelho de Ponto - ${promotorLogado.nome}</title>
+            <style>
+                body { font-family: Arial, sans-serif; padding: 40px; }
+                .header { text-align: center; margin-bottom: 20px; }
+                .header h1 { font-size: 18px; margin: 0; }
+                .header p { font-size: 12px; margin: 4px 0; color: #555; }
+                .info { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; font-size: 12px; margin-bottom: 20px; }
+                .info strong { font-weight: 600; }
+                table { width: 100%; border-collapse: collapse; font-size: 11px; }
+                th { background: #2563eb; color: white; padding: 6px; border: 1px solid #000; text-align: center; }
+                td { padding: 4px; border: 1px solid #000; text-align: center; }
+                .resumo { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; font-size: 12px; }
+                .resumo strong { font-weight: 600; }
+                .assinatura { margin-top: 40px; text-align: center; font-size: 12px; }
+                .assinatura .linha { border-top: 1px solid #000; width: 300px; margin: 8px auto; }
+                .logo-placeholder { font-size: 48px; margin-bottom: 8px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div class="logo-placeholder">🏢</div>
+                <h1>ESPELHO DO CARTÃO DE PONTO</h1>
+                <p><strong>Nome da Empresa:</strong> _________________________</p>
+                <p><strong>CNPJ:</strong> _________________________</p>
+            </div>
+
+            <div class="info">
+                <div><strong>Nome:</strong> ${promotorLogado.nome}</div>
+                <div><strong>CTPS:</strong> ${promotorLogado.ctps || '________________'}</div>
+                <div><strong>Nº PIS/PASEP:</strong> ${promotorLogado.pis || '________________'}</div>
+                <div><strong>Matrícula:</strong> ${promotorLogado.matricula || '________________'}</div>
+                <div><strong>Admissão:</strong> ${promotorLogado.admissao || '________________'}</div>
+                <div><strong>Função:</strong> ${promotorLogado.funcao || '________________'}</div>
+                <div><strong>Departamento:</strong> ${promotorLogado.departamento || '________________'}</div>
+                <div><strong>Período:</strong> ${dados.periodo}</div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>DIA</th>
+                        <th>BATIDAS</th>
+                        <th>FALTAS</th>
+                        <th>ATRASO</th>
+                        <th>H.E.</th>
+                        <th>A.Not.</th>
+                        <th>A.Med.</th>
+                        <th>Abono</th>
+                        <th>B.H</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tabelaHtml}
+                </tbody>
+            </table>
+
+            <div class="resumo">
+                <div><strong>BANCO SALDO ANTERIOR:</strong> ${dados.saldoAnterior ? `${Math.floor(dados.saldoAnterior/60)}h${dados.saldoAnterior%60}m` : '0h00m'}</div>
+                <div><strong>TOTAL DE FALTAS:</strong> ${dados.totalFaltas}</div>
+                <div><strong>CRÉDITO DO MÊS:</strong> ${totalTrabalhadas}</div>
+                <div><strong>TOTAL DE ATRASO:</strong> ${totalAtraso}</div>
+                <div><strong>DÉBITO DO MÊS:</strong> ${saldoMesStr}</div>
+                <div><strong>TOTAL DE HORAS EXTRAS:</strong> ${totalExtra}</div>
+                <div><strong>SALDO FINAL B.H.:</strong> ${saldoMesStr}</div>
+                <div><strong>TOTAL DE ADICIONAL NOTURNO:</strong> ${totalNoturno}</div>
+                <div><strong>SALDO ATUAL B.H.:</strong> ${bancoHorasStr}</div>
+                <div><strong>TOTAL DE A.Med.:</strong> 0</div>
+                <div><strong>TOTAL DE ABONO:</strong> 0</div>
+            </div>
+
+            <div class="assinatura">
+                <p>Concordo com os lançamentos efetuados neste Ponto</p>
+                <div class="linha"></div>
+                <p><strong>${promotorLogado.nome}</strong></p>
+            </div>
+
+            <script>
+                window.print();
+            <\/script>
+        </body>
+        </html>
+    `);
+    win.document.close();
+}
+
+// ============================================
+// CHECKLIST - APP (EXECUÇÃO)
+// ============================================
+
+let checklistRespostas = {};
+let checklistAtualId = null;
+let checklistLojaAtual = null;
+let checklistPerguntasAtuais = [];
+
+// CARREGAR CHECKLISTS DISPONÍVEIS
+async function carregarChecklistsApp() {
+    if (!promotorLogado) return;
+    
+    const div = document.getElementById('checklistsDisponiveis');
+    div.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando checklists...</div>';
+    
+    try {
+        const hoje = new Date().toISOString().split('T')[0];
+        
+        const checklists = await apiFetch(
+            `/rest/v1/checklists?ativo=eq.true&periodo_inicio=lte.${hoje}&periodo_fim=gte.${hoje}&select=*`
+        );
+        
+        if (checklists.length === 0) {
+            div.innerHTML = `
+                <div style="text-align:center;padding:40px 20px;color:#94a3b8;">
+                    <div style="font-size:48px;">📋</div>
+                    <p>Nenhum checklist ativo para hoje</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const loja = await getLojaDoDia();
+        if (!loja) {
+            div.innerHTML = `
+                <div style="text-align:center;padding:40px 20px;color:#94a3b8;">
+                    <div style="font-size:48px;">🏪</div>
+                    <p>Você não tem roteiro para hoje</p>
+                </div>
+            `;
+            return;
+        }
+        
+        document.getElementById('checklistLojaNome').textContent = loja.nome || 'Loja não identificada';
+        document.getElementById('checklistLojaEndereco').textContent = loja.endereco || 'Endereço não informado';
+        
+        const checklistsAplicaveis = checklists.filter(c => {
+            if (!c.lojas_ids || c.lojas_ids.length === 0) return true;
+            return c.lojas_ids.includes(loja.id);
+        });
+        
+        if (checklistsAplicaveis.length === 0) {
+            div.innerHTML = `
+                <div style="text-align:center;padding:40px 20px;color:#94a3b8;">
+                    <div style="font-size:48px;">📋</div>
+                    <p>Nenhum checklist disponível para esta loja</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const respostas = await apiFetch(
+            `/rest/v1/respostas_checklist?promotor_id=eq.${promotorLogado.id}&loja_id=eq.${loja.id}&data_hora_envio=gte.${hoje}T00:00:00&select=checklist_id`
+        );
+        const respondidos = respostas.map(r => r.checklist_id);
+        
+        let html = '';
+        checklistsAplicaveis.forEach(c => {
+            const jaRespondido = respondidos.includes(c.id);
+            const statusBadge = jaRespondido ? 'badge-success' : 'badge-warning';
+            const statusText = jaRespondido ? '✅ Concluído' : '⏳ Pendente';
+            const qtdPerguntas = c.perguntas ? c.perguntas.length : 0;
+            
+            html += `
+                <div class="checklist-item ${jaRespondido ? 'concluido' : ''}">
+                    <div class="flex-between" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                        <div>
+                            <div class="titulo">${c.titulo}</div>
+                            <div class="descricao">${c.descricao || ''}</div>
+                            <div class="meta">${qtdPerguntas} perguntas • ${new Date(c.periodo_inicio).toLocaleDateString('pt-BR')} a ${new Date(c.periodo_fim).toLocaleDateString('pt-BR')}</div>
+                        </div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                            <span class="badge ${statusBadge}" style="background:${jaRespondido ? '#dcfce7' : '#fef3c7'};color:${jaRespondido ? '#16a34a' : '#ca8a04'};padding:2px 12px;border-radius:20px;font-size:12px;font-weight:600;">${statusText}</span>
+                            ${!jaRespondido ? `
+                                <button class="btn btn-primary btn-sm" onclick="abrirChecklistResposta(${c.id}, ${loja.id})" style="padding:6px 14px;background:#2563eb;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px;">
+                                    ▶️ Responder
+                                </button>
+                            ` : `
+                                <button class="btn btn-info btn-sm" onclick="verRespostasChecklist(${c.id}, ${loja.id})" style="padding:6px 14px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px;">
+                                    👁️ Ver
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        div.innerHTML = html;
+        
+    } catch (erro) {
+        div.innerHTML = `<div style="color:#ef4444;text-align:center;">❌ ${erro.message}</div>`;
+        console.error('Erro ao carregar checklists:', erro);
+    }
+}
+
+async function getLojaDoDia() {
+    try {
+        const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+        const hoje = new Date();
+        const diaSemana = diasSemana[hoje.getDay()];
+        const dataHoje = hoje.toISOString().split('T')[0];
+        
+        const feriados = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}`);
+        if (feriados.length > 0) return null;
+        
+        const roteiros = await apiFetch(
+            `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&dia_semana=eq.${diaSemana}&select=*,lojas(*)`
+        );
+        
+        if (roteiros.length === 0 || !roteiros[0].lojas) return null;
+        return roteiros[0].lojas;
+        
+    } catch (erro) {
+        console.error('Erro ao buscar loja do dia:', erro);
+        return null;
+    }
+}
+
+function fecharModalChecklistResposta() {
+    document.getElementById('modalChecklistResposta').classList.remove('active');
+    checklistRespostas = {};
+    checklistAtualId = null;
+    checklistLojaAtual = null;
+    checklistPerguntasAtuais = [];
+}
+
+// ============================================
+// PRODUTOS - VISUALIZAÇÃO (APP)
+// ============================================
+let produtosAppCache = [];
+let produtosAppPagina = 1;
+let produtosAppPorPagina = 20;
+let produtosAppTotal = 0;
+let filtrosApp = {
+    busca: '',
+    marca: '',
+    precoMin: null,
+    precoMax: null,
+    promocao: 'todos',
+    ordenacao: 'nome_asc'
+};
+
+async function carregarProdutosApp() {
+    const div = document.getElementById('listaProdutosApp');
+    div.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+    
+    try {
+        const busca = document.getElementById('produtoBusca').value.trim();
+        const marca = document.getElementById('filtroMarcaApp').value;
+        const ordenacao = document.getElementById('filtroOrdenacaoApp').value;
+        
+        filtrosApp.busca = busca;
+        filtrosApp.marca = marca;
+        filtrosApp.ordenacao = ordenacao;
+        
+        let endpoint = '/rest/v1/produtos?order=';
+        
+        switch(ordenacao) {
+            case 'nome_asc': endpoint += 'descricao.asc'; break;
+            case 'nome_desc': endpoint += 'descricao.desc'; break;
+            case 'preco_asc': endpoint += 'preco_venda.asc'; break;
+            case 'preco_desc': endpoint += 'preco_venda.desc'; break;
+            case 'codigo_asc': endpoint += 'codigo.asc'; break;
+            default: endpoint += 'descricao.asc';
+        }
+        
+        let filters = [];
+        if (busca) {
+            filters.push(`or=(codigo.ilike.%${busca}%,descricao.ilike.%${busca}%)`);
+        }
+        if (marca) {
+            filters.push(`marca=eq.${marca}`);
+        }
+        if (filtrosApp.precoMin) {
+            filters.push(`preco_venda=gte.${filtrosApp.precoMin}`);
+        }
+        if (filtrosApp.precoMax) {
+            filters.push(`preco_venda=lte.${filtrosApp.precoMax}`);
+        }
+        if (filtrosApp.promocao === 'promocao') {
+            filters.push('preco_promocional=not.is.null');
+        } else if (filtrosApp.promocao === 'sem_promocao') {
+            filters.push('preco_promocional=is.null');
+        }
+        
+        if (filters.length > 0) {
+            endpoint += `&${filters.join('&')}`;
+        }
+        
+        const allData = await apiFetch(endpoint);
+        produtosAppTotal = allData.length || 0;
+        
+        const offset = (produtosAppPagina - 1) * produtosAppPorPagina;
+        const dados = await apiFetch(`${endpoint}&limit=${produtosAppPorPagina}&offset=${offset}`);
+        produtosAppCache = dados;
+        
+        await carregarMarcasApp();
+        renderizarProdutosApp(dados);
+        atualizarPaginacaoApp();
+        
+    } catch (erro) {
+        div.innerHTML = `<p style="color:#ef4444;text-align:center;">❌ ${erro.message}</p>`;
+        console.error('Erro:', erro);
+    }
+}
+
+function renderizarProdutosApp(dados) {
+    const div = document.getElementById('listaProdutosApp');
+    
+    if (dados.length === 0) {
+        div.innerHTML = `
+            <div style="text-align:center;padding:40px 20px;color:#94a3b8;">
+                <div style="font-size:48px;">📦</div>
+                <p>Nenhum produto encontrado</p>
+            </div>
+        `;
+        document.getElementById('contadorProdutosApp').textContent = '0 produtos encontrados';
+        return;
+    }
+    
+    let html = '';
+    dados.forEach(p => {
+        const temPromo = p.preco_promocional && p.preco_promocional > 0;
+        const economia = temPromo ? (p.preco_venda - p.preco_promocional).toFixed(2) : 0;
+        const percentual = temPromo ? Math.round((economia / p.preco_venda) * 100) : 0;
+        
+        html += `
+            <div class="produto-card">
+                <div>
+                    <span class="marca">${p.marca}</span>
+                    <span class="codigo">#${p.codigo}</span>
+                </div>
+                <div class="descricao">${p.descricao}</div>
+                <div class="precos">
+                    <span class="preco-venda">💰 R$ ${p.preco_venda.toFixed(2)}</span>
+                    ${temPromo ? `
+                        <span class="preco-promo">🔴 R$ ${p.preco_promocional.toFixed(2)}</span>
+                        <span class="economia">💲 Economia R$ ${economia} (${percentual}%)</span>
+                    ` : `
+                        <span class="sem-promo">Sem promoção</span>
+                    `}
+                </div>
+            </div>
+        `;
+    });
+    
+    div.innerHTML = html;
+    
+    const inicio = (produtosAppPagina - 1) * produtosAppPorPagina + 1;
+    const fim = Math.min(produtosAppPagina * produtosAppPorPagina, produtosAppTotal);
+    document.getElementById('contadorProdutosApp').textContent = 
+        `📊 Mostrando ${inicio}-${fim} de ${produtosAppTotal} produtos`;
+}
+
+async function carregarMarcasApp() {
+    try {
+        const dados = await apiFetch('/rest/v1/produtos?select=marca');
+        const marcasSet = new Set();
+        dados.forEach(p => {
+            if (p.marca && p.marca.trim() !== '') {
+                marcasSet.add(p.marca);
+            }
+        });
+        const marcas = Array.from(marcasSet).sort();
+        
+        const select = document.getElementById('filtroMarcaApp');
+        const valorAtual = select.value;
+        select.innerHTML = '<option value="">Todas as Marcas</option>';
+        marcas.forEach(m => {
+            select.innerHTML += `<option value="${m}">${m}</option>`;
+        });
+        select.value = valorAtual;
+        
+        const selectModal = document.getElementById('filtroMarcaModal');
+        const valorAtualModal = selectModal.value;
+        selectModal.innerHTML = '<option value="">Todas</option>';
+        marcas.forEach(m => {
+            selectModal.innerHTML += `<option value="${m}">${m}</option>`;
+        });
+        selectModal.value = valorAtualModal;
+        
+    } catch (erro) {
+        console.error('Erro ao carregar marcas:', erro);
+    }
+}
+
+function atualizarPaginacaoApp() {
+    const totalPaginas = Math.ceil(produtosAppTotal / produtosAppPorPagina);
+    const div = document.getElementById('paginacaoProdutosApp');
+    div.innerHTML = '';
+    
+    if (totalPaginas <= 1) return;
+    
+    if (produtosAppPagina > 1) {
+        div.innerHTML += `<button class="btn btn-primary btn-sm" onclick="irPaginaApp(${produtosAppPagina - 1})">◀</button>`;
+    }
+    
+    const inicio = Math.max(1, produtosAppPagina - 2);
+    const fim = Math.min(totalPaginas, produtosAppPagina + 2);
+    
+    for (let i = inicio; i <= fim; i++) {
+        const active = i === produtosAppPagina ? 'style="background:#2563eb;color:white;"' : '';
+        div.innerHTML += `<button class="btn btn-sm" onclick="irPaginaApp(${i})" ${active} style="${i === produtosAppPagina ? 'background:#2563eb;color:white;' : ''}">${i}</button>`;
+    }
+    
+    if (produtosAppPagina < totalPaginas) {
+        div.innerHTML += `<button class="btn btn-primary btn-sm" onclick="irPaginaApp(${produtosAppPagina + 1})">▶</button>`;
+    }
+}
+
+function irPaginaApp(pagina) {
+    produtosAppPagina = pagina;
+    carregarProdutosApp();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function abrirFiltrosProdutos() {
+    document.getElementById('filtroMarcaModal').value = filtrosApp.marca || '';
+    document.getElementById('filtroPrecoMin').value = filtrosApp.precoMin || '';
+    document.getElementById('filtroPrecoMax').value = filtrosApp.precoMax || '';
+    document.getElementById('filtroPromocao').value = filtrosApp.promocao || 'todos';
+    document.getElementById('modalFiltrosProdutos').classList.add('active');
+}
+
+function fecharModalFiltrosProdutos() {
+    document.getElementById('modalFiltrosProdutos').classList.remove('active');
+}
+
+function aplicarFiltrosProdutos() {
+    filtrosApp.marca = document.getElementById('filtroMarcaModal').value;
+    filtrosApp.precoMin = parseFloat(document.getElementById('filtroPrecoMin').value) || null;
+    filtrosApp.precoMax = parseFloat(document.getElementById('filtroPrecoMax').value) || null;
+    filtrosApp.promocao = document.getElementById('filtroPromocao').value;
+    document.getElementById('filtroMarcaApp').value = filtrosApp.marca;
+    produtosAppPagina = 1;
+    fecharModalFiltrosProdutos();
+    carregarProdutosApp();
+    showToast('✅ Filtros aplicados!', 'success');
+}
+
+function limparFiltrosProdutos() {
+    filtrosApp = {
+        busca: '',
+        marca: '',
+        precoMin: null,
+        precoMax: null,
+        promocao: 'todos',
+        ordenacao: 'nome_asc'
+    };
+    document.getElementById('produtoBusca').value = '';
+    document.getElementById('filtroMarcaApp').value = '';
+    document.getElementById('filtroOrdenacaoApp').value = 'nome_asc';
+    document.getElementById('filtroMarcaModal').value = '';
+    document.getElementById('filtroPrecoMin').value = '';
+    document.getElementById('filtroPrecoMax').value = '';
+    document.getElementById('filtroPromocao').value = 'todos';
+    produtosAppPagina = 1;
+    fecharModalFiltrosProdutos();
+    carregarProdutosApp();
+    showToast('🔄 Filtros limpos!', 'info');
+}
+
+// ============================================
+// ABRIR MODAL PARA RESPONDER CHECKLIST
+// ============================================
+async function abrirChecklistResposta(checklistId, lojaId) {
+    checklistAtualId = checklistId;
+    checklistLojaAtual = lojaId;
+    checklistRespostas = {};
+    
+    const modal = document.getElementById('modalChecklistResposta');
+    const conteudo = document.getElementById('modalRespostaConteudo');
+    const titulo = document.getElementById('modalRespostaTitulo');
+    
+    modal.classList.add('active');
+    titulo.textContent = '📋 Responder Checklist';
+    conteudo.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando perguntas...</div>';
+    document.getElementById('modalRespostaStatus').textContent = '';
+    document.getElementById('btnEnviarChecklist').style.display = 'block';
+    
+    try {
+        const dados = await apiFetch(`/rest/v1/checklists?id=eq.${checklistId}&select=*`);
+        if (dados.length === 0) {
+            conteudo.innerHTML = '<p style="color:#ef4444;">Checklist não encontrado</p>';
+            return;
+        }
+        
+        const checklist = dados[0];
+        checklistPerguntasAtuais = checklist.perguntas || [];
+        
+        if (checklistPerguntasAtuais.length === 0) {
+            conteudo.innerHTML = '<p style="color:#94a3b8;">Este checklist não tem perguntas</p>';
+            return;
+        }
+        
+        let html = '';
+        checklistPerguntasAtuais.forEach((p, index) => {
+            const tipoLabel = {
+                'multipla_escolha_com_img': '📷 Múltipla Escolha',
+                'multipla_escolha_sem_img': '📝 Múltipla Escolha',
+                'report_rapido': '💰 Report Rápido',
+                'envio_foto': '📸 Envio de Foto'
+            }[p.tipo] || p.tipo;
+            
+            html += `
+                <div class="pergunta-container">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <span style="font-weight:700;font-size:14px;color:#1a1a2e;">Pergunta ${index + 1}</span>
+                        <span class="badge badge-gray" style="background:#f1f5f9;padding:2px 12px;border-radius:20px;font-size:12px;">${tipoLabel}</span>
+                    </div>
+                    <div class="pergunta-texto">${p.pergunta}</div>
+                    ${p.imagem ? `<img class="pergunta-imagem" src="${p.imagem}" alt="Imagem da pergunta">` : ''}
+                    
+                    ${(p.tipo === 'multipla_escolha_com_img' || p.tipo === 'multipla_escolha_sem_img') ? `
+                        <div style="margin-top:8px;">
+                            ${p.opcoes.map((opcao, oi) => `
+                                <label class="opcao-item" id="opcao_${p.id}_${oi}" 
+                                       onclick="selecionarOpcao('${p.id}', ${oi})"
+                                       style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:white;border-radius:8px;border:2px solid #e2e8f0;cursor:pointer;margin-bottom:6px;transition:0.2s;">
+                                    <input type="radio" name="pergunta_${p.id}" value="${oi}" style="width:18px;height:18px;accent-color:#2563eb;">
+                                    <span>${opcao}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    ${p.tipo === 'report_rapido' ? `
+                        <div style="margin-top:8px;">
+                            ${p.produtos && p.produtos.length > 0 ? p.produtos.map((prod, pi) => `
+                                <div style="background:white;border-radius:8px;padding:12px;margin-bottom:8px;border:1px solid #e2e8f0;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+                                        <div>
+                                            <strong>${prod.codigo}</strong> - ${prod.descricao}
+                                        </div>
+                                        <div style="display:flex;gap:16px;font-size:13px;flex-wrap:wrap;">
+                                            <div><span style="color:#64748b;">💰 Venda:</span> <strong style="color:#1a1a2e;">R$ ${prod.preco_venda.toFixed(2)}</strong></div>
+                                            ${prod.preco_promocional ? `
+                                                <div><span style="color:#64748b;">🔥 Promoção:</span> <strong style="color:#22c55e;">R$ ${prod.preco_promocional.toFixed(2)}</strong></div>
+                                            ` : `
+                                                <div><span style="color:#94a3b8;">Sem promoção</span></div>
+                                            `}
+                                        </div>
+                                    </div>
+                                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                        <button style="flex:1;min-width:60px;padding:6px 12px;border:none;border-radius:6px;font-weight:600;font-size:12px;cursor:pointer;opacity:0.5;transition:0.2s;background:#dcfce7;color:#16a34a;" 
+                                                onclick="setPrecoStatus('${p.id}', ${pi}, 'certo')" 
+                                                id="status_${p.id}_${pi}_certo">🟢 Certo</button>
+                                        <button style="flex:1;min-width:60px;padding:6px 12px;border:none;border-radius:6px;font-weight:600;font-size:12px;cursor:pointer;opacity:0.5;transition:0.2s;background:#fee2e2;color:#dc2626;" 
+                                                onclick="setPrecoStatus('${p.id}', ${pi}, 'errado')" 
+                                                id="status_${p.id}_${pi}_errado">🔴 Errado</button>
+                                        <button style="flex:1;min-width:60px;padding:6px 12px;border:none;border-radius:6px;font-weight:600;font-size:12px;cursor:pointer;opacity:0.5;transition:0.2s;background:#fef3c7;color:#ca8a04;" 
+                                                onclick="setPrecoStatus('${p.id}', ${pi}, 'sem_preco')" 
+                                                id="status_${p.id}_${pi}_sem_preco">🟡 Sem Preço</button>
+                                    </div>
+                                    <div style="margin-top:8px;display:none;" id="preco_corrigido_${p.id}_${pi}">
+                                        <input type="number" step="0.01" placeholder="Digite o preço correto..." 
+                                               style="width:100%;padding:8px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:14px;"
+                                               onchange="checklistRespostas['${p.id}'].precos[${pi}].preco_corrigido = parseFloat(this.value)">
+                                    </div>
+                                </div>
+                            `).join('') : '<p style="color:#94a3b8;text-align:center;">Nenhum produto para conferir</p>'}
+                        </div>
+                    ` : ''}
+                    
+                    ${p.tipo === 'envio_foto' ? `
+                        <div style="margin-top:12px;">
+                            <div class="foto-upload-area" onclick="enviarFotoChecklist('${p.id}')">
+                                <div style="font-size:32px;">📸</div>
+                                <div style="font-size:14px;color:#64748b;">Clique para tirar foto ou selecionar da galeria</div>
+                            </div>
+                            <div id="foto_preview_${p.id}" style="display:none;margin-top:8px;">
+                                <img class="foto-preview-checklist show" id="foto_img_${p.id}" src="" alt="Foto">
+                                <button class="btn-remover-foto" onclick="removerFotoChecklist('${p.id}')">❌ Remover foto</button>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+        
+        conteudo.innerHTML = html;
+        
+    } catch (erro) {
+        conteudo.innerHTML = `<p style="color:#ef4444;">❌ ${erro.message}</p>`;
+        console.error('Erro ao carregar perguntas:', erro);
+    }
+}
+
+// FUNÇÕES PARA MÚLTIPLA ESCOLHA
+function selecionarOpcao(perguntaId, opcaoIndex) {
+    // Remover seleção anterior
+    document.querySelectorAll(`[id^="opcao_${perguntaId}"]`).forEach(el => {
+        el.classList.remove('selecionado');
+        el.querySelector('input[type="radio"]').checked = false;
+        el.style.borderColor = '#e2e8f0';
+        el.style.background = 'white';
+    });
+    
+    const el = document.getElementById(`opcao_${perguntaId}_${opcaoIndex}`);
+    if (el) {
+        el.classList.add('selecionado');
+        el.querySelector('input[type="radio"]').checked = true;
+        el.style.borderColor = '#2563eb';
+        el.style.background = '#dbeafe';
+    }
+    
+    checklistRespostas[perguntaId] = {
+        tipo: 'multipla_escolha',
+        resposta: opcaoIndex
+    };
+    
+    console.log('✅ Resposta salva:', checklistRespostas[perguntaId]);
+}
+
+// FUNÇÕES PARA REPORT RÁPIDO
+function setPrecoStatus(perguntaId, produtoIndex, status) {
+    if (!checklistRespostas[perguntaId]) {
+        checklistRespostas[perguntaId] = { tipo: 'report_rapido', precos: [] };
+    }
+    if (!checklistRespostas[perguntaId].precos[produtoIndex]) {
+        checklistRespostas[perguntaId].precos[produtoIndex] = {};
+    }
+    
+    checklistRespostas[perguntaId].precos[produtoIndex].status = status;
+    
+    const botoes = ['certo', 'errado', 'sem_preco'];
+    botoes.forEach(s => {
+        const btn = document.getElementById(`status_${perguntaId}_${produtoIndex}_${s}`);
+        if (btn) {
+            if (s === status) {
+                btn.style.opacity = '1';
+                btn.style.transform = 'scale(1.05)';
+                btn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+                btn.classList.add('selecionado');
+                
+                if (s === 'certo') {
+                    btn.style.background = '#22c55e';
+                    btn.style.color = 'white';
+                } else if (s === 'errado') {
+                    btn.style.background = '#ef4444';
+                    btn.style.color = 'white';
+                } else if (s === 'sem_preco') {
+                    btn.style.background = '#eab308';
+                    btn.style.color = 'white';
+                }
+            } else {
+                btn.style.opacity = '0.4';
+                btn.style.transform = 'scale(1)';
+                btn.style.boxShadow = 'none';
+                btn.classList.remove('selecionado');
+                
+                if (s === 'certo') {
+                    btn.style.background = '#dcfce7';
+                    btn.style.color = '#16a34a';
+                } else if (s === 'errado') {
+                    btn.style.background = '#fee2e2';
+                    btn.style.color = '#dc2626';
+                } else if (s === 'sem_preco') {
+                    btn.style.background = '#fef3c7';
+                    btn.style.color = '#ca8a04';
+                }
+            }
+        }
+    });
+    
+    const divCorrigido = document.getElementById(`preco_corrigido_${perguntaId}_${produtoIndex}`);
+    if (divCorrigido) {
+        divCorrigido.style.display = status === 'errado' ? 'block' : 'none';
+    }
+}
+
+// ============================================
+// FUNÇÃO CORRIGIDA E COMPLETA: enviarFotoChecklist
+// ============================================
+function enviarFotoChecklist(perguntaId) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png,image/gif,image/webp'; // ✅ ESPECÍFICO
+    
+    input.onchange = async function(event) {
+        const file = event.target.files[0];
+        
+        // 🔥 1. VERIFICAR SE HÁ ARQUIVO
+        if (!file) {
+            showToast('⚠️ Nenhuma foto selecionada!', 'error');
+            return;
+        }
+
+        // 🔥 2. VALIDAR TAMANHO (Máximo 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            showToast('⚠️ Foto muito grande! Máximo 10MB.', 'error');
+            return;
+        }
+
+        // 🔥 3. VALIDAR TIPO MIME REAL
+        const tiposPermitidos = [
+            'image/jpeg',  // .jpg, .jpeg
+            'image/png',   // .png
+            'image/gif',   // .gif
+            'image/webp'   // .webp
+        ];
+        
+        if (!tiposPermitidos.includes(file.type)) {
+            showToast('⚠️ Apenas JPG, PNG, GIF ou WEBP!', 'error');
+            return;
+        }
+
+        // 🔥 4. VALIDAR EXTENSÃO REAL
+        const extensoesPermitidas = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+        const nomeArquivo = file.name.toLowerCase();
+        const extensao = nomeArquivo.substring(nomeArquivo.lastIndexOf('.'));
+        
+        if (!extensoesPermitidas.includes(extensao)) {
+            showToast(`⚠️ Extensão "${extensao}" não permitida! Use JPG, PNG, GIF ou WEBP.`, 'error');
+            return;
+        }
+
+        // 🔥 5. VALIDAR NOME DO ARQUIVO (segurança extra)
+        const nomeLimpo = nomeArquivo.replace(/[^a-zA-Z0-9._-]/g, '');
+        if (nomeLimpo !== nomeArquivo) {
+            showToast('⚠️ O nome do arquivo contém caracteres especiais. Renomeie e tente novamente.', 'error');
+            return;
+        }
+
+        // 🔥 6. ENVIAR PARA O CLOUDINARY
+        showToast('⏳ Enviando foto...', 'info');
+
+        try {
+            // Criar FormData para enviar o arquivo
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', 'promotor_app');
+            formData.append('folder', 'checklist'); // Pasta opcional no Cloudinary
+
+            // Fazer upload para o Cloudinary
+            const response = await fetch(
+                `https://api.cloudinary.com/v1_1/zv2yyqo2/image/upload`,
+                { method: 'POST', body: formData }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error?.message || 'Erro no upload');
+            }
+
+            // 🔥 7. SALVAR A URL DA FOTO
+            const fotoUrl = data.secure_url;
+
+            // Inicializar o array de fotos se não existir
+            if (!checklistRespostas[perguntaId]) {
+                checklistRespostas[perguntaId] = { 
+                    tipo: 'envio_foto', 
+                    fotos: [] 
+                };
+            }
+            
+            // Adicionar a foto ao array
+            checklistRespostas[perguntaId].fotos.push(fotoUrl);
+
+            // 🔥 8. MOSTRAR PREVIEW DA FOTO
+            const preview = document.getElementById(`foto_preview_${perguntaId}`);
+            if (preview) {
+                preview.style.display = 'block';
+                const img = document.getElementById(`foto_img_${perguntaId}`);
+                if (img) {
+                    img.src = fotoUrl;
+                }
+            }
+
+            showToast('✅ Foto enviada com sucesso!', 'success');
+
+        } catch (erro) {
+            showToast('❌ Erro ao enviar foto: ' + erro.message, 'error');
+            console.error('Erro detalhado:', erro);
+        }
+    };
+    
+    // 🔥 9. ABRIR O SELETOR DE ARQUIVO
+    input.click();
+}
+
+function removerFotoChecklist(perguntaId) {
+    if (!confirm('⚠️ Remover esta foto?')) return;
+    
+    if (checklistRespostas[perguntaId]) {
+        checklistRespostas[perguntaId].fotos = [];
+    }
+    
+    const preview = document.getElementById(`foto_preview_${perguntaId}`);
+    if (preview) {
+        preview.style.display = 'none';
+        document.getElementById(`foto_img_${perguntaId}`).src = '';
+    }
+    showToast('📸 Foto removida', 'info');
+}
+
+// ENVIAR RESPOSTAS
+async function enviarRespostasChecklist() {
+    let todasRespondidas = true;
+    let faltando = [];
+    
+    checklistPerguntasAtuais.forEach(p => {
+        const resposta = checklistRespostas[p.id];
+        if (!resposta) {
+            todasRespondidas = false;
+            faltando.push(p.pergunta);
+            return;
+        }
+        
+        if (p.tipo === 'multipla_escolha_com_img' || p.tipo === 'multipla_escolha_sem_img') {
+            if (resposta.resposta === undefined || resposta.resposta === null) {
+                todasRespondidas = false;
+                faltando.push(p.pergunta);
+            }
+        }
+        
+        if (p.tipo === 'report_rapido') {
+            const precos = resposta.precos || [];
+            const todosRespondidos = p.produtos.every((prod, index) => {
+                return precos[index] && precos[index].status;
+            });
+            if (!todosRespondidos) {
+                todasRespondidas = false;
+                faltando.push(p.pergunta);
+            }
+        }
+        
+        if (p.tipo === 'envio_foto') {
+            if (!resposta.fotos || resposta.fotos.length === 0) {
+                todasRespondidas = false;
+                faltando.push(p.pergunta);
+            }
+        }
+    });
+    
+    if (!todasRespondidas) {
+        alert(`⚠️ Responda todas as perguntas!\n\nFaltando:\n${faltando.map((f, i) => `${i+1}. ${f}`).join('\n')}`);
+        return;
+    }
+    
+    if (!confirm('📤 Confirmar envio das respostas?')) return;
+    
+    document.getElementById('btnEnviarChecklist').disabled = true;
+    document.getElementById('btnEnviarChecklist').textContent = '⏳ Enviando...';
+    document.getElementById('modalRespostaStatus').textContent = '⏳ Enviando respostas...';
+    
+    try {
+        let lat = null, lon = null;
+        if (navigator.geolocation) {
+            try {
+                const pos = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+                });
+                lat = pos.coords.latitude;
+                lon = pos.coords.longitude;
+            } catch (e) {
+                console.warn('GPS não disponível:', e);
+            }
+        }
+        
+        const loja = await getLojaDoDia();
+        let dentroRaio = false;
+        if (loja && loja.latitude && loja.longitude && lat && lon) {
+            const distancia = calcularDistancia(lat, lon, loja.latitude, loja.longitude);
+            dentroRaio = distancia <= 50;
+        }
+        
+        const respostasArray = checklistPerguntasAtuais.map(p => {
+            const resposta = checklistRespostas[p.id] || {};
+            return {
+                pergunta_id: p.id,
+                pergunta: p.pergunta,
+                tipo: p.tipo,
+                resposta: resposta.resposta !== undefined ? resposta.resposta : null,
+                precos: resposta.precos || [],
+                fotos: resposta.fotos || []
+            };
+        });
+        
+        const dados = {
+            checklist_id: checklistAtualId,
+            promotor_id: promotorLogado.id,
+            loja_id: checklistLojaAtual,
+            respostas: respostasArray,
+            latitude: lat,
+            longitude: lon,
+            dentro_raio: dentroRaio,
+            status: 'concluido'
+        };
+        
+        await apiFetch('/rest/v1/respostas_checklist', 'POST', dados);
+        
+        document.getElementById('modalRespostaStatus').textContent = '✅ Respostas enviadas com sucesso!';
+        showToast('✅ Checklist concluído!', 'success');
+        
+        setTimeout(() => {
+            fecharModalChecklistResposta();
+            carregarChecklistsApp();
+        }, 1500);
+        
+    } catch (erro) {
+        document.getElementById('modalRespostaStatus').textContent = '❌ Erro: ' + erro.message;
+        showToast('❌ Erro ao enviar: ' + erro.message, 'error');
+        console.error('Erro:', erro);
+    } finally {
+        document.getElementById('btnEnviarChecklist').disabled = false;
+        document.getElementById('btnEnviarChecklist').textContent = '📤 Enviar Respostas';
+    }
+}
+
+// VER RESPOSTAS
+async function verRespostasChecklist(checklistId, lojaId) {
+    try {
+        const hoje = new Date().toISOString().split('T')[0];
+        const respostas = await apiFetch(
+            `/rest/v1/respostas_checklist?checklist_id=eq.${checklistId}&promotor_id=eq.${promotorLogado.id}&loja_id=eq.${lojaId}&data_hora_envio=gte.${hoje}T00:00:00&select=*`
+        );
+        
+        if (respostas.length === 0) {
+            showToast('⚠️ Nenhuma resposta encontrada', 'error');
+            return;
+        }
+        
+        const resposta = respostas[0];
+        const respostasArray = resposta.respostas || [];
+        
+        let msg = '📋 Respostas do Checklist:\n\n';
+        
+        const checklistData = await apiFetch(`/rest/v1/checklists?id=eq.${checklistId}&select=*`);
+        const perguntasOriginais = checklistData.length > 0 ? checklistData[0].perguntas : [];
+        
+        respostasArray.forEach((r, i) => {
+            msg += `${i+1}. ${r.pergunta}\n`;
+            
+            if (r.tipo === 'multipla_escolha_com_img' || r.tipo === 'multipla_escolha_sem_img') {
+                const perguntaOrig = perguntasOriginais.find(p => p.id === r.pergunta_id);
+                if (perguntaOrig && perguntaOrig.opcoes && r.resposta !== null && r.resposta !== undefined) {
+                    const opcao = perguntaOrig.opcoes[r.resposta] || 'Opção não encontrada';
+                    msg += `   Resposta: ${opcao}\n`;
+                } else if (r.resposta !== null && r.resposta !== undefined) {
+                    msg += `   Resposta: Opção ${r.resposta + 1}\n`;
+                } else {
+                    msg += `   Resposta: Não respondido\n`;
+                }
+            }
+            
+            if (r.tipo === 'report_rapido') {
+                if (r.precos && r.precos.length > 0) {
+                    r.precos.forEach((p, pi) => {
+                        const statusLabel = { certo: '🟢 Certo', errado: '🔴 Errado', sem_preco: '🟡 Sem Preço' }[p.status] || p.status;
+                        msg += `   Produto ${pi+1}: ${statusLabel}`;
+                        if (p.preco_corrigido) msg += ` (Corrigido: R$ ${p.preco_corrigido.toFixed(2)})`;
+                        msg += '\n';
+                    });
+                } else {
+                    msg += `   Nenhum produto conferido\n`;
+                }
+            }
+            
+            if (r.tipo === 'envio_foto') {
+                if (r.fotos && r.fotos.length > 0) {
+                    msg += `   📸 ${r.fotos.length} foto(s) enviada(s)\n`;
+                } else {
+                    msg += `   📸 Nenhuma foto enviada\n`;
+                }
+            }
+            
+            msg += '\n';
+        });
+        
+        alert(msg);
+        
+    } catch (erro) {
+        showToast('❌ Erro: ' + erro.message, 'error');
+        console.error(erro);
+    }
+}
+
+// ============================================
+// EVENTOS DE ENTER NO LOGIN
+// ============================================
+document.getElementById('inputSenha').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') fazerLogin();
+});
+document.getElementById('inputEmail').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') fazerLogin();
+});
+
+// ============================================
+// CALCULAR MINUTOS DA CARGA HORÁRIA
+// ============================================
+function calcularMinutosCarga(carga) {
+    if (!carga || !carga.hora_entrada || !carga.hora_saida) return 440; // 7h20 = 440 min
+    
+    const entrada = carga.hora_entrada.split(':').map(Number);
+    const saida = carga.hora_saida.split(':').map(Number);
+    let totalMin = (saida[0] * 60 + saida[1]) - (entrada[0] * 60 + entrada[1]);
+    
+    // Subtrair almoço se houver
+    if (carga.hora_almoco_inicio && carga.hora_almoco_fim) {
+        const almocoInicio = carga.hora_almoco_inicio.split(':').map(Number);
+        const almocoFim = carga.hora_almoco_fim.split(':').map(Number);
+        const almocoMin = (almocoFim[0] * 60 + almocoFim[1]) - (almocoInicio[0] * 60 + almocoInicio[1]);
+        if (almocoMin > 0) {
+            totalMin -= almocoMin;
+        }
+    }
+    
+    return totalMin > 0 ? totalMin : 440; // Fallback para 7h20
+}
+
+// ============================================
+// FORMATAR HORAS
+// ============================================
+function formatarHoras(minutos) {
+    const negativo = minutos < 0;
+    const abs = Math.abs(minutos);
+    const h = Math.floor(abs / 60);
+    const m = abs % 60;
+    return `${negativo ? '-' : ''}${h}h${String(m).padStart(2,'0')}m`;
+}
+
+// ============================================
+// JUSTIFICATIVAS - PROMOTOR
+// ============================================
+
+let justificativaArquivo = null;
+let justificativaArquivoNome = null;
+
+// ===== ABRIR MODAL JUSTIFICATIVA =====
+async function abrirModalJustificativa(data) {
+    console.log('🔍 Abrindo justificativa para:', data);
+    
+    // Limpar campos
+    document.getElementById('justificativaMotivo').value = '';
+    document.getElementById('justificativaStatus').textContent = '';
+    document.getElementById('justificativaArquivoNome').style.display = 'none';
+    document.getElementById('justificativaArquivoUrl').value = '';
+    justificativaArquivo = null;
+    justificativaArquivoNome = null;
+    
+    // Formatar data
+    const dataFormatada = data.split('-').reverse().join('/');
+    document.getElementById('justificativaData').textContent = dataFormatada;
+    document.getElementById('justificativaDataDetalhe').textContent = dataFormatada;
+    document.getElementById('justificativaDataInput').value = data;
+    
+    // Buscar loja do dia
+    try {
+        const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+        const hoje = new Date(data + 'T00:00:00');
+        const diaSemana = diasSemana[hoje.getDay()];
+        
+        const roteiros = await apiFetch(
+            `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&dia_semana=eq.${diaSemana}&select=*,lojas(*)`
+        );
+        
+        if (roteiros.length > 0 && roteiros[0].lojas) {
+            document.getElementById('justificativaLoja').textContent = roteiros[0].lojas.nome || 'Loja não identificada';
+        } else {
+            document.getElementById('justificativaLoja').textContent = 'Sem loja agendada';
+        }
+    } catch (erro) {
+        console.error('Erro ao buscar loja:', erro);
+        document.getElementById('justificativaLoja').textContent = 'Erro ao carregar';
+    }
+    
+    document.getElementById('modalJustificativa').classList.add('active');
+}
+
+// ===== FECHAR MODAL JUSTIFICATIVA =====
+function fecharModalJustificativa() {
+    document.getElementById('modalJustificativa').classList.remove('active');
+}
+
+// ===== ANEXAR ARQUIVO =====
+function anexarArquivoJustificativa() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.jpg,.jpeg,.png';
+    
+    input.onchange = async function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        if (file.size > 5 * 1024 * 1024) {
+            showToast('⚠️ Arquivo muito grande! Máximo 5MB.', 'error');
+            return;
+        }
+        
+        showToast('⏳ Enviando arquivo...', 'info');
+        
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', 'promotor_app');
+            
+            const isImage = file.type.startsWith('image/');
+            const uploadUrl = isImage ?
+                `https://api.cloudinary.com/v1_1/zv2yyqo2/image/upload` :
+                `https://api.cloudinary.com/v1_1/zv2yyqo2/raw/upload`;
+            
+            const response = await fetch(uploadUrl, { method: 'POST', body: formData });
+            const data = await response.json();
+            
+            if (!response.ok) throw new Error(data.error?.message || 'Erro no upload');
+            
+            document.getElementById('justificativaArquivoUrl').value = data.secure_url;
+            const nomeDiv = document.getElementById('justificativaArquivoNome');
+            nomeDiv.textContent = `📎 ${file.name}`;
+            nomeDiv.style.display = 'block';
+            
+            showToast('✅ Arquivo anexado!', 'success');
+        } catch (erro) {
+            showToast('❌ Erro: ' + erro.message, 'error');
+        }
+    };
+    
+    input.click();
+}
+
+// ===== ENVIAR JUSTIFICATIVA =====
+async function enviarJustificativa() {
+    const data = document.getElementById('justificativaDataInput').value;
+    const motivo = document.getElementById('justificativaMotivo').value.trim();
+    const arquivoUrl = document.getElementById('justificativaArquivoUrl').value || null;
+    const statusDiv = document.getElementById('justificativaStatus');
+    
+    if (!motivo) {
+        statusDiv.textContent = '⚠️ Digite o motivo da justificativa!';
+        statusDiv.style.color = '#ef4444';
+        return;
+    }
+    
+    statusDiv.textContent = '⏳ Enviando...';
+    statusDiv.style.color = '#eab308';
+    
+    try {
+        const dados = {
+            promotor_id: promotorLogado.id,
+            data: data,
+            motivo: motivo,
+            arquivo_url: arquivoUrl,
+            status: 'pendente'
+        };
+        
+        await apiFetch('/rest/v1/justificativas', 'POST', dados);
+        
+        statusDiv.textContent = '✅ Justificativa enviada com sucesso!';
+        statusDiv.style.color = '#22c55e';
+        showToast('✅ Justificativa enviada! Aguarde a análise da gerência.', 'success');
+        
+        // Atualizar cache de justificativas
+        await carregarJustificativas();
+        
+        setTimeout(() => {
+            fecharModalJustificativa();
+            carregarEspelhoPonto();
+        }, 1500);
+        
+    } catch (erro) {
+        statusDiv.textContent = '❌ Erro: ' + erro.message;
+        statusDiv.style.color = '#ef4444';
+        showToast('❌ Erro ao enviar: ' + erro.message, 'error');
+        console.error(erro);
+    }
+}
+
+// ===== CARREGAR JUSTIFICATIVAS DO PROMOTOR =====
+async function carregarJustificativas() {
+    try {
+        const justificativas = await apiFetch(
+            `/rest/v1/justificativas?promotor_id=eq.${promotorLogado.id}&order=criado_em.desc`
+        );
+        
+        window.justificativasCache = {};
+        justificativas.forEach(j => {
+            window.justificativasCache[j.data] = j;
+        });
+        
+        console.log('📋 Justificativas carregadas:', Object.keys(window.justificativasCache).length);
+    } catch (erro) {
+        console.error('Erro ao carregar justificativas:', erro);
+        window.justificativasCache = {};
+    }
+}
+
+console.log('🚀 App Promotor carregado!');
+</script>
+</body>
+</html>
