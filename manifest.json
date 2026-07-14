@@ -1,0 +1,18 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "App Promotor",
+  "orientation": "portrait",
+  "scope": "/",
+  "short_name": "Promotor",
+  "start_url": "/app.html",
+  "theme_color": "#ffffff",
+  "description": "Sistema de monitoramento de promotores",
+  "id": "app-promotor",
+  "categories": [
+    "business",
+    "productivity"
+  ],
+  "lang": "pt"
+}
