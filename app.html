@@ -3246,14 +3246,15 @@ async function carregarEspelhoPonto() {
             if (mesFim > 12) { mesFim = 1; anoFim = anoInicio + 1; }
         }
 
+        // ===== CORREÇÃO 1: o valor do filtro é o MÊS VIGENTE (mês em que o período termina) =====
         const filtro = document.getElementById('filtroMesEspelho');
         if (filtro && filtro.value !== '0') {
             const [anoFiltro, mesFiltro] = filtro.value.split('-').map(Number);
-            mesInicio = mesFiltro;
-            anoInicio = anoFiltro;
-            mesFim = mesInicio + 1;
-            anoFim = anoInicio;
-            if (mesFim > 12) { mesFim = 1; anoFim = anoInicio + 1; }
+            mesFim = mesFiltro;
+            anoFim = anoFiltro;
+            mesInicio = mesFim - 1;
+            anoInicio = anoFim;
+            if (mesInicio < 1) { mesInicio = 12; anoInicio = anoFim - 1; }
         }
 
         periodoEl.textContent = `${String(mesInicio).padStart(2,'0')}/${anoInicio} a ${String(mesFim).padStart(2,'0')}/${anoFim}`;
@@ -3272,6 +3273,23 @@ async function carregarEspelhoPonto() {
         const atestadosMap = {};
         atestados.forEach(a => {
             atestadosMap[a.data] = a;
+        });
+
+        // ===== CORREÇÃO 2: buscar TODOS os feriados do período de uma vez só =====
+        const feriadosPeriodo = await apiFetch(
+            `/rest/v1/feriados?data=gte.${dataInicio}&data=lte.${dataFim}&or=(estado.eq.${promotorLogado.estado},estado.is.null)`
+        );
+        const feriadosMap = {};
+        feriadosPeriodo.forEach(f => {
+            // Se houver feriado nacional e estadual no mesmo dia, prioriza o que tem estado definido
+            if (!feriadosMap[f.data] || f.estado) feriadosMap[f.data] = f;
+        });
+
+        // ===== CORREÇÃO 2: buscar TODA a carga horária de uma vez só =====
+        const todasCargas = await apiFetch('/rest/v1/carga_horaria?select=*');
+        const cargaPorDia = {};
+        todasCargas.forEach(c => {
+            if (!cargaPorDia[c.dia_semana]) cargaPorDia[c.dia_semana] = c;
         });
 
         const dias = {};
@@ -3310,8 +3328,8 @@ async function carregarEspelhoPonto() {
             // VERIFICAR SE O DIA É FUTURO
             // ============================================
             const hoje = new Date();
-            const dataAtual = new Date(dataStr + 'T00:00:00');
-            const isDiaFuturo = dataAtual > hoje;
+            const dataAtualLoop = new Date(dataStr + 'T00:00:00');
+            const isDiaFuturo = dataAtualLoop > hoje;
 
             if (isDiaFuturo) {
                 const diaNum = parseInt(dataStr.split('-')[2]);
@@ -3334,13 +3352,12 @@ async function carregarEspelhoPonto() {
             }
 
             // ============================================
-            // VERIFICAR SE É FERIADO
+            // VERIFICAR SE É FERIADO (agora consultando em memória)
             // ============================================
-            const feriados = await apiFetch(`/rest/v1/feriados?data=eq.${dataStr}&estado=eq.${promotorLogado.estado}`);
-            const feriadoNacional = await apiFetch(`/rest/v1/feriados?data=eq.${dataStr}&estado=is.null`);
+            const feriadoDoDia = feriadosMap[dataStr];
 
-            if (feriados.length > 0 || feriadoNacional.length > 0) {
-                const feriadoNome = feriados.length > 0 ? feriados[0].descricao : feriadoNacional[0].descricao;
+            if (feriadoDoDia) {
+                const feriadoNome = feriadoDoDia.descricao;
                 const diaNum = parseInt(dataStr.split('-')[2]);
                 const mesReal = new Date(dataStr + 'T00:00:00').getMonth() + 1;
                 const diaNome = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'][new Date(dataStr + 'T00:00:00').getDay()];
@@ -3421,23 +3438,10 @@ async function carregarEspelhoPonto() {
             if (!entrada) {
                 batidas = '';
                 const diaSemanaNome = ['domingo','segunda','terca','quarta','quinta','sexta','sabado'][diaSemana];
-                let minutosFalta = 440; // 7h20 padrão
-                
-                try {
-                    // CÓDIGO CORRIGIDO
-                    const carga = await apiFetch(`/rest/v1/carga_horaria?dia_semana=eq.${diaSemanaNome}&select=*`);
 
-                    // 🔥 VERIFICAÇÃO SEGURA
-                    if (carga && carga.length > 0 && carga[0]) {
-                        minutosFalta = calcularMinutosCarga(carga[0]);
-                    } else {
-                        // 🔥 VALOR PADRÃO: 7h20 (440 minutos)
-                        minutosFalta = 440;
-                        console.log(`⚠️ Carga horária não encontrada para ${diaSemanaNome}, usando padrão 7h20`);
-                    }
-                } catch (e) {
-                    console.warn('Erro ao buscar carga horária, usando padrão 7h20:', e);
-                }
+                // ===== CORREÇÃO 2: consulta em memória, sem nova busca ao banco =====
+                const cargaDoDia = cargaPorDia[diaSemanaNome];
+                const minutosFalta = cargaDoDia ? calcularMinutosCarga(cargaDoDia) : 440;
                 
                 totalHorasSegundos -= minutosFalta * 60;
                 const horasStr = formatarHoras(minutosFalta);
@@ -3592,7 +3596,7 @@ async function carregarEspelhoPonto() {
         container.innerHTML = '<p style="color:#ef4444;text-align:center;">❌ Erro ao carregar dados</p>';
         totalContainer.innerHTML = '<p style="color:#ef4444;text-align:center;">❌ Erro ao carregar totais</p>';
     }
-}  // ← FIM DA FUNÇÃO 
+}
 
 function renderizarMarcacoes(dados) {
     const container = document.getElementById('espelhoContainer');
