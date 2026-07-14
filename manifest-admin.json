@@ -4,7 +4,7 @@
   "display": "standalone",
   "name": "Admin Promotor",
   "orientation": "portrait",
-  "scope": "/",
+  "scope": "/admin.html"
   "short_name": "Admin",
   "start_url": "/admin.html",
   "theme_color": "#1a1a2e",
