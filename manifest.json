@@ -4,7 +4,7 @@
   "display": "standalone",
   "name": "App Promotor",
   "orientation": "portrait",
-  "scope": "/",
+  "scope": "/app.html"
   "short_name": "Promotor",
   "start_url": "/app.html",
   "theme_color": "#ffffff",
