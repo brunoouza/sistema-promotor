@@ -4151,17 +4151,18 @@ function montarCardsSemanas(mes, ano, dias) {
             let conteudo = '';
             const registrosDia = dias.filter(d => d.semana === sem.semana && d.dia_semana === dia);
             if (registrosDia.length > 0) {
-                let lojasHtml = '';
-                registrosDia.forEach((reg, idx) => {
-                    const loja = reg.loja;
-                    if (!loja) return;
-                    const turno = reg.turno === 'tarde' ? '🌅 Tarde' : '🌄 Manhã';
-                    lojasHtml += `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;border-bottom:1px solid #e2e8f0;padding:4px 0;gap:8px;">
-                        <span><strong>${loja.nome}</strong></span>
-                        <span style="font-size:11px;color:#64748b;">${turno}</span>
-                        <button onclick="removerLojaDia(${sem.semana}, '${dia}', ${idx})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-weight:700;font-size:14px;">✕</button>
-                    </div>`;
-                });
+                            let lojasHtml = '';
+                            const mostrarTurno = registrosDia.length > 1;
+                            registrosDia.forEach((reg, idx) => {
+                                const loja = reg.loja;
+                                if (!loja) return;
+                                const turno = reg.turno === 'tarde' ? '🌅 Tarde' : '🌄 Manhã';
+                                lojasHtml += `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;border-bottom:1px solid #e2e8f0;padding:4px 0;gap:8px;">
+                                    <span><strong>${loja.nome}</strong></span>
+                                    ${mostrarTurno ? `<span style="font-size:11px;color:#64748b;">${turno}</span>` : ''}
+                                    <button onclick="removerLojaDia(${sem.semana}, '${dia}', ${idx})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-weight:700;font-size:14px;">✕</button>
+                                </div>`;
+                            });
                 conteudo = `<div style="flex:1;display:flex;flex-direction:column;align-items:stretch;gap:4px;width:100%;">${lojasHtml}
                     <button onclick="adicionarLojaDia(${sem.semana}, '${dia}')" style="background:none;border:1px dashed #22c55e;border-radius:6px;color:#22c55e;cursor:pointer;padding:4px;font-size:12px;margin-top:4px;">+ Adicionar outra loja</button>
                 </div>`;
