@@ -5012,12 +5012,19 @@ async function carregarEspelhoAdmin() {
     }
     container.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando dados...</div>';
     try {
-        // Implementação completa do espelho admin
-        const [ano, mes] = mesAno.split('-').map(Number);
-        const dataInicio = `${ano}-${String(mes).padStart(2,'0')}-01`;
-        const ultimoDia = new Date(ano, mes, 0).getDate();
-        const dataFim = `${ano}-${String(mes).padStart(2,'0')}-${String(ultimoDia).padStart(2,'0')}`;
-        
+        // ===== CORREÇÃO: período de 21 do mês anterior a 20 do mês vigente (igual ao app) =====
+        const [anoFim, mesFim] = mesAno.split('-').map(Number);
+        let mesInicio = mesFim - 1;
+        let anoInicio = anoFim;
+        if (mesInicio < 1) { mesInicio = 12; anoInicio = anoFim - 1; }
+
+        const dataInicio = `${anoInicio}-${String(mesInicio).padStart(2,'0')}-21`;
+        const dataFim = `${anoFim}-${String(mesFim).padStart(2,'0')}-20`;
+
+        // ===== CORREÇÃO: nome do promotor vem do select, não de "promotorLogado" (que não existe aqui) =====
+        const selectPromotor = document.getElementById('espelhoPromotor');
+        const nomePromotor = selectPromotor.options[selectPromotor.selectedIndex]?.text || '';
+
         const pontos = await apiFetch(
             `/rest/v1/pontos?promotor_id=eq.${promotorId}&data=gte.${dataInicio}&data=lte.${dataFim}&order=data.asc`
         );
@@ -5031,17 +5038,20 @@ async function carregarEspelhoAdmin() {
         let html = `<div class="table-wrapper"><table class="espelho-table-admin">
             <thead><tr><th>Data</th><th>Entrada</th><th>Almoço</th><th>Volta</th><th>Saída</th><th>Foto</th><th style="min-width:80px;">Ações</th></tr></thead><tbody>`;
         
-        for (let d = 1; d <= ultimoDia; d++) {
-            const dataStr = `${ano}-${String(mes).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const dataAtual = new Date(dataInicio + 'T00:00:00');
+        const dataFimObj = new Date(dataFim + 'T00:00:00');
+        while (dataAtual <= dataFimObj) {
+            const dataStr = dataAtual.toISOString().split('T')[0];
+            const [anoD, mesD, diaD] = dataStr.split('-');
             const diaRegistros = diasMap[dataStr] || [];
             const entrada = diaRegistros.find(p => p.tipo === 'entrada');
             const almoco = diaRegistros.find(p => p.tipo === 'inicio_almoco');
             const volta = diaRegistros.find(p => p.tipo === 'fim_almoco');
             const saida = diaRegistros.find(p => p.tipo === 'saida');
             
-            const dataFormat = `${String(d).padStart(2,'0')}/${String(mes).padStart(2,'0')}`;
+            const dataFormat = `${diaD}/${mesD}`;
             const fotoHtml = entrada?.foto_url ? 
-                `<img src="${entrada.foto_url}" class="foto-ponto-mini" onclick="abrirFotoPonto('${entrada.foto_url}', 'entrada', '${promotorLogado?.nome || ''}', '${dataStr}')" style="cursor:pointer;">` : 
+                `<img src="${entrada.foto_url}" class="foto-ponto-mini" onclick="abrirFotoPonto('${entrada.foto_url}', 'entrada', '${nomePromotor}', '${dataStr}')" style="cursor:pointer;">` : 
                 '-';
             
             html += `<tr>
@@ -5055,6 +5065,7 @@ async function carregarEspelhoAdmin() {
                     <button class="btn btn-primary btn-sm" onclick="abrirModalAcao(${promotorId}, '${dataStr}')" style="padding:4px 10px;font-size:11px;">✏️ Ações</button>
                 </td>
             </tr>`;
+            dataAtual.setDate(dataAtual.getDate() + 1);
         }
         
         html += '</tbody></table></div>';
