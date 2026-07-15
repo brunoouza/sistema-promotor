@@ -5167,6 +5167,17 @@ setInterval(() => {
     if (navigator.onLine) sincronizarPontosOffline();
 }, 2 * 60 * 1000);
 
+// ============================================
+// REGISTRAR SERVICE WORKER (MODO OFFLINE)
+// ============================================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js', { scope: '/app.html' })
+            .then(() => console.log('✅ Service Worker registrado'))
+            .catch((erro) => console.warn('⚠️ Erro ao registrar Service Worker:', erro));
+    });
+}
+
 console.log('🚀 App Promotor carregado!');
 </script>
 </body>
