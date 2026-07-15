@@ -1981,6 +1981,77 @@ async function verificarRaio() {
 }
 
 // ============================================
+// MODO OFFLINE - FILA DE PONTOS PENDENTES
+// ============================================
+function salvarPontoOffline(dadosPonto, fotoBase64) {
+    const fila = JSON.parse(localStorage.getItem('pontosPendentes') || '[]');
+    fila.push({
+        id_temp: Date.now() + '_' + Math.random().toString(36).slice(2),
+        dados: dadosPonto,
+        fotoBase64: fotoBase64 || null,
+        fotoUrl: dadosPonto.foto_url || null,
+        criado_em: new Date().toISOString()
+    });
+    localStorage.setItem('pontosPendentes', JSON.stringify(fila));
+}
+
+function contarPontosPendentes() {
+    const fila = JSON.parse(localStorage.getItem('pontosPendentes') || '[]');
+    return fila.length;
+}
+
+async function sincronizarPontosOffline() {
+    let fila = JSON.parse(localStorage.getItem('pontosPendentes') || '[]');
+    if (fila.length === 0) return;
+    if (!navigator.onLine) return;
+
+    showToast(`⏳ Sincronizando ${fila.length} ponto(s) pendente(s)...`, 'info');
+
+    const restantes = [];
+    for (const item of fila) {
+        try {
+            let fotoUrlFinal = item.fotoUrl;
+
+            // Se a foto ainda não foi enviada (só temos o base64), envia agora
+            if (!fotoUrlFinal && item.fotoBase64) {
+                const blob = await (await fetch(item.fotoBase64)).blob();
+                const formData = new FormData();
+                formData.append('file', blob, 'ponto.jpg');
+                formData.append('upload_preset', 'promotor_app');
+                const resp = await fetch(`https://api.cloudinary.com/v1_1/zv2yyqo2/image/upload`, { method: 'POST', body: formData });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error?.message || 'Erro no upload da foto');
+                fotoUrlFinal = data.secure_url;
+            }
+
+            const registroFinal = { ...item.dados, foto_url: fotoUrlFinal };
+            await apiFetch('/rest/v1/pontos', 'POST', registroFinal);
+        } catch (erro) {
+            console.warn('Ainda não foi possível sincronizar um ponto:', erro);
+            restantes.push(item);
+        }
+    }
+
+    localStorage.setItem('pontosPendentes', JSON.stringify(restantes));
+
+    if (restantes.length === 0) {
+        showToast('✅ Todos os pontos pendentes foram sincronizados!', 'success');
+        carregarHistoricoHoje();
+    } else {
+        showToast(`⚠️ ${restantes.length} ponto(s) ainda pendente(s), tentando de novo mais tarde.`, 'info');
+    }
+}
+
+function converterArquivoParaBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// ============================================
 // ESCOLHER A LOJA CERTA QUANDO HÁ 2 NO MESMO DIA
 // ============================================
 function selecionarRoteiroDoDia(roteiros, tipo) {
