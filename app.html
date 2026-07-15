@@ -2224,7 +2224,14 @@ function pararCronometroAlmoco() {
 async function registrarPonto(tipo) {
     const msgDiv = document.getElementById('mensagemPonto');
 
+    // ===== EVITAR REGISTRO DUPLICADO =====
+    const botaoId = { entrada: 'btnEntrada', inicio_almoco: 'btnAlmoco', fim_almoco: 'btnVolta', saida: 'btnSaida' }[tipo];
+    const botao = document.getElementById(botaoId);
+    if (botao && botao.disabled) return; // já está processando, ignora o clique repetido
+    if (botao) botao.disabled = true;
+
     if (!promotorLogado) {
+        if (botao) botao.disabled = false;
         msgDiv.style.display = 'block';
         msgDiv.style.background = '#fee2e2';
         msgDiv.style.color = '#991b1b';
@@ -2451,8 +2458,12 @@ async function executarRegistroPonto(tipo, fotoUrl) {
             ${fotoUrl ? '<br>📸 Foto registrada!' : ''}
         `;
 
-        fotoPontoUrl = null;
+fotoPontoUrl = null;
         fotoPontoTipo = null;
+
+        const botaoIdReabilitar = { entrada: 'btnEntrada', inicio_almoco: 'btnAlmoco', fim_almoco: 'btnVolta', saida: 'btnSaida' }[tipo];
+        const botaoReabilitar = document.getElementById(botaoIdReabilitar);
+        if (botaoReabilitar) botaoReabilitar.disabled = false;
 
         carregarHistoricoHoje();
 
@@ -2460,12 +2471,15 @@ async function executarRegistroPonto(tipo, fotoUrl) {
             msgDiv.style.display = 'none';
         }, 5000);
 
-    } catch (erro) {
+} catch (erro) {
         msgDiv.style.display = 'block';
         msgDiv.style.background = '#fee2e2';
         msgDiv.style.color = '#991b1b';
         msgDiv.textContent = '❌ Erro: ' + erro.message;
         console.error(erro);
+        const botaoIdErro = { entrada: 'btnEntrada', inicio_almoco: 'btnAlmoco', fim_almoco: 'btnVolta', saida: 'btnSaida' }[tipo];
+        const botaoErro = document.getElementById(botaoIdErro);
+        if (botaoErro) botaoErro.disabled = false;
     }
 }
 
