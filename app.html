@@ -4586,11 +4586,7 @@ async function abrirChecklistResposta(checklistId, lojaId) {
                                                 onclick="setPrecoStatus('${p.id}', ${pi}, 'sem_preco')" 
                                                 id="status_${p.id}_${pi}_sem_preco">🟡 Sem Preço</button>
                                     </div>
-                                    <div style="margin-top:8px;display:none;" id="preco_corrigido_${p.id}_${pi}">
-                                        <input type="number" step="0.01" placeholder="Digite o preço correto..." 
-                                               style="width:100%;padding:8px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:14px;"
-                                               onchange="checklistRespostas['${p.id}'].precos[${pi}].preco_corrigido = parseFloat(this.value)">
-                                    </div>
+
                                 </div>
                             `).join('') : '<p style="color:#94a3b8;text-align:center;">Nenhum produto para conferir</p>'}
                         </div>
@@ -4696,12 +4692,6 @@ function setPrecoStatus(perguntaId, produtoIndex, status) {
             }
         }
     });
-    
-    const divCorrigido = document.getElementById(`preco_corrigido_${perguntaId}_${produtoIndex}`);
-    if (divCorrigido) {
-        divCorrigido.style.display = status === 'errado' ? 'block' : 'none';
-    }
-}
 
 // ============================================
 // FUNÇÃO CORRIGIDA E COMPLETA: enviarFotoChecklist
