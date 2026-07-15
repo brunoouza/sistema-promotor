@@ -2199,6 +2199,19 @@ function iniciarCronometroAlmoco(horarioInicioStr) {
     almocoInterval = setInterval(atualizar, 1000);
 }
 
+function atualizarIndicadorPendentes() {
+    const qtd = contarPontosPendentes();
+    const div = document.getElementById('indicadorPendentes');
+    const span = document.getElementById('qtdPendentes');
+    if (!div || !span) return;
+    if (qtd > 0) {
+        div.style.display = 'block';
+        span.textContent = qtd;
+    } else {
+        div.style.display = 'none';
+    }
+}
+
 function pararCronometroAlmoco() {
     if (almocoInterval) { clearInterval(almocoInterval); almocoInterval = null; }
     const div = document.getElementById('cronometroAlmoco');
