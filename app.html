@@ -1373,6 +1373,10 @@
             <!-- MENSAGEM DE FEEDBACK -->
             <div id="mensagemPonto" style="display:none;padding:12px;border-radius:12px;margin-bottom:16px;font-weight:600;"></div>
 
+            <div id="indicadorPendentes" style="display:none;background:#dbeafe;border:2px solid #3b82f6;border-radius:12px;padding:12px;margin-bottom:16px;text-align:center;font-size:13px;color:#1e40af;font-weight:600;">
+                📴 <span id="qtdPendentes">0</span> ponto(s) aguardando internet para sincronizar
+            </div>
+
             <!-- HISTÓRICO DO DIA -->
             <div style="margin-top:16px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -1612,6 +1616,7 @@ let localizacaoAtual = null;
 let gpsAtivo = false;
 let fotoPontoBase64 = null;
 let fotoPontoUrl = null;
+let fotoBase64Atual = null;
 let mapaRelatorio = null;
 let fotoPontoTipo = null;
 
@@ -1842,6 +1847,8 @@ async function carregarDadosIniciais() {
     if (!promotorLogado) return;
     try {
         verificarGPS();
+        atualizarIndicadorPendentes();
+        if (navigator.onLine) sincronizarPontosOffline();
         await Promise.all([
             carregarLojaDoDia(),
             carregarRoteiroSemana(),
@@ -2033,6 +2040,7 @@ async function sincronizarPontosOffline() {
     }
 
     localStorage.setItem('pontosPendentes', JSON.stringify(restantes));
+    atualizarIndicadorPendentes();
 
     if (restantes.length === 0) {
         showToast('✅ Todos os pontos pendentes foram sincronizados!', 'success');
@@ -2249,8 +2257,16 @@ function tirarFotoPonto(tipo) {
             return;
         }
 
+fotoBase64Atual = await converterArquivoParaBase64(file);
+
+        if (!navigator.onLine) {
+            showToast('📴 Sem internet — ponto será guardado e enviado depois', 'info');
+            fotoPontoUrl = null;
+            await executarRegistroPonto(tipo, null);
+            return;
+        }
+
         try {
-            // Upload da foto para o Cloudinary
             const formData = new FormData();
             formData.append('file', file);
             formData.append('upload_preset', 'promotor_app');
@@ -2272,8 +2288,8 @@ function tirarFotoPonto(tipo) {
             await executarRegistroPonto(tipo, fotoPontoUrl);
             
         } catch (erro) {
-            showToast('❌ Erro ao enviar foto: ' + erro.message, 'error');
-            console.error(erro);
+            showToast('📴 Sem conexão — ponto será guardado e enviado depois', 'info');
+            await executarRegistroPonto(tipo, null);
         }
     };
     
@@ -2388,15 +2404,17 @@ async function executarRegistroPonto(tipo, fotoUrl) {
             foto_tipo: fotoUrl ? tipo : null
         };
 
-        await apiFetch('/rest/v1/pontos', 'POST', registro);
+        let salvouOnline = true;
+                try {
+                    if (!navigator.onLine) throw new Error('Sem conexão');
+                    await apiFetch('/rest/v1/pontos', 'POST', registro);
+                } catch (erroConexao) {
+                    salvouOnline = false;
+                    salvarPontoOffline(registro, fotoBase64Atual);
+                    atualizarIndicadorPendentes();
+                }
 
-        if (tipo === 'inicio_almoco') {
-            iniciarCronometroAlmoco(horario);
-        } else if (tipo === 'fim_almoco') {
-            pararCronometroAlmoco();
-        }
-
-        const emojis = {
+                const emojis = {
             entrada: '🟢 Entrada',
             inicio_almoco: '🍽️ Início Almoço',
             fim_almoco: '✅ Volta Almoço',
@@ -5123,6 +5141,18 @@ async function carregarJustificativas() {
         window.justificativasCache = {};
     }
 }
+
+// ============================================
+// SINCRONIZAÇÃO AUTOMÁTICA AO VOLTAR A INTERNET
+// ============================================
+window.addEventListener('online', () => {
+    sincronizarPontosOffline();
+});
+
+// Tenta sincronizar a cada 2 minutos, caso o evento 'online' não dispare
+setInterval(() => {
+    if (navigator.onLine) sincronizarPontosOffline();
+}, 2 * 60 * 1000);
 
 console.log('🚀 App Promotor carregado!');
 </script>
