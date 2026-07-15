@@ -1364,6 +1364,12 @@
                 <button class="btn btn-saida" onclick="registrarPonto('saida')" id="btnSaida">🔴 SAÍDA</button>
             </div>
 
+            <div id="cronometroAlmoco" style="display:none;background:#fef9c3;border:2px solid #eab308;border-radius:12px;padding:16px;margin-bottom:16px;text-align:center;">
+                <div style="font-size:13px;color:#92400e;font-weight:600;">🍽️ Tempo de almoço (1h)</div>
+                <div id="cronometroAlmocoTempo" style="font-size:32px;font-weight:700;color:#92400e;margin-top:4px;">60:00</div>
+                <div id="cronometroAlmocoStatus" style="font-size:12px;color:#92400e;margin-top:4px;">Tempo restante</div>
+            </div>
+
             <!-- MENSAGEM DE FEEDBACK -->
             <div id="mensagemPonto" style="display:none;padding:12px;border-radius:12px;margin-bottom:16px;font-weight:600;"></div>
 
@@ -2035,6 +2041,54 @@ async function carregarLojaDoDia() {
     }
 }
 
+let almocoInterval = null;
+
+function iniciarCronometroAlmoco(horarioInicioStr) {
+    const hoje = new Date();
+    const [h, m] = horarioInicioStr.split(':').map(Number);
+    const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), h, m, 0);
+    const fimPrevisto = new Date(inicio.getTime() + 60 * 60 * 1000);
+
+    const div = document.getElementById('cronometroAlmoco');
+    const tempoEl = document.getElementById('cronometroAlmocoTempo');
+    const statusEl = document.getElementById('cronometroAlmocoStatus');
+    if (!div || !tempoEl || !statusEl) return;
+
+    div.style.display = 'block';
+    if (almocoInterval) clearInterval(almocoInterval);
+
+    function atualizar() {
+        const agora = new Date();
+        const diffSegTotal = Math.floor((fimPrevisto - agora) / 1000);
+        if (diffSegTotal >= 0) {
+            const min = Math.floor(diffSegTotal / 60);
+            const seg = diffSegTotal % 60;
+            tempoEl.textContent = `${String(min).padStart(2,'0')}:${String(seg).padStart(2,'0')}`;
+            tempoEl.style.color = '#92400e';
+            statusEl.textContent = 'Tempo restante';
+            div.style.background = '#fef9c3';
+            div.style.borderColor = '#eab308';
+        } else {
+            const atrasoSeg = Math.abs(diffSegTotal);
+            const min = Math.floor(atrasoSeg / 60);
+            const seg = atrasoSeg % 60;
+            tempoEl.textContent = `+${String(min).padStart(2,'0')}:${String(seg).padStart(2,'0')}`;
+            tempoEl.style.color = '#991b1b';
+            statusEl.textContent = '⚠️ Tempo de almoço excedido';
+            div.style.background = '#fee2e2';
+            div.style.borderColor = '#ef4444';
+        }
+    }
+    atualizar();
+    almocoInterval = setInterval(atualizar, 1000);
+}
+
+function pararCronometroAlmoco() {
+    if (almocoInterval) { clearInterval(almocoInterval); almocoInterval = null; }
+    const div = document.getElementById('cronometroAlmoco');
+    if (div) div.style.display = 'none';
+}
+
 // ============================================
 // REGISTRAR PONTO (COM FOTO OBRIGATÓRIA)
 // ============================================
@@ -2077,8 +2131,7 @@ function tirarFotoPonto(tipo) {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    // 🔥 REMOVEMOS O CAPTURE PARA ABRIR A CÂMERA CORRETAMENTE
-    // input.capture = 'environment';  ← REMOVIDO
+    input.capture = 'user'; // 📸 força a câmera FRONTAL (selfie)
     
     showToast('📸 Tire uma selfie para registrar o ponto', 'info');
     
@@ -2235,6 +2288,12 @@ async function executarRegistroPonto(tipo, fotoUrl) {
 
         await apiFetch('/rest/v1/pontos', 'POST', registro);
 
+        if (tipo === 'inicio_almoco') {
+            iniciarCronometroAlmoco(horario);
+        } else if (tipo === 'fim_almoco') {
+            pararCronometroAlmoco();
+        }
+
         const emojis = {
             entrada: '🟢 Entrada',
             inicio_almoco: '🍽️ Início Almoço',
@@ -2305,6 +2364,14 @@ async function carregarHistoricoHoje() {
         const pontos = await apiFetch(
             `/rest/v1/pontos?promotor_id=eq.${promotorLogado.id}&data=eq.${hoje}&order=horario_real.asc`
         );
+
+        const temInicioAlmoco = pontos.find(p => p.tipo === 'inicio_almoco');
+        const temFimAlmoco = pontos.find(p => p.tipo === 'fim_almoco');
+        if (temInicioAlmoco && !temFimAlmoco) {
+            iniciarCronometroAlmoco(temInicioAlmoco.horario_real);
+        } else {
+            pararCronometroAlmoco();
+        }
 
         if (pontos.length === 0) {
             div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum registro hoje</p>';
