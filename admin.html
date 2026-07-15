@@ -3878,9 +3878,19 @@ async function carregarRoteiros() {
             }
         });
         let html = '';
-        Object.values(grupos).forEach(r => {
+Object.values(grupos).forEach(r => {
             const recorrenteBadge = r.recorrente ? '<span class="badge badge-info">🔄 Recorrente</span>' : '<span class="badge badge-gray">Único</span>';
-            html += `<tr><td>${r.id}</td><td><strong>${r.promotor_nome}</strong></td><td>${r.mes}/${r.ano}</td>
+
+            // Se for recorrente, mostra o mês/ano vigente (atual) em vez do mês de cadastro
+            let mesExibicao = r.mes;
+            let anoExibicao = r.ano;
+            if (r.recorrente) {
+                const hoje = new Date();
+                mesExibicao = hoje.getMonth() + 1;
+                anoExibicao = hoje.getFullYear();
+            }
+
+            html += `<tr><td>${r.id}</td><td><strong>${r.promotor_nome}</strong></td><td>${mesExibicao}/${anoExibicao}</td>
                 <td>${recorrenteBadge}</td>
                 <td><button class="btn btn-primary btn-sm" onclick="editarRoteiro(${r.id}, ${r.mes}, ${r.ano})">Editar</button>
                 <button class="btn btn-danger btn-sm" onclick="excluirRoteiro(${r.id})">Excluir</button></td></tr>`;
