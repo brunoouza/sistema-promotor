@@ -2113,16 +2113,10 @@ async function registrarPonto(tipo) {
         return;
     }
 
-    // FOTO OBRIGATÓRIA (ENTRADA E SAÍDA)
-    if (tipo === 'entrada' || tipo === 'saida') {
+    // FOTO OBRIGATÓRIA EM TODAS AS MARCAÇÕES (entrada, almoço, volta, saída)
         fotoPontoTipo = tipo;
         await tirarFotoPonto(tipo);
-        return;
     }
-
-    // Para almoço e volta, não precisa de foto
-    await executarRegistroPonto(tipo, null);
-}
 
 // ============================================
 // TIRAR FOTO PARA O PONTO
