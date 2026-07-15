@@ -4136,13 +4136,15 @@ async function carregarChecklistsApp() {
     div.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando checklists...</div>';
     
     try {
-        const hoje = new Date().toISOString().split('T')[0];
+    const hoje = new Date().toISOString().split('T')[0];
         
-        const checklists = await apiFetch(
-            `/rest/v1/checklists?ativo=eq.true&periodo_inicio=lte.${hoje}&periodo_fim=gte.${hoje}&select=*`
-        );
+            // ===== BUSCA CHECKLISTS (sem produtos pesados) E LOJA DO DIA EM PARALELO =====
+            const [checklists, lojaDoDiaResult] = await Promise.all([
+                apiFetch(`/rest/v1/checklists?ativo=eq.true&periodo_inicio=lte.${hoje}&periodo_fim=gte.${hoje}&select=id,titulo,descricao,periodo_inicio,periodo_fim,lojas_ids`),
+                getLojaDoDia()
+            ]);
         
-        if (checklists.length === 0) {
+            if (checklists.length === 0) {
             div.innerHTML = `
                 <div style="text-align:center;padding:40px 20px;color:#94a3b8;">
                     <div style="font-size:48px;">📋</div>
@@ -4152,8 +4154,8 @@ async function carregarChecklistsApp() {
             return;
         }
         
-        const loja = await getLojaDoDia();
-        if (!loja) {
+        const loja = lojaDoDiaResult;
+                if (!loja) {
             div.innerHTML = `
                 <div style="text-align:center;padding:40px 20px;color:#94a3b8;">
                     <div style="font-size:48px;">🏪</div>
@@ -4191,7 +4193,6 @@ async function carregarChecklistsApp() {
             const jaRespondido = respondidos.includes(c.id);
             const statusBadge = jaRespondido ? 'badge-success' : 'badge-warning';
             const statusText = jaRespondido ? '✅ Concluído' : '⏳ Pendente';
-            const qtdPerguntas = c.perguntas ? c.perguntas.length : 0;
             
             html += `
                 <div class="checklist-item ${jaRespondido ? 'concluido' : ''}">
@@ -4199,7 +4200,7 @@ async function carregarChecklistsApp() {
                         <div>
                             <div class="titulo">${c.titulo}</div>
                             <div class="descricao">${c.descricao || ''}</div>
-                            <div class="meta">${qtdPerguntas} perguntas • ${new Date(c.periodo_inicio).toLocaleDateString('pt-BR')} a ${new Date(c.periodo_fim).toLocaleDateString('pt-BR')}</div>
+                            <div class="meta">${new Date(c.periodo_inicio).toLocaleDateString('pt-BR')} a ${new Date(c.periodo_fim).toLocaleDateString('pt-BR')}</div>
                         </div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
                             <span class="badge ${statusBadge}" style="background:${jaRespondido ? '#dcfce7' : '#fef3c7'};color:${jaRespondido ? '#16a34a' : '#ca8a04'};padding:2px 12px;border-radius:20px;font-size:12px;font-weight:600;">${statusText}</span>
