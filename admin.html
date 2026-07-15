@@ -2531,10 +2531,12 @@ function fecharModal(id) { document.getElementById(id).classList.remove('active'
 // ============================================
 // HASH DE SENHAS (SEGURANÇA)
 // ============================================
+const SENHA_SALT = 'PromotorKalunga2026_SaltFixo';
+
 async function hashSenha(senha) {
     try {
         const encoder = new TextEncoder();
-        const data = encoder.encode(senha);
+        const data = encoder.encode(SENHA_SALT + senha);
         const hashBuffer = await crypto.subtle.digest('SHA-256', data);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
