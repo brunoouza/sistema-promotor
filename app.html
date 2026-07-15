@@ -1980,6 +1980,43 @@ async function verificarRaio() {
     }
 }
 
+// ============================================
+// ESCOLHER A LOJA CERTA QUANDO HÁ 2 NO MESMO DIA
+// ============================================
+function selecionarRoteiroDoDia(roteiros, tipo) {
+    if (roteiros.length <= 1) return roteiros[0];
+
+    if (tipo === 'entrada') {
+        // Entrada sempre na loja da manhã
+        return roteiros.find(r => (r.turno || 'manha') === 'manha') || roteiros[0];
+    }
+    if (tipo === 'saida') {
+        // Saída sempre na loja da tarde
+        return roteiros.find(r => r.turno === 'tarde') || roteiros[roteiros.length - 1];
+    }
+
+    // Almoço (início/volta): usa a loja mais próxima da localização atual
+    if (localizacaoAtual) {
+        let maisProxima = roteiros[0];
+        let menorDistancia = Infinity;
+        roteiros.forEach(r => {
+            if (r.lojas && r.lojas.latitude && r.lojas.longitude) {
+                const dist = calcularDistancia(
+                    localizacaoAtual.lat, localizacaoAtual.lon,
+                    parseFloat(r.lojas.latitude), parseFloat(r.lojas.longitude)
+                );
+                if (dist < menorDistancia) {
+                    menorDistancia = dist;
+                    maisProxima = r;
+                }
+            }
+        });
+        return maisProxima;
+    }
+
+    return roteiros[0];
+}
+
 function calcularDistancia(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -2244,8 +2281,8 @@ async function executarRegistroPonto(tipo, fotoUrl) {
             return;
         }
 
-        const roteiro = roteiros[0];
-        const loja = roteiro.lojas;
+        const roteiro = selecionarRoteiroDoDia(roteiros, tipo);
+                const loja = roteiro.lojas;
         const horario = new Date().toTimeString().slice(0, 5);
 
         let dentroRaio = false;
