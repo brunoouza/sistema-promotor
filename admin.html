@@ -7610,6 +7610,17 @@ async function salvarAcao() {
     }
 }
 
+// ============================================
+// REGISTRAR SERVICE WORKER (MODO OFFLINE)
+// ============================================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw-admin.js', { scope: '/admin.html' })
+            .then(() => console.log('✅ Service Worker do Admin registrado'))
+            .catch((erro) => console.warn('⚠️ Erro ao registrar Service Worker:', erro));
+    });
+}
+
 console.log('👔 Admin carregado!');
 </script>
 </body>
