@@ -2646,24 +2646,25 @@ async function abrirModalMes() {
                                 📅 ${diasNomes[dia]}
                             </div>
                             ${itens.map(item => {
-                                const loja = item.loja;
-                                const turno = turnoLabel[item.turno] || '🌄 Manhã';
-                                return `
-                                    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:white;border-radius:8px;margin-bottom:4px;border:1px solid #e2e8f0;">
-                                        <div style="display:flex;align-items:center;gap:8px;">
-                                            <span>🏪</span>
-                                            <span style="font-weight:500;font-size:13px;color:#1a1a2e;">
-                                                ${loja.nome}
-                                                ${loja.codigo_loja ? ` <span style="color:#94a3b8;font-weight:400;">(${loja.codigo_loja})</span>` : ''}
-                                            </span>
-                                        </div>
-                                        <div style="display:flex;align-items:center;gap:8px;">
-                                            <span style="font-size:12px;color:#64748b;">${turno}</span>
-                                            ${item.horario ? `<span style="font-size:11px;color:#94a3b8;">🕐 ${item.horario}</span>` : ''}
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
+                                            const loja = item.loja;
+                                            const turno = turnoLabel[item.turno] || '🌄 Manhã';
+                                            const mostrarTurno = itens.length > 1;
+                                            return `
+                                                <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:white;border-radius:8px;margin-bottom:4px;border:1px solid #e2e8f0;">
+                                                    <div style="display:flex;align-items:center;gap:8px;">
+                                                        <span>🏪</span>
+                                                        <span style="font-weight:500;font-size:13px;color:#1a1a2e;">
+                                                            ${loja.nome}
+                                                            ${loja.codigo_loja ? ` <span style="color:#94a3b8;font-weight:400;">(${loja.codigo_loja})</span>` : ''}
+                                                        </span>
+                                                    </div>
+                                                    <div style="display:flex;align-items:center;gap:8px;">
+                                                        ${mostrarTurno ? `<span style="font-size:12px;color:#64748b;">${turno}</span>` : ''}
+                                                        ${item.horario ? `<span style="font-size:11px;color:#94a3b8;">🕐 ${item.horario}</span>` : ''}
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }).join('')}
                         </div>
                     `;
                 });
