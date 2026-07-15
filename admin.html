@@ -7183,11 +7183,11 @@ async function carregarMapaLojas() {
             const cor = dentroRaio ? '#22c55e' : '#ef4444';
             const status = dentroRaio ? '✅ Dentro do raio' : '❌ Fora do raio';
             
-            const icon = L.divIcon({
-                html: `<div style="background:${cor};width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>`,
+const icon = L.divIcon({
+                html: `<div style="font-size:26px;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4));text-shadow:-1px 0 ${cor}, 0 1px ${cor}, 1px 0 ${cor}, 0 -1px ${cor};">🧍</div>`,
                 className: 'custom-div-icon',
-                iconSize: [18, 18],
-                iconAnchor: [9, 9]
+                iconSize: [30, 30],
+                iconAnchor: [15, 28]
             });
             
             // Marcador do promotor
