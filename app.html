@@ -1623,12 +1623,13 @@ let fotoPontoTipo = null;
 // ============================================
 // FUNÇÕES DE API
 // ============================================
-async function apiFetch(endpoint, metodo = 'GET', dados = null) {
+async function apiFetch(endpoint, metodo = 'GET', dados = null, retornarRepresentacao = false) {
     const headers = {
         'apikey': SUPABASE_KEY,
         'Authorization': `Bearer ${SUPABASE_KEY}`,
         'Content-Type': 'application/json'
     };
+    if (retornarRepresentacao) headers['Prefer'] = 'return=representation';
     const config = { method: metodo, headers: headers };
     if (dados && (metodo === 'POST' || metodo === 'PATCH' || metodo === 'PUT')) {
         config.body = JSON.stringify(dados);
@@ -2138,6 +2139,17 @@ function selecionarRoteiroDoDia(roteiros, tipo) {
     return roteiros[0];
 }
 
+// ============================================
+// HORÁRIO DO SERVIDOR (não pode ser falsificado pelo celular)
+// ============================================
+function converterParaHorarioBrasil(isoUtc) {
+    const dataUtc = new Date(isoUtc);
+    const dataBrasil = new Date(dataUtc.getTime() - 3 * 60 * 60000); // Brasília = UTC-3
+    const hora = `${String(dataBrasil.getUTCHours()).padStart(2,'0')}:${String(dataBrasil.getUTCMinutes()).padStart(2,'0')}`;
+    const data = `${dataBrasil.getUTCFullYear()}-${String(dataBrasil.getUTCMonth()+1).padStart(2,'0')}-${String(dataBrasil.getUTCDate()).padStart(2,'0')}`;
+    return { hora, data };
+}
+
 function calcularDistancia(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -2474,15 +2486,27 @@ async function executarRegistroPonto(tipo, fotoUrl) {
             foto_tipo: fotoUrl ? tipo : null
         };
 
-        let salvouOnline = true;
-                try {
-                    if (!navigator.onLine) throw new Error('Sem conexão');
-                    await apiFetch('/rest/v1/pontos', 'POST', registro);
-                } catch (erroConexao) {
-                    salvouOnline = false;
-                    salvarPontoOffline(registro, fotoBase64Atual);
-                    atualizarIndicadorPendentes();
+let salvouOnline = true;
+        let horarioFinal = horario; // usa o horário do celular só se cair no modo offline
+        try {
+            if (!navigator.onLine) throw new Error('Sem conexão');
+            const resposta = await apiFetch('/rest/v1/pontos', 'POST', registro, true);
+            if (Array.isArray(resposta) && resposta[0] && resposta[0].id && resposta[0].created_at) {
+                const horarioServidor = converterParaHorarioBrasil(resposta[0].created_at);
+                horarioFinal = horarioServidor.hora;
+                // Corrige o registro no banco com o horário real do servidor (não o do celular)
+                if (horarioServidor.hora !== horario || horarioServidor.data !== data) {
+                    await apiFetch(`/rest/v1/pontos?id=eq.${resposta[0].id}`, 'PATCH', {
+                        horario_real: horarioServidor.hora,
+                        data: horarioServidor.data
+                    });
                 }
+            }
+        } catch (erroConexao) {
+            salvouOnline = false;
+            salvarPontoOffline(registro, fotoBase64Atual);
+            atualizarIndicadorPendentes();
+        }
 
                 const emojis = {
             entrada: '🟢 Entrada',
@@ -2502,8 +2526,8 @@ async function executarRegistroPonto(tipo, fotoUrl) {
             msgDiv.style.background = '#fee2e2';
             msgDiv.style.color = '#991b1b';
         }
-        msgDiv.innerHTML = `
-            ${emojis[tipo] || tipo} registrada! 🕐 ${horario}
+msgDiv.innerHTML = `
+            ${emojis[tipo] || tipo} registrada! 🕐 ${horarioFinal}
             <br>📍 ${statusEmoji} ${statusTexto}
             ${fotoUrl ? '<br>📸 Foto registrada!' : ''}
         `;
