@@ -1759,6 +1759,7 @@ async function fazerLogin() {
         }
 
         promotorLogado = promotor;
+                localStorage.setItem('sessaoPromotor', JSON.stringify({ id: promotor.id, email: promotor.email }));
         document.getElementById('telaLogin').classList.add('hidden');
         document.getElementById('painelPrincipal').classList.remove('hidden');
         document.getElementById('headerNome').textContent = promotor.nome;
@@ -1776,8 +1777,9 @@ async function fazerLogin() {
     }
 }
 
-function fazerLogout() {
-    promotorLogado = null;
+    function fazerLogout() {
+        localStorage.removeItem('sessaoPromotor');
+        promotorLogado = null;
     localizacaoAtual = null;
     gpsAtivo = false;
     fotoPontoBase64 = null;
@@ -5005,6 +5007,38 @@ async function verRespostasChecklist(checklistId, lojaId) {
         console.error(erro);
     }
 }
+
+// ============================================
+// LOGIN PERSISTENTE
+// ============================================
+async function tentarLoginAutomatico() {
+    const sessaoSalva = localStorage.getItem('sessaoPromotor');
+    if (!sessaoSalva) return;
+
+    try {
+        const sessao = JSON.parse(sessaoSalva);
+        const dados = await apiFetch(`/rest/v1/promotores?id=eq.${sessao.id}&tipo=eq.promotor&select=id,nome,email,senha,ativo,estado,ctps,pis,matricula,admissao,funcao,departamento,data_nascimento,logo_url,validador_habilitado,ferias_inicio,ferias_fim,banco_horas`);
+
+        if (dados.length === 0 || !dados[0].ativo || dados[0].email !== sessao.email) {
+            localStorage.removeItem('sessaoPromotor');
+            return;
+        }
+
+        promotorLogado = dados[0];
+        document.getElementById('telaLogin').classList.add('hidden');
+        document.getElementById('painelPrincipal').classList.remove('hidden');
+        document.getElementById('headerNome').textContent = promotorLogado.nome;
+        document.getElementById('headerAvatar').textContent = promotorLogado.nome.charAt(0).toUpperCase();
+        document.getElementById('sidebarNome').textContent = promotorLogado.nome;
+        document.getElementById('sidebarEmail').textContent = promotorLogado.email;
+
+        carregarDadosIniciais();
+    } catch (erro) {
+        console.warn('Não foi possível retomar a sessão:', erro);
+    }
+}
+
+tentarLoginAutomatico();
 
 // ============================================
 // EVENTOS DE ENTER NO LOGIN
