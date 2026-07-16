@@ -2589,6 +2589,7 @@ async function loginAdmin() {
         }
         
         adminLogado = admin;
+                localStorage.setItem('sessaoAdmin', JSON.stringify({ id: admin.id, email: admin.email }));
         document.getElementById('loginAdmin').classList.add('hidden');
         document.getElementById('painelAdmin').classList.remove('hidden');
         document.getElementById('headerNome').textContent = admin.nome;
@@ -2627,6 +2628,7 @@ async function verificarMaster(adminId) {
 }
 
 function logoutAdmin() {
+    localStorage.removeItem('sessaoAdmin');
     adminLogado = null;
     document.getElementById('painelAdmin').classList.add('hidden');
     document.getElementById('loginAdmin').classList.remove('hidden');
@@ -6999,6 +7001,39 @@ async function excluirAdmMaster(id) {
         showToast('❌ Erro: ' + erro.message, 'error');
     }
 }
+
+// ============================================
+// LOGIN PERSISTENTE (ADMIN)
+// ============================================
+async function tentarLoginAutomaticoAdmin() {
+    const sessaoSalva = localStorage.getItem('sessaoAdmin');
+    if (!sessaoSalva) return;
+
+    try {
+        const sessao = JSON.parse(sessaoSalva);
+        const dados = await apiFetch(`/rest/v1/administradores?id=eq.${sessao.id}&select=id,nome,email,ativo`);
+
+        if (dados.length === 0 || dados[0].ativo === false || dados[0].email !== sessao.email) {
+            localStorage.removeItem('sessaoAdmin');
+            return;
+        }
+
+        adminLogado = dados[0];
+        document.getElementById('loginAdmin').classList.add('hidden');
+        document.getElementById('painelAdmin').classList.remove('hidden');
+        document.getElementById('headerNome').textContent = adminLogado.nome;
+        document.getElementById('headerAvatar').textContent = adminLogado.nome.charAt(0).toUpperCase();
+        document.getElementById('sidebarNome').textContent = adminLogado.nome;
+        document.getElementById('sidebarEmail').textContent = adminLogado.email;
+
+        verificarMaster(adminLogado.id);
+        carregarDadosIniciais();
+    } catch (erro) {
+        console.warn('Não foi possível retomar a sessão do admin:', erro);
+    }
+}
+
+tentarLoginAutomaticoAdmin();
 
 // ============================================
 // INICIALIZAÇÃO
