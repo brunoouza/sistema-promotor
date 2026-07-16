@@ -1830,6 +1830,28 @@
                     <button class="btn btn-sm btn-success" onclick="carregarRelatorio('respostas_checklist')">📋 Respostas do Checklist</button>
                 </div>
 
+<!-- FILTROS PARA PONTOS FORA DO RAIO -->
+                <div id="filtrosForaRaio" style="display:none;background:#f8fafc;padding:16px;border-radius:12px;margin-bottom:16px;">
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:end;">
+                        <div class="form-group" style="min-width:180px;flex:1;">
+                            <label>👤 Promotor</label>
+                            <select id="filtroForaRaioPromotor"><option value="">Todos</option></select>
+                        </div>
+                        <div class="form-group" style="min-width:150px;">
+                            <label>📅 Mês/Ano</label>
+                            <select id="filtroForaRaioMes"></select>
+                        </div>
+                        <div class="form-group" style="min-width:120px;flex:0;">
+                            <label>&nbsp;</label>
+                            <button class="btn btn-primary btn-sm" onclick="aplicarFiltroForaRaio()">🔍 Filtrar</button>
+                        </div>
+                        <div class="form-group" style="min-width:120px;flex:0;">
+                            <label>&nbsp;</label>
+                            <button class="btn btn-danger btn-sm" onclick="gerarPDFForaRaio()">📄 PDF</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- FILTROS PARA RESPOSTAS DO CHECKLIST -->
                 <div id="filtrosRespostas" style="display:none;background:#f8fafc;padding:16px;border-radius:12px;margin-bottom:16px;">
                     <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:end;">
@@ -5170,6 +5192,146 @@ function gerarPDFEspelhoAdmin() {
 }
 
 // ============================================
+// RELATÓRIO: PONTOS FORA DO RAIO (filtro por promotor + PDF)
+// ============================================
+let foraRaioCache = [];
+
+async function carregarFiltrosForaRaio() {
+    try {
+        const promotores = await apiFetch('/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true&order=nome&select=id,nome');
+        const sel = document.getElementById('filtroForaRaioPromotor');
+        sel.innerHTML = '<option value="">Todos</option>';
+        promotores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nome}</option>`; });
+
+        const selMes = document.getElementById('filtroForaRaioMes');
+        selMes.innerHTML = '';
+        const hoje = new Date();
+        const mesAtual = hoje.getMonth() + 1;
+        const anoAtual = hoje.getFullYear();
+        for (let i = 0; i < 6; i++) {
+            let mes = mesAtual - i;
+            let ano = anoAtual;
+            if (mes <= 0) { mes += 12; ano--; }
+            const label = `${String(mes).padStart(2,'0')}/${ano}`;
+            const value = `${ano}-${String(mes).padStart(2,'0')}`;
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = label;
+            if (i === 0) option.selected = true;
+            selMes.appendChild(option);
+        }
+    } catch (erro) {
+        console.error('Erro ao carregar filtros de fora do raio:', erro);
+    }
+}
+
+async function carregarPontosForaRaio() {
+    const div = document.getElementById('relatorioResultado');
+    div.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+
+    try {
+        const promotorId = document.getElementById('filtroForaRaioPromotor').value;
+        const mesAno = document.getElementById('filtroForaRaioMes').value;
+
+        const [anoFim, mesFim] = mesAno.split('-').map(Number);
+        let mesInicio = mesFim - 1;
+        let anoInicio = anoFim;
+        if (mesInicio < 1) { mesInicio = 12; anoInicio = anoFim - 1; }
+        const dataInicio = `${anoInicio}-${String(mesInicio).padStart(2,'0')}-21`;
+        const dataFim = `${anoFim}-${String(mesFim).padStart(2,'0')}-20`;
+
+        let endpoint = `/rest/v1/pontos?dentro_raio=eq.false&data=gte.${dataInicio}&data=lte.${dataFim}&select=*,promotores(nome)&order=data.desc,horario_real.desc`;
+        if (promotorId) endpoint += `&promotor_id=eq.${promotorId}`;
+
+        const dados = await apiFetch(endpoint);
+        for (const p of dados) {
+            const roteiro = await apiFetch(`/rest/v1/roteiros?id=eq.${p.roteiro_id}&select=lojas(nome)`);
+            p.loja_nome = roteiro[0]?.lojas?.nome || 'N/A';
+        }
+        foraRaioCache = dados;
+
+        if (dados.length === 0) {
+            div.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>Nenhum ponto fora do raio no período selecionado.</p></div>`;
+            return;
+        }
+
+        const tipoMap = { entrada: '🟢 Entrada', inicio_almoco: '🍽️ Almoço', fim_almoco: '✅ Volta', saida: '🔴 Saída' };
+        let html = `<h3>📍 Pontos Fora do Raio (${dados.length})</h3><div class="table-wrapper"><table><thead><tr><th>Tipo</th><th>Promotor</th><th>Loja</th><th>Data/Hora</th><th>Foto</th></tr></thead><tbody>`;
+        dados.forEach(p => {
+            const fotoHtml = p.foto_url ? 
+                `<img src="${p.foto_url}" class="foto-ponto-mini" onclick="abrirFotoPonto('${p.foto_url}', '${p.tipo}', '${p.promotores?.nome || 'N/A'}', '${p.data} ${p.horario_real}')" style="cursor:pointer;">` : 
+                '<span style="color:#94a3b8;font-size:11px;">Sem foto</span>';
+            html += `<tr><td>${tipoMap[p.tipo] || p.tipo}</td><td>${p.promotores?.nome || 'N/A'}</td><td>${p.loja_nome || 'N/A'}</td><td>${p.data} ${p.horario_real}</td><td>${fotoHtml}</td></tr>`;
+        });
+        html += '</tbody></table></div>';
+        div.innerHTML = html;
+    } catch (erro) {
+        div.innerHTML = `<div class="loading">❌ ${erro.message}</div>`;
+    }
+}
+
+function aplicarFiltroForaRaio() {
+    carregarPontosForaRaio();
+}
+
+function gerarPDFForaRaio() {
+    if (foraRaioCache.length === 0) {
+        showToast('⚠️ Nenhum ponto fora do raio para gerar PDF.', 'error');
+        return;
+    }
+    showToast('📄 Gerando PDF...', 'info');
+    const win = window.open('', '_blank');
+    if (!win) {
+        showToast('❌ Permita pop-ups para gerar o PDF', 'error');
+        return;
+    }
+
+    const promotorNome = document.getElementById('filtroForaRaioPromotor').selectedOptions[0]?.text || 'Todos';
+    const periodoLabel = document.getElementById('filtroForaRaioMes').selectedOptions[0]?.text || '';
+    const tipoMap = { entrada: '🟢 Entrada', inicio_almoco: '🍽️ Almoço', fim_almoco: '✅ Volta', saida: '🔴 Saída' };
+
+    let tabelaHtml = '';
+    foraRaioCache.forEach(p => {
+        tabelaHtml += `
+            <tr>
+                <td style="border:1px solid #000;padding:4px;font-size:10px;">${tipoMap[p.tipo] || p.tipo}</td>
+                <td style="border:1px solid #000;padding:4px;font-size:10px;">${p.promotores?.nome || 'N/A'}</td>
+                <td style="border:1px solid #000;padding:4px;font-size:10px;">${p.loja_nome || 'N/A'}</td>
+                <td style="border:1px solid #000;padding:4px;font-size:10px;">${p.data} ${p.horario_real}</td>
+            </tr>
+        `;
+    });
+
+    win.document.write(`
+        <html><head><title>Pontos Fora do Raio</title>
+        <style>
+            body { font-family: Arial, sans-serif; padding: 40px; background: white; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .header h1 { font-size: 20px; margin: 0; color: #1a1a2e; }
+            .header p { font-size: 12px; color: #64748b; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            th { background: #2563eb; color: white; padding: 6px; border: 1px solid #000; text-align: center; }
+            td { padding: 4px; border: 1px solid #000; text-align: center; }
+            .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 16px; }
+        </style></head>
+        <body>
+            <div class="header">
+                <h1>📍 RELATÓRIO DE PONTOS FORA DO RAIO</h1>
+                <p>Promotor: ${promotorNome} | Período: ${periodoLabel}</p>
+                <p>Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')} • Total: ${foraRaioCache.length} registros</p>
+            </div>
+            <table>
+                <thead><tr><th>Tipo</th><th>Promotor</th><th>Loja</th><th>Data/Hora</th></tr></thead>
+                <tbody>${tabelaHtml}</tbody>
+            </table>
+            <div class="footer">Relatório gerado em ${new Date().toLocaleDateString('pt-BR')}</div>
+            <script>window.print();<\/script>
+        </body></html>
+    `);
+    win.document.close();
+}
+
+// ============================================
 // RELATÓRIO DE EXPOSIÇÕES
 // ============================================
 async function carregarSelectsExpo() {
@@ -5209,11 +5371,13 @@ async function carregarLojasExpoFiltro() {
 async function carregarRelatorio(tipo) {
     const filtrosExpo = document.getElementById('filtrosExposicoes');
     const filtrosRespostas = document.getElementById('filtrosRespostas');
+    const filtrosForaRaio = document.getElementById('filtrosForaRaio');
     const resultadoDiv = document.getElementById('relatorioResultado');
     
     // Resetar filtros
     filtrosExpo.style.display = 'none';
     filtrosRespostas.style.display = 'none';
+    filtrosForaRaio.style.display = 'none';
     
     if (tipo === 'exposicoes') {
         filtrosExpo.style.display = 'block';
@@ -5227,20 +5391,19 @@ async function carregarRelatorio(tipo) {
         await carregarRespostasChecklist();
         return;
     }
+
+    if (tipo === 'fora_raio') {
+        filtrosForaRaio.style.display = 'block';
+        await carregarFiltrosForaRaio();
+        await carregarPontosForaRaio();
+        return;
+    }
     
-    filtrosExpo.style.display = 'none';
     resultadoDiv.innerHTML = '<div class="loading">⏳ Carregando...</div>';
     
     try {
-        let dados = [], titulo = '';
-        if (tipo === 'fora_raio') {
-            dados = await apiFetch(`/rest/v1/pontos?dentro_raio=eq.false&select=*,promotores(nome)&order=created_at.desc`);
-            titulo = '📍 Pontos Fora do Raio';
-            for (const p of dados) {
-                const roteiro = await apiFetch(`/rest/v1/roteiros?id=eq.${p.roteiro_id}&select=lojas(nome)`);
-                p.loja_nome = roteiro[0]?.lojas?.nome || 'N/A';
-            }
-        } else if (tipo === 'pontos_hoje') {
+let dados = [], titulo = '';
+        if (tipo === 'pontos_hoje') {
             const hoje = new Date().toISOString().split('T')[0];
             dados = await apiFetch(`/rest/v1/pontos?data=eq.${hoje}&select=*,promotores(nome)&order=created_at.desc`);
             titulo = '🕐 Pontos de Hoje';
@@ -5251,7 +5414,7 @@ async function carregarRelatorio(tipo) {
         }
         if (dados.length === 0) { resultadoDiv.innerHTML = `<div class="empty-state"><div class="icon">📭</div>Nenhum registro</div>`; return; }
         let html = `<h3>${titulo}</h3><div class="table-wrapper"><table><thead><tr>`;
-        if (tipo === 'fora_raio' || tipo === 'pontos_hoje') {
+if (tipo === 'pontos_hoje') {
             html += `<th>Tipo</th><th>Promotor</th><th>Loja</th><th>Data/Hora</th><th>Raio</th><th>Foto</th></tr></thead><tbody>`;
             const tipoMap = { entrada: '🟢 Entrada', inicio_almoco: '🍽️ Almoço', fim_almoco: '✅ Volta', saida: '🔴 Saída' };
             dados.forEach(p => {
