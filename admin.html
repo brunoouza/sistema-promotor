@@ -1556,9 +1556,9 @@
                     </div>
                 </div>
 
-                <!-- BOTÕES -->
+<!-- BOTÕES -->
                 <div class="btn-group">
-                    <button class="btn btn-success" onclick="salvarChecklist()">💾 Salvar Checklist</button>
+                    <button class="btn btn-success" id="btnSalvarChecklist" onclick="salvarChecklist()">💾 Salvar Checklist</button>
                     <button class="btn btn-danger" onclick="fecharModal('modalChecklist')">Cancelar</button>
                 </div>
                 <div id="checklistStatus" style="margin-top:12px;font-size:14px;color:#64748b;"></div>
@@ -2004,10 +2004,10 @@
             </div>
         </div>
         <input type="hidden" id="formPromotorId">
-        <div class="btn-group" style="margin-top:16px;">
-            <button class="btn btn-primary" onclick="salvarPromotor()">💾 Salvar</button>
-            <button class="btn btn-danger" onclick="fecharModal('modalPromotor')">Cancelar</button>
-        </div>
+                <div class="btn-group" style="margin-top:16px;">
+                    <button class="btn btn-primary" id="btnSalvarPromotor" onclick="salvarPromotor()">💾 Salvar</button>
+                    <button class="btn btn-danger" onclick="fecharModal('modalPromotor')">Cancelar</button>
+                </div>
     </div>
 </div>
 
@@ -2030,10 +2030,10 @@
             <div class="form-group"><label>Longitude</label><input type="text" id="formLojaLon" placeholder="-46.6333"></div>
         </div>
         <input type="hidden" id="formLojaId">
-        <div class="btn-group" style="margin-top:16px;">
-            <button class="btn btn-primary" onclick="salvarLoja()">💾 Salvar</button>
-            <button class="btn btn-danger" onclick="fecharModal('modalLoja')">Cancelar</button>
-        </div>
+                <div class="btn-group" style="margin-top:16px;">
+                    <button class="btn btn-primary" id="btnSalvarLoja" onclick="salvarLoja()">💾 Salvar</button>
+                    <button class="btn btn-danger" onclick="fecharModal('modalLoja')">Cancelar</button>
+                </div>
     </div>
 </div>
 
@@ -2278,9 +2278,9 @@
                 <input type="number" id="formProdutoPrecoPromo" placeholder="0.00 (opcional)" step="0.01" min="0">
             </div>
         </div>
-        <input type="hidden" id="formProdutoId">
+<input type="hidden" id="formProdutoId">
         <div class="btn-group" style="margin-top:16px;">
-            <button class="btn btn-primary" onclick="salvarProduto()">💾 Salvar</button>
+            <button class="btn btn-primary" id="btnSalvarProduto" onclick="salvarProduto()">💾 Salvar</button>
             <button class="btn btn-danger" onclick="fecharModal('modalProduto')">Cancelar</button>
         </div>
     </div>
@@ -3658,8 +3658,11 @@ async function salvarPromotor() {
     
     if (!nome || !email || !senha) { showToast('⚠️ Preencha nome, email e senha!', 'error'); return; }
     
-    try {
-        const senhaHash = await hashSenha(senha);
+        const btnSalvarPromotor = document.getElementById('btnSalvarPromotor');
+        if (btnSalvarPromotor) btnSalvarPromotor.disabled = true;
+    
+        try {
+            const senhaHash = await hashSenha(senha);
         const dados = { 
             nome, 
             email, 
@@ -3693,7 +3696,11 @@ async function salvarPromotor() {
         carregarValidadorPromotores();
         carregarSelectsEspelhoAdmin();
         carregarAniversariantes();
-    } catch (erro) { showToast('❌ Erro: ' + erro.message, 'error'); }
+} catch (erro) { 
+        showToast('❌ Erro: ' + erro.message, 'error'); 
+    } finally {
+        if (btnSalvarPromotor) btnSalvarPromotor.disabled = false;
+    }
 }
 
 async function togglePromotor(id, ativo) {
@@ -3801,10 +3808,13 @@ async function salvarLoja() {
     const latitude = document.getElementById('formLojaLat').value.trim();
     const longitude = document.getElementById('formLojaLon').value.trim();
     
-    if (!nome) { 
+if (!nome) { 
         showToast('⚠️ O nome da loja é obrigatório!', 'error'); 
         return; 
     }
+    
+    const btnSalvarLoja = document.getElementById('btnSalvarLoja');
+    if (btnSalvarLoja) btnSalvarLoja.disabled = true;
     
     try {
         // ===== CONSTRUIR OBJETO SEM O ID =====
@@ -3851,10 +3861,12 @@ async function salvarLoja() {
         await carregarLojas();
         await carregarDashboard();
         
-    } catch (erro) { 
+} catch (erro) { 
         console.error('❌ Erro detalhado:', erro);
         console.error('❌ Dados enviados:', dados);
         showToast('❌ Erro: ' + erro.message, 'error'); 
+    } finally {
+        if (btnSalvarLoja) btnSalvarLoja.disabled = false;
     }
 }
 
@@ -5618,7 +5630,7 @@ function gerarPDFExposicoes() {
             @media print { .no-print { display: none; } }
         </style></head>
         <body>
-            <div class="header"><div class="logo">🏢</div><h1>📸 RELATÓRIO DE EXPOSIÇÕES</h1><div class="sub">${promotorLogado?.nome || 'Empresa'} • Gerado em ${new Date().toLocaleDateString('pt-BR')}</div></div>
+            <div class="header"><div class="logo">🏢</div><h1>📸 RELATÓRIO DE EXPOSIÇÕES</h1><div class="sub">${adminLogado?.nome || 'Empresa'} • Gerado em ${new Date().toLocaleDateString('pt-BR')}</div></div>
             <div class="filtros-info">Promotor: <strong>${promotorNome}</strong> &nbsp;|&nbsp; Loja: <strong>${lojaNome}</strong> &nbsp;|&nbsp; Total: <strong>${dados.length}</strong> exposições</div>
             <div class="resumo"><span><strong>📊 Total:</strong> ${dados.length}</span><span><strong>📦 Pontas:</strong> ${totalPonta}</span><span><strong>🛒 Check Stands:</strong> ${totalCheck}</span></div>
             ${cardsHtml}
@@ -5970,6 +5982,9 @@ async function salvarChecklist() {
         }
     }
     
+const btnSalvarChecklist = document.getElementById('btnSalvarChecklist');
+    if (btnSalvarChecklist) btnSalvarChecklist.disabled = true;
+
     if (checklistEditandoId) {
         try {
             await apiFetch(`/rest/v1/checklists?id=eq.${checklistEditandoId}`, 'PATCH', {
@@ -5980,9 +5995,10 @@ async function salvarChecklist() {
                 perguntas: checklistPerguntas,
                 atualizado_em: new Date().toISOString()
             });
-            showToast('✅ Checklist atualizado!', 'success');
+showToast('✅ Checklist atualizado!', 'success');
         } catch (erro) {
             showToast('❌ Erro: ' + erro.message, 'error');
+            if (btnSalvarChecklist) btnSalvarChecklist.disabled = false;
             return;
         }
     } else {
@@ -5996,15 +6012,17 @@ async function salvarChecklist() {
                 ativo: true,
                 criado_por: adminLogado?.id || null
             });
-            showToast('✅ Checklist criado!', 'success');
+showToast('✅ Checklist criado!', 'success');
         } catch (erro) {
             showToast('❌ Erro: ' + erro.message, 'error');
+            if (btnSalvarChecklist) btnSalvarChecklist.disabled = false;
             return;
         }
     }
     
     fecharModal('modalChecklist');
     carregarChecklistsAdmin();
+    if (btnSalvarChecklist) btnSalvarChecklist.disabled = false;
 }
 
 // TOGGLE E EXCLUIR CHECKLIST
@@ -6498,10 +6516,13 @@ async function salvarProduto() {
     const preco_venda = parseFloat(document.getElementById('formProdutoPrecoVenda').value) || 0;
     const preco_promocional = parseFloat(document.getElementById('formProdutoPrecoPromo').value) || null;
     
-    if (!marca || !codigo || !descricao || preco_venda <= 0) {
+if (!marca || !codigo || !descricao || preco_venda <= 0) {
         showToast('⚠️ Preencha todos os campos obrigatórios!', 'error');
         return;
     }
+    
+    const btnSalvarProduto = document.getElementById('btnSalvarProduto');
+    if (btnSalvarProduto) btnSalvarProduto.disabled = true;
     
     try {
         const dados = { marca, codigo, descricao, preco_venda, preco_promocional };
@@ -6521,8 +6542,10 @@ async function salvarProduto() {
         
         fecharModal('modalProduto');
         carregarProdutos();
-    } catch (erro) {
+} catch (erro) {
         showToast('❌ Erro: ' + erro.message, 'error');
+    } finally {
+        if (btnSalvarProduto) btnSalvarProduto.disabled = false;
     }
 }
 
