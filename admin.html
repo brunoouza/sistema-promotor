@@ -4401,7 +4401,7 @@ async function salvarEdicaoRoteiro() {
 async function carregarFeriados() {
     const tbody = document.getElementById('tabelaFeriados');
     try {
-        const dados = await apiFetch('/rest/v1/feriados?order=data');
+        const dados = await apiFetch('/rest/v1/feriados?order=data&select=*');
         
         if (dados.length === 0) { 
             tbody.innerHTML = `<tr><td colspan="5" class="empty-state">Nenhum feriado ou reunião cadastrado</td></tr>`; 
@@ -4434,13 +4434,15 @@ async function carregarFeriados() {
             const cor = isReuniao ? 'style="color:#8b5cf6;font-weight:600;"' : '';
             
             // ===== BOTÃO DE AÇÃO (AGORA REUNIÕES TAMBÉM PODEM EXCLUIR) =====
+const statusFeriado = f.ativo !== false ? '<span class="badge badge-success">Ativo</span>' : '<span class="badge badge-gray">Inativo</span>';
+
             let acoes = '';
             if (isReuniao) {
                 // Reunião: pode excluir
                 acoes = `<button class="btn btn-danger btn-sm" onclick="deletarFeriado(${f.id})">🗑️ Excluir</button>`;
             } else {
-                // Feriado: pode excluir
-                acoes = `<button class="btn btn-danger btn-sm" onclick="deletarFeriado(${f.id})">Excluir</button>`;
+                // Feriado: pode alternar ativo/inativo ou excluir
+                acoes = `${statusFeriado} <button class="btn btn-warning btn-sm" onclick="toggleFeriado(${f.id}, ${f.ativo === false})">${f.ativo !== false ? '🔴 Desativar' : '🟢 Ativar'}</button> <button class="btn btn-danger btn-sm" onclick="deletarFeriado(${f.id})">Excluir</button>`;
             }
             
             html += `
@@ -4475,6 +4477,14 @@ async function salvarFeriado() {
     const estado = document.getElementById('formFeriadoEstado').value || null;
     if (!data || !descricao) { showToast('⚠️ Preencha data e descrição!', 'error'); return; }
     try { await apiFetch('/rest/v1/feriados', 'POST', { data, descricao, estado }); showToast('✅ Feriado cadastrado!'); fecharModal('modalFeriado'); carregarFeriados(); } catch (erro) { showToast('❌ Erro: ' + erro.message, 'error'); }
+}
+
+async function toggleFeriado(id, ativo) {
+    try {
+        await apiFetch(`/rest/v1/feriados?id=eq.${id}`, 'PATCH', { ativo });
+        showToast(ativo ? '✅ Feriado ativado!' : '⛔ Feriado desativado!');
+        carregarFeriados();
+    } catch (erro) { showToast('❌ Erro: ' + erro.message, 'error'); }
 }
 
 async function deletarFeriado(id) {
