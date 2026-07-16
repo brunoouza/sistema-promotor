@@ -2157,11 +2157,17 @@ async function buscarReuniaoHoje() {
     try {
         const hoje = new Date().toISOString().split('T')[0];
         const reunioes = await apiFetch(`/rest/v1/feriados?data=eq.${hoje}&tipo=eq.reuniao&loja_id=not.is.null`);
-        const compativel = reunioes.find(r => r.estado === 'ambos' || r.estado === promotorLogado.estado || !r.estado);
-        if (!compativel) return null;
-        const lojas = await apiFetch(`/rest/v1/lojas?id=eq.${compativel.loja_id}`);
-        if (lojas.length === 0) return null;
-        return { reuniao: compativel, loja: lojas[0] };
+        if (reunioes.length === 0) return null;
+
+        for (const reuniao of reunioes) {
+            const participacoes = await apiFetch(`/rest/v1/reuniao_participantes?feriado_id=eq.${reuniao.id}&promotor_id=eq.${promotorLogado.id}`);
+            if (participacoes.length > 0) {
+                const lojas = await apiFetch(`/rest/v1/lojas?id=eq.${reuniao.loja_id}`);
+                if (lojas.length === 0) return null;
+                return { reuniao, loja: lojas[0], participacao: participacoes[0].participacao };
+            }
+        }
+        return null;
     } catch (erro) {
         console.error('Erro ao buscar reunião de hoje:', erro);
         return null;
