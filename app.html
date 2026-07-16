@@ -2473,11 +2473,15 @@ try {
         const reuniaoHoje = await buscarReuniaoHoje();
         let roteiro, loja;
 
-if (reuniaoHoje) {
+let raioFlexivel = false;
+
+        if (reuniaoHoje) {
             // Na entrada, usa a loja da reunião; nas demais marcações, verifica se há loja sugerida pra tarde
             if (tipo === 'entrada') {
                 loja = reuniaoHoje.loja;
                 roteiro = { id: null, lojas: loja, horario_visita: reuniaoHoje.reuniao.horario_inicio || '09:00' };
+                // Quem participa Online não precisa estar fisicamente na loja da reunião
+                if (reuniaoHoje.participacao === 'online') raioFlexivel = true;
             } else {
                 const excecoes = await apiFetch(`/rest/v1/roteiro_excecoes?promotor_id=eq.${promotorLogado.id}&data=eq.${data}&turno=eq.tarde&select=*,lojas(*)`);
                 if (excecoes.length > 0 && excecoes[0].lojas) {
@@ -2510,7 +2514,10 @@ if (reuniaoHoje) {
         let distanciaMetros = 0;
         let distanciaTexto = '';
 
-        if (loja.latitude && loja.longitude) {
+if (raioFlexivel) {
+            dentroRaio = true;
+            distanciaTexto = 'Online - raio não exigido';
+        } else if (loja.latitude && loja.longitude) {
             distanciaMetros = calcularDistancia(
                 localizacaoAtual.lat,
                 localizacaoAtual.lon,
