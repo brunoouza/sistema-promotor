@@ -2712,7 +2712,8 @@ async function carregarDadosIniciais() {
         carregarChecklistsAdmin(),
         carregarCargaHoraria(),
         carregarAdmMaster(),
-        carregarFiltrosRespostas()
+        carregarFiltrosRespostas(),
+        carregarConfiguracaoRaio()
     ]);
 }
 
@@ -7145,9 +7146,37 @@ let raiosConfig = {
 let ultimaLocalizacaoPromotores = {};
 
 // ============================================
+// CONFIGURAÇÃO DE RAIO (SALVA NO BANCO)
+// ============================================
+async function carregarConfiguracaoRaio() {
+    try {
+        const dados = await apiFetch('/rest/v1/configuracoes_sistema?id=eq.1&select=raio_rua,raio_shopping');
+        if (dados.length > 0) {
+            raiosConfig.rua = dados[0].raio_rua || 75;
+            raiosConfig.shopping = dados[0].raio_shopping || 50;
+            document.querySelectorAll('.btn-radio').forEach(btn => {
+                const tipo = btn.dataset.tipo;
+                const raio = parseInt(btn.dataset.raio);
+                if (raio === raiosConfig[tipo]) {
+                    btn.style.borderColor = '#2563eb';
+                    btn.style.background = '#2563eb';
+                    btn.style.color = 'white';
+                } else {
+                    btn.style.borderColor = '#e2e8f0';
+                    btn.style.background = 'white';
+                    btn.style.color = '#1a1a2e';
+                }
+            });
+        }
+    } catch (erro) {
+        console.error('Erro ao carregar configuração de raio:', erro);
+    }
+}
+
+// ============================================
 // ALTERAR RAIO
 // ============================================
-function alterarRaio(tipo, valor) {
+async function alterarRaio(tipo, valor) {
     // Salvar a configuração
     raiosConfig[tipo] = valor;
     
@@ -7165,6 +7194,14 @@ function alterarRaio(tipo, valor) {
         }
     });
     
+// Salvar a alteração no banco de dados
+    try {
+        const campo = tipo === 'rua' ? 'raio_rua' : 'raio_shopping';
+        await apiFetch('/rest/v1/configuracoes_sistema?id=eq.1', 'PATCH', { [campo]: valor });
+    } catch (erro) {
+        console.error('Erro ao salvar configuração de raio no banco:', erro);
+    }
+
     // Se o mapa já estiver carregado, recarregar com os novos raios
     if (mapaGlobal) {
         carregarMapaLojas();
