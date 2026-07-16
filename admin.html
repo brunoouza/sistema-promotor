@@ -6428,6 +6428,9 @@ async function carregarListasProdutos() {
 
 // ABRIR MODAL LISTAS DE PRODUTOS (Seleção Report Rápido)
 async function abrirModalListasProdutos() {
+    // Remove qualquer instância antiga desse modal que tenha ficado no DOM
+    document.querySelectorAll('#modalListasTemp').forEach(el => el.remove());
+
     const listas = await carregarListasProdutos();
     
     if (listas.length === 0) {
@@ -6472,6 +6475,9 @@ async function abrirModalListasProdutos() {
 
 // ABRIR DETALHES DA LISTA
 async function abrirDetalhesLista(listaId) {
+    // Remove qualquer instância antiga desses modais que tenha ficado no DOM
+    document.querySelectorAll('#modalListasTemp, #modalDetalhesLista').forEach(el => el.remove());
+
     try {
         const listas = await apiFetch(`/rest/v1/listas_produtos?id=eq.${listaId}&select=*`);
         if (listas.length === 0) return;
@@ -6524,12 +6530,9 @@ async function abrirDetalhesLista(listaId) {
             </div>
         `;
         
-        const tempDiv = document.createElement('div');
+const tempDiv = document.createElement('div');
         tempDiv.innerHTML = html;
         document.body.appendChild(tempDiv);
-        
-        const modalListas = document.getElementById('modalListasTemp');
-        if (modalListas) modalListas.remove();
         
     } catch (erro) {
         showToast('❌ Erro: ' + erro.message, 'error');
@@ -6551,10 +6554,7 @@ async function removerProdutoDaLista(listaId, produtoId) {
             produtos_ids: novosIds
         });
         
-        showToast('✅ Produto removido!', 'success');
-        
-        const modal = document.getElementById('modalDetalhesLista');
-        if (modal) modal.remove();
+showToast('✅ Produto removido!', 'success');
         abrirDetalhesLista(listaId);
         
     } catch (erro) {
@@ -6567,14 +6567,9 @@ async function excluirLista(listaId) {
     if (!confirm('⚠️ Tem certeza que quer EXCLUIR esta lista completa?')) return;
     
     try {
-        await apiFetch(`/rest/v1/listas_produtos?id=eq.${listaId}`, 'DELETE');
+await apiFetch(`/rest/v1/listas_produtos?id=eq.${listaId}`, 'DELETE');
         showToast('🗑️ Lista excluída!', 'success');
-        
-        const modal = document.getElementById('modalDetalhesLista');
-        if (modal) modal.remove();
-        
-        const modalListas = document.getElementById('modalListasTemp');
-        if (modalListas) modalListas.remove();
+        document.querySelectorAll('#modalDetalhesLista, #modalListasTemp').forEach(el => el.remove());
         
     } catch (erro) {
         showToast('❌ Erro: ' + erro.message, 'error');
