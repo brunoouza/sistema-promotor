@@ -1064,6 +1064,38 @@
         margin-bottom: 8px;
     }
 }
+
+/* ===== SUB-ABAS DA ABA LOJAS ===== */
+.lojas-subtabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    background: #e2e8f0;
+    border-radius: 10px;
+    padding: 4px;
+}
+.lojas-subtabs button {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.3s;
+    color: #64748b;
+}
+.lojas-subtabs button.ativo {
+    background: white;
+    color: #1a1a2e;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.lojas-subtabs button:hover:not(.ativo) {
+    background: rgba(255,255,255,0.5);
+}
+.lojas-sub-content { display: none; }
+.lojas-sub-content.active { display: block; }
     </style>
 </head>
 <body>
@@ -1573,61 +1605,72 @@
             </div>
         </div>
 
-        <div id="tabLojas" class="tab-content">
+<div id="tabLojas" class="tab-content">
             <div class="card">
-                <div class="flex-between"><h2>🏪 Gerenciar Lojas</h2><button class="btn btn-success" onclick="abrirModalLoja()">+ Nova Loja</button></div>
-                <div class="table-wrapper"><table><thead><tr><th>ID</th><th>Nome</th><th>Endereço</th><th>Cidade</th><th>UF</th><th>Tipo</th><th>Coordenadas</th><th>Ações</th></tr></thead><tbody id="tabelaLojas"><tr><td colspan="8" class="loading">Carregando...</td></tr></tbody></table></div>
-            </div>
+                <div class="flex-between"><h2>🏪 Gerenciar Lojas</h2></div>
 
-        <!-- ========================================== -->
-        <!-- SUB-ABA: MAPA DE LOJAS E PROMOTORES -->
-        <!-- ========================================== -->
-        <div style="margin-top:24px;border-top:2px solid #e2e8f0;padding-top:16px;">
-            <div class="flex-between" style="margin-bottom:12px;">
-                <h2>🗺️ Mapa de Lojas e Promotores</h2>
-                <div style="display:flex;gap:8px;align-items:center;font-size:13px;">
-                    <span>👥 Promotores:</span>
-                    <span id="contadorLogados" style="color:#22c55e;font-weight:700;">🟢 0 logados</span>
-                    <span id="contadorOffline" style="color:#ef4444;font-weight:700;">🔴 0 offline</span>
+                <!-- SUB-ABAS -->
+                <div class="lojas-subtabs">
+                    <button class="ativo" onclick="abrirSubTabLojas('subLojasLista')">📋 Lista de Lojas</button>
+                    <button onclick="abrirSubTabLojas('subLojasMapa')">🗺️ Mapa</button>
                 </div>
-            </div>
 
-            <!-- SELETORES DE RAIO -->
-            <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;background:#f8fafc;padding:16px;border-radius:12px;">
-                <div>
-                    <label style="font-weight:600;font-size:13px;color:#334155;display:block;margin-bottom:4px;">🏪 Lojas de Rua</label>
-                    <div style="display:flex;gap:6px;">
-                        <button class="btn btn-sm btn-radio" data-tipo="rua" data-raio="50" onclick="alterarRaio('rua', 50)" style="padding:6px 16px;border:2px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-weight:600;font-size:12px;">50m</button>
-                        <button class="btn btn-sm btn-radio" data-tipo="rua" data-raio="75" onclick="alterarRaio('rua', 75)" style="padding:6px 16px;border:2px solid #2563eb;border-radius:8px;background:#2563eb;color:white;cursor:pointer;font-weight:600;font-size:12px;">75m</button>
-                        <button class="btn btn-sm btn-radio" data-tipo="rua" data-raio="100" onclick="alterarRaio('rua', 100)" style="padding:6px 16px;border:2px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-weight:600;font-size:12px;">100m</button>
+                <!-- SUB-ABA: LISTA DE LOJAS -->
+                <div id="subLojasLista" class="lojas-sub-content active">
+                    <div style="margin-bottom:12px;text-align:right;">
+                        <button class="btn btn-success" onclick="abrirModalLoja()">+ Nova Loja</button>
+                    </div>
+                    <div class="table-wrapper"><table><thead><tr><th>ID</th><th>Nome</th><th>Endereço</th><th>Cidade</th><th>UF</th><th>Tipo</th><th>Coordenadas</th><th>Ações</th></tr></thead><tbody id="tabelaLojas"><tr><td colspan="8" class="loading">Carregando...</td></tr></tbody></table></div>
+                </div>
+
+                <!-- SUB-ABA: MAPA DE LOJAS E PROMOTORES -->
+                <div id="subLojasMapa" class="lojas-sub-content">
+                    <div class="flex-between" style="margin-bottom:12px;">
+                        <h2>🗺️ Mapa de Lojas e Promotores</h2>
+                        <div style="display:flex;gap:8px;align-items:center;font-size:13px;">
+                            <span>👥 Promotores:</span>
+                            <span id="contadorLogados" style="color:#22c55e;font-weight:700;">🟢 0 logados</span>
+                            <span id="contadorOffline" style="color:#ef4444;font-weight:700;">🔴 0 offline</span>
+                        </div>
+                    </div>
+
+                    <!-- SELETORES DE RAIO -->
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;background:#f8fafc;padding:16px;border-radius:12px;">
+                        <div>
+                            <label style="font-weight:600;font-size:13px;color:#334155;display:block;margin-bottom:4px;">🏪 Lojas de Rua</label>
+                            <div style="display:flex;gap:6px;">
+                                <button class="btn btn-sm btn-radio" data-tipo="rua" data-raio="50" onclick="alterarRaio('rua', 50)" style="padding:6px 16px;border:2px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-weight:600;font-size:12px;">50m</button>
+                                <button class="btn btn-sm btn-radio" data-tipo="rua" data-raio="75" onclick="alterarRaio('rua', 75)" style="padding:6px 16px;border:2px solid #2563eb;border-radius:8px;background:#2563eb;color:white;cursor:pointer;font-weight:600;font-size:12px;">75m</button>
+                                <button class="btn btn-sm btn-radio" data-tipo="rua" data-raio="100" onclick="alterarRaio('rua', 100)" style="padding:6px 16px;border:2px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-weight:600;font-size:12px;">100m</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label style="font-weight:600;font-size:13px;color:#334155;display:block;margin-bottom:4px;">🛍️ Lojas de Shopping</label>
+                            <div style="display:flex;gap:6px;">
+                                <button class="btn btn-sm btn-radio" data-tipo="shopping" data-raio="50" onclick="alterarRaio('shopping', 50)" style="padding:6px 16px;border:2px solid #2563eb;border-radius:8px;background:#2563eb;color:white;cursor:pointer;font-weight:600;font-size:12px;">50m</button>
+                                <button class="btn btn-sm btn-radio" data-tipo="shopping" data-raio="75" onclick="alterarRaio('shopping', 75)" style="padding:6px 16px;border:2px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-weight:600;font-size:12px;">75m</button>
+                                <button class="btn btn-sm btn-radio" data-tipo="shopping" data-raio="100" onclick="alterarRaio('shopping', 100)" style="padding:6px 16px;border:2px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-weight:600;font-size:12px;">100m</button>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:end;gap:8px;">
+                            <button class="btn btn-primary" onclick="carregarMapaLojas()" style="padding:8px 20px;">🔄 Atualizar Mapa</button>
+                        </div>
+                    </div>
+
+                    <!-- MAPA -->
+                    <div id="mapaLojasContainer" class="mapa-container" style="height:500px;border-radius:12px;border:2px solid #e2e8f0;margin-bottom:12px;"></div>
+
+                    <!-- LEGENDA -->
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#64748b;padding:8px 12px;background:#f8fafc;border-radius:8px;">
+                        <span>🏪 <strong>Loja</strong></span>
+                        <span>👤 <strong>Promotor</strong></span>
+                        <span>🟢 <strong>Dentro do raio</strong></span>
+                        <span>🔴 <strong>Fora do raio</strong></span>
+                        <span>⭕ <strong>Raio de abrangência</strong></span>
+                        <span style="color:#94a3b8;">💡 Passe o mouse sobre os ícones para ver detalhes</span>
                     </div>
                 </div>
-                <div>
-                    <label style="font-weight:600;font-size:13px;color:#334155;display:block;margin-bottom:4px;">🛍️ Lojas de Shopping</label>
-                    <div style="display:flex;gap:6px;">
-                        <button class="btn btn-sm btn-radio" data-tipo="shopping" data-raio="50" onclick="alterarRaio('shopping', 50)" style="padding:6px 16px;border:2px solid #2563eb;border-radius:8px;background:#2563eb;color:white;cursor:pointer;font-weight:600;font-size:12px;">50m</button>
-                        <button class="btn btn-sm btn-radio" data-tipo="shopping" data-raio="75" onclick="alterarRaio('shopping', 75)" style="padding:6px 16px;border:2px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-weight:600;font-size:12px;">75m</button>
-                        <button class="btn btn-sm btn-radio" data-tipo="shopping" data-raio="100" onclick="alterarRaio('shopping', 100)" style="padding:6px 16px;border:2px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-weight:600;font-size:12px;">100m</button>
-                    </div>
-                </div>
-                <div style="display:flex;align-items:end;gap:8px;">
-                    <button class="btn btn-primary" onclick="carregarMapaLojas()" style="padding:8px 20px;">🔄 Atualizar Mapa</button>
-                </div>
             </div>
-
-            <!-- MAPA -->
-            <div id="mapaLojasContainer" class="mapa-container" style="height:500px;border-radius:12px;border:2px solid #e2e8f0;margin-bottom:12px;"></div>
-
-            <!-- LEGENDA -->
-            <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#64748b;padding:8px 12px;background:#f8fafc;border-radius:8px;">
-                <span>🏪 <strong>Loja</strong></span>
-                <span>👤 <strong>Promotor</strong></span>
-                <span>🟢 <strong>Dentro do raio</strong></span>
-                <span>🔴 <strong>Fora do raio</strong></span>
-                <span>⭕ <strong>Raio de abrangência</strong></span>
-                <span style="color:#94a3b8;">💡 Passe o mouse sobre os ícones para ver detalhes</span>
-            </div>
-        </div>
         </div>
 
         <div id="tabRoteiros" class="tab-content">
@@ -2524,6 +2567,15 @@ function abrirTab(tabId) {
     if (tabId === 'tabChecklistAdmin') { carregarChecklistsAdmin(); }
     if (tabId === 'tabProdutos') { carregarProdutos(); }
     if (tabId === 'tabAdmMaster') { carregarAdmMaster(); }
+}
+
+function abrirSubTabLojas(tabId) {
+    document.querySelectorAll('.lojas-sub-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.querySelectorAll('.lojas-subtabs button').forEach(el => el.classList.remove('ativo'));
+    const btn = document.querySelector(`.lojas-subtabs button[onclick="abrirSubTabLojas('${tabId}')"]`);
+    if (btn) btn.classList.add('ativo');
+    if (tabId === 'subLojasMapa') carregarMapaLojas();
 }
 
 function fecharModal(id) { document.getElementById(id).classList.remove('active'); }
