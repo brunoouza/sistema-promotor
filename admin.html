@@ -2097,6 +2097,29 @@
 </div>
 
 <!-- ========================================== -->
+<!-- MODAL SUGESTÃO DE LOJA DA TARDE -->
+<!-- ========================================== -->
+<div id="modalSugestaoTarde" class="modal-overlay">
+    <div class="modal-content" style="max-width:600px;">
+        <div class="flex-between">
+            <h2>🌅 Sugestão de Loja da Tarde</h2>
+            <button class="btn btn-danger btn-sm" onclick="fecharModal('modalSugestaoTarde')">✕ Fechar</button>
+        </div>
+        <p style="color:#64748b;font-size:14px;margin:8px 0 16px;">
+            A reunião é presencial. Confira ou ajuste a loja que cada promotor deve visitar à tarde, depois da reunião.
+        </p>
+        <div id="listaSugestaoTarde" style="max-height:400px;overflow-y:auto;">
+            <div class="loading"><div class="spinner"></div>Calculando sugestões...</div>
+        </div>
+        <div class="btn-group" style="margin-top:16px;">
+            <button class="btn btn-success" onclick="confirmarSugestoesTarde()">💾 Confirmar Sugestões</button>
+            <button class="btn btn-danger" onclick="fecharModal('modalSugestaoTarde')">Pular esta etapa</button>
+        </div>
+        <div id="sugestaoTardeStatus" style="margin-top:12px;font-size:14px;color:#64748b;"></div>
+    </div>
+</div>
+
+<!-- ========================================== -->
 <!-- MODAL AGENDAR REUNIÃO -->
 <!-- ========================================== -->
 <div id="modalReuniao" class="modal-overlay">
@@ -7549,21 +7572,116 @@ async function salvarReuniao() {
         
         console.log('📝 Dados da reunião:', dados);
         
-        await apiFetch('/rest/v1/feriados', 'POST', dados);
+await apiFetch('/rest/v1/feriados', 'POST', dados);
         
         statusDiv.textContent = '✅ Reunião agendada!';
         statusDiv.style.color = '#22c55e';
         showToast('✅ Reunião agendada com sucesso!', 'success');
         
-        setTimeout(() => {
-            fecharModal('modalReuniao');
-            carregarFeriados();
-        }, 1500);
+        fecharModal('modalReuniao');
+        carregarFeriados();
+
+        // Se for presencial (ou mista), sugerir a loja da tarde antes de finalizar
+        if (participacao === 'presencial' || participacao === 'ambos') {
+            await sugerirLojasTarde(data, parseInt(lojaId), estadoPromotores);
+        }
         
     } catch (erro) {
         console.error('❌ Erro:', erro);
         statusDiv.textContent = '❌ ' + erro.message;
         statusDiv.style.color = '#ef4444';
+        showToast('❌ Erro: ' + erro.message, 'error');
+    }
+}
+
+// ============================================
+// SUGESTÃO DE LOJA DA TARDE (APÓS REUNIÃO PRESENCIAL)
+// ============================================
+let sugestoesTardeAtuais = [];
+
+async function sugerirLojasTarde(data, lojaReuniaoId, estadoPromotores) {
+    const div = document.getElementById('listaSugestaoTarde');
+    document.getElementById('sugestaoTardeStatus').textContent = '';
+    document.getElementById('modalSugestaoTarde').classList.add('active');
+    div.innerHTML = '<div class="loading"><div class="spinner"></div>Calculando sugestões...</div>';
+
+    try {
+        const lojaReuniao = (await apiFetch(`/rest/v1/lojas?id=eq.${lojaReuniaoId}`))[0];
+        const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+        const diaSemana = diasSemana[new Date(data + 'T00:00:00').getDay()];
+
+        let filtroEstado = '';
+        if (estadoPromotores !== 'ambos') filtroEstado = `&estado=eq.${estadoPromotores}`;
+        const promotores = await apiFetch(`/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true${filtroEstado}&select=id,nome`);
+
+        sugestoesTardeAtuais = [];
+
+        if (promotores.length === 0) {
+            div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum promotor encontrado para este estado</p>';
+            return;
+        }
+
+        let html = '';
+        for (const p of promotores) {
+            const roteiros = await apiFetch(`/rest/v1/roteiros?promotor_id=eq.${p.id}&dia_semana=eq.${diaSemana}&select=*,lojas(*)`);
+            const lojasRoteiro = roteiros.map(r => r.lojas).filter(l => l && l.id !== lojaReuniaoId && l.latitude && l.longitude);
+
+            let sugeridaId = '';
+            if (lojasRoteiro.length > 0 && lojaReuniao?.latitude && lojaReuniao?.longitude) {
+                let menor = Infinity;
+                lojasRoteiro.forEach(l => {
+                    const dist = calcularDistancia(parseFloat(lojaReuniao.latitude), parseFloat(lojaReuniao.longitude), parseFloat(l.latitude), parseFloat(l.longitude));
+                    if (dist < menor) { menor = dist; sugeridaId = l.id; }
+                });
+            }
+
+            const opcoes = lojasRoteiro.map(l => `<option value="${l.id}" ${l.id === sugeridaId ? 'selected' : ''}>${l.nome}</option>`).join('');
+
+            html += `
+                <div style="background:#f8fafc;padding:12px;border-radius:8px;margin-bottom:8px;">
+                    <div style="font-weight:600;margin-bottom:6px;">👤 ${p.nome}</div>
+                    <select class="select-sugestao-tarde" data-promotor-id="${p.id}" style="width:100%;padding:8px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:14px;">
+                        <option value="">Nenhuma (não sugerir loja da tarde)</option>
+                        ${opcoes}
+                    </select>
+                </div>
+            `;
+        }
+
+        div.innerHTML = html || '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum promotor com roteiro nesse dia</p>';
+        sugestoesTardeAtuais = { data, promotores };
+
+    } catch (erro) {
+        div.innerHTML = `<p style="color:#ef4444;text-align:center;">❌ ${erro.message}</p>`;
+        console.error(erro);
+    }
+}
+
+async function confirmarSugestoesTarde() {
+    const statusDiv = document.getElementById('sugestaoTardeStatus');
+    const selects = document.querySelectorAll('.select-sugestao-tarde');
+    statusDiv.textContent = '⏳ Salvando...';
+
+    let salvos = 0;
+    try {
+        for (const sel of selects) {
+            const lojaId = sel.value;
+            if (!lojaId) continue;
+            const promotorId = parseInt(sel.dataset.promotorId);
+            await apiFetch('/rest/v1/roteiro_excecoes', 'POST', {
+                promotor_id: promotorId,
+                data: sugestoesTardeAtuais.data,
+                loja_id: parseInt(lojaId),
+                turno: 'tarde',
+                motivo: 'Sugestão automática após reunião presencial'
+            });
+            salvos++;
+        }
+        statusDiv.textContent = `✅ ${salvos} loja(s) da tarde confirmada(s)!`;
+        showToast('✅ Sugestões de loja da tarde salvas!', 'success');
+        setTimeout(() => fecharModal('modalSugestaoTarde'), 1200);
+    } catch (erro) {
+        statusDiv.textContent = '❌ Erro: ' + erro.message;
         showToast('❌ Erro: ' + erro.message, 'error');
     }
 }
