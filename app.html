@@ -2177,8 +2177,8 @@ async function carregarLojaDoDia() {
         const diaSemana = diasSemana[hoje.getDay()];
         const dataHoje = hoje.toISOString().split('T')[0];
 
-        const feriados = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=eq.${promotorLogado.estado}`);
-        const feriadoNacional = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=is.null`);
+        const feriados = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=eq.${promotorLogado.estado}&ativo=eq.true`);
+        const feriadoNacional = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=is.null&ativo=eq.true`);
 
         if (feriados.length > 0 || feriadoNacional.length > 0) {
             nomeEl.textContent = '🎉 Hoje é feriado!';
@@ -2398,8 +2398,8 @@ async function executarRegistroPonto(tipo, fotoUrl) {
 
     // ===== 2. VERIFICAR FERIADO =====
     const dataHoje = hoje.toISOString().split('T')[0];
-    const feriados = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=eq.${promotorLogado.estado}`);
-    const feriadoNacional = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=is.null`);
+        const feriados = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=eq.${promotorLogado.estado}&ativo=eq.true`);
+        const feriadoNacional = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=is.null&ativo=eq.true`);
 
     if (feriados.length > 0 || feriadoNacional.length > 0) {
         msgDiv.style.display = 'block';
@@ -3566,7 +3566,7 @@ async function carregarEspelhoPonto() {
 
         // ===== CORREÇÃO 2: buscar TODOS os feriados do período de uma vez só =====
         const feriadosPeriodo = await apiFetch(
-            `/rest/v1/feriados?data=gte.${dataInicio}&data=lte.${dataFim}&or=(estado.eq.${promotorLogado.estado},estado.is.null)`
+            `/rest/v1/feriados?data=gte.${dataInicio}&data=lte.${dataFim}&or=(estado.eq.${promotorLogado.estado},estado.is.null)&ativo=eq.true`
         );
         const feriadosMap = {};
         feriadosPeriodo.forEach(f => {
@@ -4258,7 +4258,7 @@ async function getLojaDoDia() {
         const diaSemana = diasSemana[hoje.getDay()];
         const dataHoje = hoje.toISOString().split('T')[0];
         
-        const feriados = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}`);
+        const feriados = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&ativo=eq.true`);
         if (feriados.length > 0) return null;
         
         const roteiros = await apiFetch(
