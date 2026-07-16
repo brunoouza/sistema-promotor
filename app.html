@@ -2467,9 +2467,21 @@ try {
         const reuniaoHoje = await buscarReuniaoHoje();
         let roteiro, loja;
 
-        if (reuniaoHoje) {
-            loja = reuniaoHoje.loja;
-            roteiro = { id: null, lojas: loja, horario_visita: reuniaoHoje.reuniao.horario_inicio || '09:00' };
+if (reuniaoHoje) {
+            // Na entrada, usa a loja da reunião; nas demais marcações, verifica se há loja sugerida pra tarde
+            if (tipo === 'entrada') {
+                loja = reuniaoHoje.loja;
+                roteiro = { id: null, lojas: loja, horario_visita: reuniaoHoje.reuniao.horario_inicio || '09:00' };
+            } else {
+                const excecoes = await apiFetch(`/rest/v1/roteiro_excecoes?promotor_id=eq.${promotorLogado.id}&data=eq.${data}&turno=eq.tarde&select=*,lojas(*)`);
+                if (excecoes.length > 0 && excecoes[0].lojas) {
+                    loja = excecoes[0].lojas;
+                    roteiro = { id: null, lojas: loja, horario_visita: reuniaoHoje.reuniao.horario_fim || '14:00' };
+                } else {
+                    loja = reuniaoHoje.loja;
+                    roteiro = { id: null, lojas: loja, horario_visita: reuniaoHoje.reuniao.horario_inicio || '09:00' };
+                }
+            }
         } else {
             const roteiros = await apiFetch(
                 `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&dia_semana=eq.${diaSemana}&select=*,lojas(*)`
