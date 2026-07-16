@@ -2162,24 +2162,13 @@
                 <input type="time" id="formReuniaoHorarioFim" value="10:00">
             </div>
 
-            <!-- CAMPO 5: Estado dos Promotores (NOVO) -->
+<!-- CAMPO 5: Participantes (individual, Presencial ou Online) -->
             <div class="form-group">
-                <label>📍 Estado dos Promotores *</label>
-                <select id="formReuniaoEstado">
-                    <option value="ambos">Ambos (SP e RJ)</option>
-                    <option value="SP">São Paulo (SP)</option>
-                    <option value="RJ">Rio de Janeiro (RJ)</option>
-                </select>
-            </div>
-
-            <!-- CAMPO 6: Tipo de Participação (NOVO) -->
-            <div class="form-group">
-                <label>💻 Tipo de Participação *</label>
-                <select id="formReuniaoParticipacao">
-                    <option value="presencial">Presencial</option>
-                    <option value="online">Online</option>
-                    <option value="ambos">Presencial e Online</option>
-                </select>
+                <label>👥 Participantes *</label>
+                <div style="font-size:12px;color:#94a3b8;margin-bottom:6px;">Marque quem participa e escolha Presencial ou Online para cada um</div>
+                <div id="listaParticipantesReuniao" style="max-height:250px;overflow-y:auto;background:#f8fafc;border-radius:8px;padding:8px;">
+                    <p style="color:#94a3b8;text-align:center;padding:12px 0;">Carregando promotores...</p>
+                </div>
             </div>
 
             <!-- CAMPO 7: Título -->
@@ -2519,12 +2508,13 @@ let checklistEditandoId = null;
 // ============================================
 // FUNÇÕES DE API
 // ============================================
-async function apiFetch(endpoint, metodo = 'GET', dados = null) {
+async function apiFetch(endpoint, metodo = 'GET', dados = null, retornarRepresentacao = false) {
     const headers = {
         'apikey': SUPABASE_KEY,
         'Authorization': `Bearer ${SUPABASE_KEY}`,
         'Content-Type': 'application/json'
     };
+    if (retornarRepresentacao) headers['Prefer'] = 'return=representation';
     const config = { method: metodo, headers: headers };
     if (dados && (metodo === 'POST' || metodo === 'PATCH' || metodo === 'PUT')) {
         config.body = JSON.stringify(dados);
@@ -7473,18 +7463,50 @@ function abrirModalReuniao() {
     document.getElementById('formReuniaoData').value = '';
     document.getElementById('formReuniaoHorarioInicio').value = '09:00';
     document.getElementById('formReuniaoHorarioFim').value = '10:00';
-    document.getElementById('formReuniaoEstado').value = 'ambos';
-    document.getElementById('formReuniaoParticipacao').value = 'presencial';
     document.getElementById('formReuniaoTitulo').value = '';
     document.getElementById('formReuniaoDescricao').value = '';
     document.getElementById('reuniaoStatus').textContent = '';
     
-    // Carregar as lojas no select
+    // Carregar as lojas no select e os participantes
     carregarLojasReuniao();
+    carregarParticipantesReuniao();
     
     // Abrir o modal
     document.getElementById('modalReuniao').classList.add('active');
     console.log('✅ Modal de reunião aberto!');
+}
+
+async function carregarParticipantesReuniao() {
+    const div = document.getElementById('listaParticipantesReuniao');
+    div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:12px 0;">Carregando promotores...</p>';
+    try {
+        const promotores = await apiFetch('/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true&order=nome&select=id,nome');
+        if (promotores.length === 0) {
+            div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:12px 0;">Nenhum promotor ativo</p>';
+            return;
+        }
+        let html = '';
+        promotores.forEach(p => {
+            html += `
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-bottom:1px solid #e2e8f0;">
+                    <input type="checkbox" class="participante-checkbox" data-promotor-id="${p.id}" onchange="toggleParticipanteSelect(${p.id}, this.checked)">
+                    <span style="flex:1;font-size:14px;">${p.nome}</span>
+                    <select class="participante-tipo" data-promotor-id="${p.id}" disabled style="padding:4px 8px;border:2px solid #e2e8f0;border-radius:6px;font-size:12px;">
+                        <option value="presencial">Presencial</option>
+                        <option value="online">Online</option>
+                    </select>
+                </div>
+            `;
+        });
+        div.innerHTML = html;
+    } catch (erro) {
+        div.innerHTML = `<p style="color:#ef4444;text-align:center;">❌ ${erro.message}</p>`;
+    }
+}
+
+function toggleParticipanteSelect(promotorId, checked) {
+    const select = document.querySelector(`.participante-tipo[data-promotor-id="${promotorId}"]`);
+    if (select) select.disabled = !checked;
 }
 
 // ============================================
@@ -7527,11 +7549,17 @@ async function salvarReuniao() {
     const data = document.getElementById('formReuniaoData').value;
     const horarioInicio = document.getElementById('formReuniaoHorarioInicio').value;
     const horarioFim = document.getElementById('formReuniaoHorarioFim').value;
-    const estadoPromotores = document.getElementById('formReuniaoEstado').value;
-    const participacao = document.getElementById('formReuniaoParticipacao').value;
     const titulo = document.getElementById('formReuniaoTitulo').value.trim();
     const descricao = document.getElementById('formReuniaoDescricao').value.trim();
     const statusDiv = document.getElementById('reuniaoStatus');
+
+    // ===== COLETAR PARTICIPANTES SELECIONADOS =====
+    const participantes = [];
+    document.querySelectorAll('.participante-checkbox:checked').forEach(cb => {
+        const promotorId = parseInt(cb.dataset.promotorId);
+        const select = document.querySelector(`.participante-tipo[data-promotor-id="${promotorId}"]`);
+        participantes.push({ promotor_id: promotorId, participacao: select ? select.value : 'presencial' });
+    });
     
     // VALIDAÇÕES
     if (!lojaId) {
@@ -7540,18 +7568,22 @@ async function salvarReuniao() {
         showToast('⚠️ Selecione uma loja!', 'error');
         return;
     }
-    
     if (!data) {
         statusDiv.textContent = '⚠️ Selecione a data!';
         statusDiv.style.color = '#ef4444';
         showToast('⚠️ Selecione a data!', 'error');
         return;
     }
-    
     if (!titulo) {
         statusDiv.textContent = '⚠️ Digite um título!';
         statusDiv.style.color = '#ef4444';
         showToast('⚠️ Digite o título!', 'error');
+        return;
+    }
+    if (participantes.length === 0) {
+        statusDiv.textContent = '⚠️ Selecione pelo menos um participante!';
+        statusDiv.style.color = '#ef4444';
+        showToast('⚠️ Selecione pelo menos um participante!', 'error');
         return;
     }
     
@@ -7559,10 +7591,12 @@ async function salvarReuniao() {
         statusDiv.textContent = '⏳ Agendando...';
         statusDiv.style.color = '#eab308';
         
-// ===== DADOS PARA SALVAR =====
+        const qtdPresencial = participantes.filter(p => p.participacao === 'presencial').length;
+        const qtdOnline = participantes.filter(p => p.participacao === 'online').length;
+
         const dados = {
             data: data,
-            descricao: `📅 REUNIÃO: ${titulo}${descricao ? ' - ' + descricao : ''} | 🕐 ${horarioInicio} às ${horarioFim} | 📍 ${estadoPromotores} | 💻 ${participacao}`,
+            descricao: `📅 REUNIÃO: ${titulo}${descricao ? ' - ' + descricao : ''} | 🕐 ${horarioInicio} às ${horarioFim} | 👥 ${qtdPresencial} presencial, ${qtdOnline} online`,
             estado: null,
             loja_id: parseInt(lojaId),
             horario_inicio: horarioInicio || '09:00',
@@ -7570,9 +7604,18 @@ async function salvarReuniao() {
             tipo: 'reuniao'
         };
         
-        console.log('📝 Dados da reunião:', dados);
-        
-await apiFetch('/rest/v1/feriados', 'POST', dados);
+        const criada = await apiFetch('/rest/v1/feriados', 'POST', dados, true);
+        const feriadoId = Array.isArray(criada) && criada[0] ? criada[0].id : null;
+        if (!feriadoId) throw new Error('Não foi possível obter o ID da reunião criada');
+
+        // ===== SALVAR PARTICIPANTES =====
+        for (const p of participantes) {
+            await apiFetch('/rest/v1/reuniao_participantes', 'POST', {
+                feriado_id: feriadoId,
+                promotor_id: p.promotor_id,
+                participacao: p.participacao
+            });
+        }
         
         statusDiv.textContent = '✅ Reunião agendada!';
         statusDiv.style.color = '#22c55e';
@@ -7581,9 +7624,10 @@ await apiFetch('/rest/v1/feriados', 'POST', dados);
         fecharModal('modalReuniao');
         carregarFeriados();
 
-        // Se for presencial (ou mista), sugerir a loja da tarde antes de finalizar
-        if (participacao === 'presencial' || participacao === 'ambos') {
-            await sugerirLojasTarde(data, parseInt(lojaId), estadoPromotores);
+        // Sugerir loja da tarde apenas para quem é presencial
+        const presenciais = participantes.filter(p => p.participacao === 'presencial').map(p => p.promotor_id);
+        if (presenciais.length > 0) {
+            await sugerirLojasTarde(data, parseInt(lojaId), presenciais);
         }
         
     } catch (erro) {
@@ -7599,7 +7643,7 @@ await apiFetch('/rest/v1/feriados', 'POST', dados);
 // ============================================
 let sugestoesTardeAtuais = [];
 
-async function sugerirLojasTarde(data, lojaReuniaoId, estadoPromotores) {
+async function sugerirLojasTarde(data, lojaReuniaoId, promotorIds) {
     const div = document.getElementById('listaSugestaoTarde');
     document.getElementById('sugestaoTardeStatus').textContent = '';
     document.getElementById('modalSugestaoTarde').classList.add('active');
@@ -7610,9 +7654,8 @@ async function sugerirLojasTarde(data, lojaReuniaoId, estadoPromotores) {
         const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
         const diaSemana = diasSemana[new Date(data + 'T00:00:00').getDay()];
 
-        let filtroEstado = '';
-        if (estadoPromotores !== 'ambos') filtroEstado = `&estado=eq.${estadoPromotores}`;
-        const promotores = await apiFetch(`/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true${filtroEstado}&select=id,nome`);
+        const idsFiltro = promotorIds.join(',');
+        const promotores = await apiFetch(`/rest/v1/promotores?id=in.(${idsFiltro})&select=id,nome`);
 
         sugestoesTardeAtuais = [];
 
