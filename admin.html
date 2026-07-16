@@ -2117,7 +2117,7 @@
                     <option value="">Selecione...</option>
                 </select>
                 <div style="font-size:12px;color:#94a3b8;margin-top:4px;">
-                    💡 Selecione "Matriz" para reuniões administrativas
+                    💡 Selecione a loja onde a reunião será realizada
                 </div>
             </div>
 
@@ -7475,23 +7475,10 @@ async function carregarLojasReuniao() {
         const lojas = await apiFetch('/rest/v1/lojas?order=nome');
         const select = document.getElementById('formReuniaoLoja');
         
-        // Limpar o select
-        select.innerHTML = '';
+// Limpar o select
+        select.innerHTML = '<option value="">Selecione...</option>';
         
-        // Adicionar opção "Matriz" (sempre a primeira)
-        const optionMatriz = document.createElement('option');
-        optionMatriz.value = 'matriz';
-        optionMatriz.textContent = '🏢 Matriz (Reunião Administrativa)';
-        select.appendChild(optionMatriz);
-        
-        // Adicionar uma linha separadora (opcional)
-        const separator = document.createElement('option');
-        separator.value = '';
-        separator.textContent = '─── Lojas ───';
-        separator.disabled = true;
-        select.appendChild(separator);
-        
-        // Adicionar cada loja
+        // Adicionar cada loja (sem a opção "Matriz" — só lojas reais)
         lojas.forEach(loja => {
             const option = document.createElement('option');
             option.value = loja.id;
@@ -7499,7 +7486,7 @@ async function carregarLojasReuniao() {
             select.appendChild(option);
         });
         
-        console.log(`✅ ${lojas.length} lojas carregadas + Matriz`);
+        console.log(`✅ ${lojas.length} lojas carregadas`);
         
     } catch (erro) {
         console.error('❌ Erro ao carregar lojas:', erro);
@@ -7549,12 +7536,12 @@ async function salvarReuniao() {
         statusDiv.textContent = '⏳ Agendando...';
         statusDiv.style.color = '#eab308';
         
-        // ===== DADOS PARA SALVAR (COM loja_id) =====
+// ===== DADOS PARA SALVAR =====
         const dados = {
             data: data,
             descricao: `📅 REUNIÃO: ${titulo}${descricao ? ' - ' + descricao : ''} | 🕐 ${horarioInicio} às ${horarioFim} | 📍 ${estadoPromotores} | 💻 ${participacao}`,
-            estado: lojaId === 'matriz' ? 'matriz' : null,
-            loja_id: lojaId === 'matriz' ? null : parseInt(lojaId),   // ← AGORA EXISTE!
+            estado: null,
+            loja_id: parseInt(lojaId),
             horario_inicio: horarioInicio || '09:00',
             horario_fim: horarioFim || '10:00',
             tipo: 'reuniao'
