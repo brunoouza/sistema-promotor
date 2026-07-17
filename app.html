@@ -3693,6 +3693,7 @@ const pontos = await apiFetch(
         let totalHorasSegundos = 0;
         let totalAtrasos = 0;
         let totalExtrasSegundos = 0;
+        let totalHorasFaltantesSegundos = 0;
         let totalNoturnoSegundos = 0;
         let totalFaltas = 0;
 
@@ -3801,6 +3802,7 @@ const pontos = await apiFetch(
             let faltas = 0;
             let atraso = 0;
             let horaExtra = 0;
+            let horasFaltantes = 0;
             let noturno = 0;
             let totalMinutos = 0;
 
@@ -3827,7 +3829,7 @@ const pontos = await apiFetch(
                 const minutosFalta = cargaDoDia ? calcularMinutosCarga(cargaDoDia) : 440;
                 
                 totalHorasSegundos -= minutosFalta * 60;
-                const horasStr = formatarHoras(minutosFalta);
+                const horasStr = formatarHoras(-minutosFalta);
                 situacao = `FALTA NÃO JUSTIFICADA (${horasStr})`;
                 faltas = 1;
                 totalFaltas++;
@@ -3881,10 +3883,25 @@ const loja = entrada.roteiros?.lojas;
                     totalAtrasos += atrasoMin;
                 }
 
-                const extraMin = Math.max(0, totalMin - 500);
+// Duração de almoço esperada (pra calcular a jornada líquida esperada)
+                let duracaoAlmocoEsperado = 0;
+                if (cargaDoPonto.hora_almoco_inicio && cargaDoPonto.hora_almoco_fim) {
+                    const [aiH, aiM] = cargaDoPonto.hora_almoco_inicio.split(':').map(Number);
+                    const [afH, afM] = cargaDoPonto.hora_almoco_fim.split(':').map(Number);
+                    duracaoAlmocoEsperado = (afH * 60 + afM) - (aiH * 60 + aiM);
+                }
+                const jornadaEsperadaMin = Math.max(0, (saidaEsperada - entradaEsperada) - duracaoAlmocoEsperado);
+
+                const extraMin = Math.max(0, totalMin - jornadaEsperadaMin);
                 if (extraMin > 0) {
                     horaExtra = extraMin;
                     totalExtrasSegundos += extraMin * 60;
+                }
+
+                const faltantesMin = Math.max(0, jornadaEsperadaMin - totalMin - atrasoMin);
+                if (faltantesMin > 0) {
+                    horasFaltantes = faltantesMin;
+                    totalHorasFaltantesSegundos += faltantesMin * 60;
                 }
 
                 if (saidaH >= 22 || saidaH < 5) {
@@ -3922,6 +3939,11 @@ const loja = entrada.roteiros?.lojas;
                     const notM = noturno % 60;
                     situacao += ` / ${String(notH).padStart(2,'0')}:${String(notM).padStart(2,'0')} ADICIONAL NOTURNO`;
                 }
+                if (horasFaltantes > 0) {
+                    const faltH = Math.floor(horasFaltantes / 60);
+                    const faltM = horasFaltantes % 60;
+                    situacao += ` / -${String(faltH).padStart(2,'0')}:${String(faltM).padStart(2,'0')} HORAS FALTANTES`;
+                }
             }
 
             dadosProcessados.push({ 
@@ -3932,6 +3954,7 @@ const loja = entrada.roteiros?.lojas;
                 faltas,
                 atraso,
                 horaExtra,
+                horasFaltantes,
                 noturno,
                 totalMinutos
             });
@@ -3958,6 +3981,9 @@ const loja = entrada.roteiros?.lojas;
         const saldoAnterior = promotorLogado.saldo_anterior || 0;
         const bancoHorasTotal = Math.floor(saldoAnterior + saldoMes);
 
+const totalHorasFaltantesHoras = Math.floor(totalHorasFaltantesSegundos / 3600);
+        const totalHorasFaltantesMinutos = Math.floor((totalHorasFaltantesSegundos % 3600) / 60);
+
         window._dadosEspelho = {
             dadosProcessados,
             totalHoras,
@@ -3966,6 +3992,8 @@ const loja = entrada.roteiros?.lojas;
             totalMinutosExtra,
             totalHorasAtraso,
             totalMinutosAtraso,
+            totalHorasFaltantesHoras,
+            totalHorasFaltantesMinutos,
             totalHorasNoturno,
             totalMinutosNoturno,
             totalFaltas,
@@ -4034,7 +4062,8 @@ function renderizarMarcacoes(dados) {
         if (d.situacao.includes('ATRASO')) situacaoClass = 'atraso';
         if (d.situacao.includes('HORA EXTRA')) situacaoClass = 'extra';
         if (d.situacao.includes('NOTURNO')) situacaoClass = 'noturno';
-        if (d.situacao === 'FALTA NÃO JUSTIFICADA') situacaoClass = 'ausente';
+        if (d.situacao && d.situacao.includes('FALTA NÃO JUSTIFICADA')) situacaoClass = 'ausente';
+        if (d.situacao && d.situacao.includes('HORAS FALTANTES')) situacaoClass = 'ausente';
         if (d.situacao === 'ABONADO/ ATESTADO MÉDICO') situacaoClass = 'abonado';
         if (d.situacao === 'DOMINGO') situacaoClass = '';
         if (d.situacao.includes('FERIADO')) situacaoClass = 'abonado';
@@ -4083,6 +4112,10 @@ function renderizarTotais() {
             <div class="item">
                 <div class="label">⏳ TOTAL ATRASO</div>
                 <div class="valor negativo">-${totalAtraso}</div>
+            </div>
+            <div class="item">
+                <div class="label">📉 HORAS FALTANTES</div>
+                <div class="valor negativo">-${String(dados.totalHorasFaltantesHoras).padStart(2,'0')}h${String(dados.totalHorasFaltantesMinutos).padStart(2,'0')}m</div>
             </div>
             <div class="item">
                 <div class="label">🌙 ADICIONAL NOTURNO</div>
