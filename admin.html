@@ -2451,7 +2451,7 @@
             <button class="btn btn-danger btn-sm" onclick="fecharModal('modalDetalheRoteiro')">✕ Fechar</button>
         </div>
         <p id="modalRoteiroPeriodo" style="color:#64748b;font-size:14px;margin-bottom:12px;">Período: --</p>
-        <div id="modalRoteiroResumo" class="resumo-modal"></div>
+        <div id="modalRoteiroResumo" class="resumo-modal" style="grid-template-columns: repeat(4, 1fr);"></div>
         <div id="modalRoteiroLista"></div>
     </div>
 </div>
@@ -3285,7 +3285,7 @@ async function carregarCardChecklistsConcluidos() {
 }
 
 // ============================================
-// CALCULAR CUMPRIMENTO DE ROTEIRO (dia a dia, com datas)
+// CALCULAR CUMPRIMENTO DE ROTEIRO (dia a dia, respeitando a semana do mês)
 // ============================================
 async function calcularCumprimentoRoteiro(promotorId, inicio, fim) {
     const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
@@ -3295,6 +3295,10 @@ async function calcularCumprimentoRoteiro(promotorId, inicio, fim) {
     const pontos = await apiFetch(`/rest/v1/pontos?promotor_id=eq.${promotorId}&data=gte.${inicio}&data=lte.${fim}&select=data`);
     const diasComPonto = new Set(pontos.map(p => p.data));
 
+    // Feriados no período (não conta como dia esperado de visita)
+    const feriados = await apiFetch(`/rest/v1/feriados?data=gte.${inicio}&data=lte.${fim}&select=data,tipo`);
+    const diasFeriado = new Set(feriados.filter(f => f.tipo !== 'reuniao').map(f => f.data));
+
     let total = 0, visitados = 0;
     const dias = [];
 
@@ -3302,24 +3306,37 @@ async function calcularCumprimentoRoteiro(promotorId, inicio, fim) {
     const dataFimObj = new Date(fim + 'T00:00:00');
     while (dataAtual <= dataFimObj) {
         const diaSemana = diasSemana[dataAtual.getDay()];
-        if (diaSemana !== 'domingo') {
+        const dataStr = dataAtual.toISOString().split('T')[0];
+
+        if (diaSemana !== 'domingo' && !diasFeriado.has(dataStr)) {
             const mes = dataAtual.getMonth() + 1;
             const ano = dataAtual.getFullYear();
-            let roteiroDoDia = todosRoteiros.find(r => r.dia_semana === diaSemana && r.mes === mes && r.ano === ano);
-            if (!roteiroDoDia) {
-                roteiroDoDia = todosRoteiros.find(r => r.dia_semana === diaSemana && r.roteiro_recorrente);
+
+            // Calcular a semana do mês (1-4), igual ao resto do sistema
+            const primeiroDia = new Date(ano, mes - 1, 1);
+            const offset = (primeiroDia.getDay() === 0) ? 6 : primeiroDia.getDay() - 1;
+            const semanaDoMes = Math.floor((dataAtual.getDate() + offset - 1) / 7) + 1;
+
+            // Roteiro específico daquela semana/mês; senão, cai no recorrente
+            let roteirosDoDia = todosRoteiros.filter(r => r.dia_semana === diaSemana && r.mes === mes && r.ano === ano && r.semana === semanaDoMes);
+            if (roteirosDoDia.length === 0) {
+                roteirosDoDia = todosRoteiros.filter(r => r.dia_semana === diaSemana && r.roteiro_recorrente);
             }
-            if (roteiroDoDia && roteiroDoDia.lojas) {
-                total++;
-                const dataStr = dataAtual.toISOString().split('T')[0];
-                const visitou = diasComPonto.has(dataStr);
-                if (visitou) visitados++;
-                dias.push({
-                    data: dataStr,
-                    dataFormat: `${String(dataAtual.getDate()).padStart(2,'0')}/${String(mes).padStart(2,'0')}`,
-                    diaNome: diasNomes[diaSemana],
-                    loja: roteiroDoDia.lojas.nome,
-                    visitou
+
+            if (roteirosDoDia.length > 0) {
+                // Lojas únicas nesse dia (pode ter manhã e tarde, por exemplo)
+                const lojasUnicas = [...new Map(roteirosDoDia.filter(r => r.lojas).map(r => [r.lojas.id, r.lojas])).values()];
+                lojasUnicas.forEach(loja => {
+                    total++;
+                    const visitou = diasComPonto.has(dataStr);
+                    if (visitou) visitados++;
+                    dias.push({
+                        data: dataStr,
+                        dataFormat: `${String(dataAtual.getDate()).padStart(2,'0')}/${String(mes).padStart(2,'0')}`,
+                        diaNome: diasNomes[diaSemana],
+                        loja: loja.nome,
+                        visitou
+                    });
                 });
             }
         }
@@ -3365,10 +3382,11 @@ async function abrirDetalheRoteiro(promotorId) {
 
         titulo.textContent = `🎯 ${nomePromotor} - Cumprimento do Roteiro`;
         periodo.textContent = `📅 Período: ${new Date(inicio + 'T00:00:00').toLocaleDateString('pt-BR')} a ${new Date(fim + 'T00:00:00').toLocaleDateString('pt-BR')}`;
-        resumo.innerHTML = `
-            <div class="item"><div class="valor ${pct >= 80 ? 'positivo' : 'atencao'}">${pct}%</div><div class="label">Cumprimento</div></div>
-            <div class="item"><div class="valor">${visitados}</div><div class="label">Visitadas</div></div>
+resumo.innerHTML = `
+            <div class="item"><div class="valor ${pct >= 80 ? 'positivo' : 'atencao'}">${pct}%</div><div class="label">% Cumprimento</div></div>
+            <div class="item"><div class="valor">${visitados}</div><div class="label">Visitas Feitas</div></div>
             <div class="item"><div class="valor">${total - visitados}</div><div class="label">Faltaram</div></div>
+            <div class="item"><div class="valor">${total}</div><div class="label">Total no Mês</div></div>
         `;
         lista.innerHTML = listaHtml || '<div class="item-lista" style="text-align:center;color:#94a3b8;">Nenhum dia com roteiro no período</div>';
         modal.classList.add('active');
