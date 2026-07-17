@@ -350,6 +350,7 @@
         .stat-card .numero.green { color: #22c55e; }
         .stat-card .numero.yellow { color: #eab308; }
         .stat-card .numero.red { color: #ef4444; }
+        .stat-card .numero.purple { color: #8b5cf6; }
         .filtros-dashboard {
             background: #f8fafc;
             border-radius: 12px;
@@ -1209,6 +1210,7 @@
 <div class="stats-grid">
                     <div class="stat-card"><div class="numero blue" id="totalPromotores">-</div><div class="label">Promotores</div></div>
                     <div class="stat-card"><div class="numero green" id="totalLojas">-</div><div class="label">Lojas</div></div>
+                    <div class="stat-card"><div class="numero purple" id="coberturaVisitas">-</div><div class="label">Cobertura de Visitas</div></div>
                     <div class="stat-card"><div class="numero yellow" id="totalRoteiros">-</div><div class="label">Roteiros</div></div>
                 </div>
             </div>
@@ -2851,6 +2853,11 @@ async function carregarDashboard() {
         // ===== LOJAS =====
         const lojas = await apiFetch('/rest/v1/lojas?select=id');
         document.getElementById('totalLojas').textContent = lojas.length || 0;
+
+        // ===== COBERTURA DE VISITAS (lojas com pelo menos um roteiro fixo) =====
+        const roteirosParaCobertura = await apiFetch('/rest/v1/roteiros?select=loja_id');
+        const lojasComRoteiro = new Set(roteirosParaCobertura.map(r => r.loja_id).filter(id => id));
+        document.getElementById('coberturaVisitas').textContent = `${lojasComRoteiro.size}/${lojas.length || 0}`;
 
         // ===== ROTEIROS (AGRUPADOS POR roteiro_id) =====
         // Buscar todos os roteiros do ano
