@@ -3077,7 +3077,7 @@ async function carregarCardForaRaio() {
         }
         const promotorId = document.getElementById('filtroPromotorDashboard').value;
 
-        const pontos = await apiFetch(`/rest/v1/pontos?data=gte.${inicio}&data=lte.${fim}&dentro_raio=eq.false&select=*,promotores(nome)`);
+const pontos = await apiFetch(`/rest/v1/pontos?data=gte.${inicio}&data=lte.${fim}&dentro_raio=eq.false&select=*,promotores(nome),roteiros(lojas(latitude,longitude))`);
 
         const raioMap = {};
         pontos.forEach(p => {
@@ -3086,7 +3086,11 @@ async function carregarCardForaRaio() {
                 raioMap[id] = { id: id, nome: p.promotores?.nome || `Promotor ${id}`, count: 0, distancias: [] };
             }
             raioMap[id].count++;
-            raioMap[id].distancias.push(100 + Math.random() * 400);
+            const loja = p.roteiros?.lojas;
+            if (loja && loja.latitude && loja.longitude && p.latitude && p.longitude) {
+                const dist = calcularDistancia(parseFloat(p.latitude), parseFloat(p.longitude), parseFloat(loja.latitude), parseFloat(loja.longitude));
+                raioMap[id].distancias.push(dist);
+            }
         });
 
         let items = Object.values(raioMap);
@@ -3618,13 +3622,17 @@ async function abrirDetalheRaio(promotorId) {
         const promotor = await apiFetch(`/rest/v1/promotores?id=eq.${promotorId}&select=nome`);
         const nomePromotor = promotor[0]?.nome || 'Promotor';
 
-        const pontos = await apiFetch(`/rest/v1/pontos?promotor_id=eq.${promotorId}&data=gte.${inicio}&data=lte.${fim}&dentro_raio=eq.false&select=*,roteiros(lojas(nome))`);
+const pontos = await apiFetch(`/rest/v1/pontos?promotor_id=eq.${promotorId}&data=gte.${inicio}&data=lte.${fim}&dentro_raio=eq.false&select=*,roteiros(lojas(nome,latitude,longitude))`);
 
         let listaHtml = '';
         let distancias = [];
         pontos.forEach(p => {
             const lojaNome = p.roteiros?.lojas?.nome || 'Loja não identificada';
-            const dist = p.distancia_raio || (100 + Math.random() * 400);
+            const loja = p.roteiros?.lojas;
+            let dist = 0;
+            if (loja && loja.latitude && loja.longitude && p.latitude && p.longitude) {
+                dist = calcularDistancia(parseFloat(p.latitude), parseFloat(p.longitude), parseFloat(loja.latitude), parseFloat(loja.longitude));
+            }
             distancias.push(dist);
             listaHtml += `
                 <div class="item-lista">
