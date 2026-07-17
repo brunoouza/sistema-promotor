@@ -1206,11 +1206,10 @@
 
             <div class="card">
                 <h2>📊 Visão Geral</h2>
-                <div class="stats-grid">
+<div class="stats-grid">
                     <div class="stat-card"><div class="numero blue" id="totalPromotores">-</div><div class="label">Promotores</div></div>
                     <div class="stat-card"><div class="numero green" id="totalLojas">-</div><div class="label">Lojas</div></div>
                     <div class="stat-card"><div class="numero yellow" id="totalRoteiros">-</div><div class="label">Roteiros</div></div>
-                    <div class="stat-card"><div class="numero red" id="totalPontosHoje">-</div><div class="label">Pontos Hoje</div></div>
                 </div>
             </div>
 
@@ -1229,35 +1228,18 @@
                         <div class="card-titulo">📍 Marcações Fora do Raio</div>
                         <div class="card-conteudo" id="cardForaRaio"><div class="card-vazio">Carregando...</div></div>
                     </div>
-                    <div class="card-gestao">
-                        <div class="card-titulo">📋 % Cumprimento do Check-list</div>
-                        <div class="card-conteudo" id="cardChecklist"><div class="card-vazio">Carregando...</div></div>
-                    </div>
-                    <div class="card-gestao">
-                        <div class="card-titulo">📈 Produtividade</div>
-                        <div class="card-conteudo">
-                            <div class="grafico-container"><canvas id="graficoProdutividade"></canvas></div>
-                        </div>
-                    </div>
-                    <div class="card-gestao">
+<div class="card-gestao">
                         <div class="card-titulo">💰 Report Rápido</div>
                         <div class="card-conteudo" id="cardReportRapido"><div class="card-vazio">Carregando...</div></div>
                     </div>
                     <div class="card-gestao" style="grid-column: span 2;">
-                        <div class="card-titulo">📋 Checklists Concluídos</div>
+                        <div class="card-titulo">📋 Cumprimento do Check-list</div>
                         <div class="card-conteudo" id="cardChecklistsConcluidos"><div class="card-vazio">Carregando...</div></div>
                     </div>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="flex-between">
-                    <h2>🕐 Registros de Hoje</h2>
-                    <span style="font-size:14px;color:#94a3b8;" id="totalRegistrosHoje">0 registros</span>
-                </div>
-                <div id="ultimosPontos"><div class="loading">Carregando...</div></div>
-            </div>
-        </div>
+</div>
 
         <!-- ========================================== -->
         <!-- TAB: CONFIGURAR PESOS (REMOVER - NÃO USAREMOS MAIS) -->
@@ -2574,10 +2556,8 @@ function abrirTab(tabId) {
     document.querySelectorAll('.sidebar .menu-item').forEach(el => el.classList.remove('ativo'));
     const item = document.querySelector(`.sidebar .menu-item[onclick*="${tabId}"]`);
     if (item) item.classList.add('ativo');
-    
     if (tabId === 'tabDashboard') { 
         carregarDashboard(); 
-        carregarPontosHoje(); 
         carregarAniversariantes();
         carregarCardsGestao();
         carregarFiltrosDashboard();
@@ -2726,7 +2706,6 @@ async function carregarDadosIniciais() {
         carregarLojasAdmin(),
         carregarRoteiros(),
         carregarFeriados(),
-        carregarPontosHoje(),
         carregarValidadorPromotores(),
         carregarSolicitacoes(),
         carregarMateriaisAdmin(),
@@ -2887,57 +2866,14 @@ async function carregarDashboard() {
         const totalRoteiros = roteirosUnicos.size;
         document.getElementById('totalRoteiros').textContent = totalRoteiros || 0;
 
-        // ===== PONTOS =====
-        const pontos = await apiFetch(`/rest/v1/pontos?data=gte.${dataInicio}&data=lte.${dataFim}${filtroPromotor}&select=id`);
-        document.getElementById('totalPontosHoje').textContent = pontos.length || 0;
-
-        console.log(`📊 Dashboard: ${totalRoteiros} roteiros únicos, ${pontos.length} pontos`);
+console.log(`📊 Dashboard: ${totalRoteiros} roteiros únicos`);
 
     } catch (erro) { 
         console.error('Erro no dashboard:', erro);
         document.getElementById('totalPromotores').textContent = '0';
         document.getElementById('totalLojas').textContent = '0';
         document.getElementById('totalRoteiros').textContent = '0';
-        document.getElementById('totalPontosHoje').textContent = '0';
     }
-}
-
-// ============================================
-// PONTOS DE HOJE
-// ============================================
-async function carregarPontosHoje() {
-    const div = document.getElementById('ultimosPontos');
-    const hoje = new Date().toISOString().split('T')[0];
-    try {
-        const dados = await apiFetch(`/rest/v1/pontos?data=eq.${hoje}&select=*,promotores(nome)&order=horario_real.desc`);
-        if (dados.length === 0) {
-            div.innerHTML = '<div class="empty-state"><div class="icon">📭</div>Nenhum ponto registrado hoje</div>';
-            document.getElementById('totalRegistrosHoje').textContent = '0 registros';
-            return;
-        }
-        for (const p of dados) {
-            try {
-                const roteiro = await apiFetch(`/rest/v1/roteiros?id=eq.${p.roteiro_id}&select=lojas(nome)`);
-                if (roteiro && roteiro.length > 0 && roteiro[0].lojas) {
-                    p.loja_nome = roteiro[0].lojas.nome;
-                } else {
-                    p.loja_nome = 'N/A';
-                }
-            } catch (e) { p.loja_nome = 'N/A'; }
-        }
-        document.getElementById('totalRegistrosHoje').textContent = `${dados.length} registros`;
-        const tipoMap = { entrada: '🟢 Entrada', inicio_almoco: '🍽️ Início Almoço', fim_almoco: '✅ Fim Almoço', saida: '🔴 Saída' };
-        let html = `<div class="table-wrapper"><table><thead><tr><th>Tipo</th><th>Promotor</th><th>Loja</th><th>Horário</th><th>Raio</th><th>Foto</th></tr></thead><tbody>`;
-        dados.forEach(p => {
-            const dentro = p.dentro_raio ? '<span class="badge badge-success">✅</span>' : '<span class="badge badge-danger">❌</span>';
-            const fotoHtml = p.foto_url ? 
-                `<img src="${p.foto_url}" class="foto-ponto-mini" onclick="abrirFotoPonto('${p.foto_url}', '${p.tipo}', '${p.promotores?.nome || 'N/A'}', '${p.data} ${p.horario_real}')" style="cursor:pointer;">` : 
-                '<span style="color:#94a3b8;font-size:11px;">Sem foto</span>';
-            html += `<tr><td><strong>${tipoMap[p.tipo] || p.tipo}</strong></td><td>${p.promotores?.nome || 'N/A'}</td><td>${p.loja_nome || 'N/A'}</td><td>${p.horario_real}</td><td>${dentro}</td><td>${fotoHtml}</td></tr>`;
-        });
-        html += '</tbody></table></div>';
-        div.innerHTML = html;
-    } catch (erro) { div.innerHTML = `<div class="loading">❌ ${erro.message}</div>`; }
 }
 
 // ============================================
@@ -2987,8 +2923,6 @@ async function carregarCardsGestao() {
         carregarCardRoteiro(),
         carregarCardAtrasos(),
         carregarCardForaRaio(),
-        carregarCardChecklist(),
-        carregarCardProdutividade(),
         carregarCardReportRapido(),
         carregarCardChecklistsConcluidos()
     ]);
@@ -3159,159 +3093,6 @@ async function carregarCardForaRaio() {
         div.innerHTML = `<div class="card-vazio">❌ ${erro.message}</div>`;
         console.error(erro);
     }
-}
-
-// ============================================
-// CARD 4: CHECKLIST
-// ============================================
-async function carregarCardChecklist() {
-    const div = document.getElementById('cardChecklist');
-    try {
-        const inicio = document.getElementById('filtroDataInicio').value;
-        const fim = document.getElementById('filtroDataFim').value;
-        if (!inicio || !fim) {
-            div.innerHTML = '<div class="card-vazio">Selecione um período</div>';
-            return;
-        }
-        const promotorId = document.getElementById('filtroPromotorDashboard').value;
-        
-        // Buscar checklists ativos no período
-        const checklists = await apiFetch(`/rest/v1/checklists?periodo_inicio=lte.${fim}&periodo_fim=gte.${inicio}&ativo=eq.true`);
-        const totalChecklists = checklists.length;
-        
-        if (totalChecklists === 0) {
-            div.innerHTML = '<div class="card-vazio">Nenhum checklist ativo no período</div>';
-            return;
-        }
-
-        // Buscar respostas dos promotores
-        let filtroPromotor = promotorId !== 'todos' ? `&promotor_id=eq.${promotorId}` : '';
-        const respostas = await apiFetch(`/rest/v1/respostas_checklist?data_hora_envio=gte.${inicio}T00:00:00&data_hora_envio=lte.${fim}T23:59:59${filtroPromotor}`);
-        
-        // Agrupar por promotor
-        const promotorRespostas = {};
-        respostas.forEach(r => {
-            if (!promotorRespostas[r.promotor_id]) {
-                promotorRespostas[r.promotor_id] = { total: 0, respondidos: 0 };
-            }
-            promotorRespostas[r.promotor_id].respondidos++;
-        });
-
-        // Contar total por promotor (checklists únicos)
-        const promotores = await apiFetch(`/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true&select=id,nome${promotorId !== 'todos' ? `&id=eq.${promotorId}` : ''}`);
-        promotores.forEach(p => {
-            if (!promotorRespostas[p.id]) {
-                promotorRespostas[p.id] = { total: 0, respondidos: 0 };
-            }
-            // Cada promotor deveria responder cada checklist
-            promotorRespostas[p.id].total = totalChecklists;
-        });
-
-        let items = Object.keys(promotorRespostas).map(id => ({
-            id: parseInt(id),
-            nome: promotores.find(p => p.id === parseInt(id))?.nome || `Promotor ${id}`,
-            total: promotorRespostas[id].total || 0,
-            respondidos: promotorRespostas[id].respondidos || 0
-        }));
-
-        if (items.length === 0) {
-            div.innerHTML = '<div class="card-vazio">Nenhum dado disponível</div>';
-            return;
-        }
-
-        let html = '';
-        items.forEach(item => {
-            const pct = item.total > 0 ? Math.round((item.respondidos / item.total) * 100) : 0;
-            html += `<div class="item">
-                <span class="nome">${item.nome}</span>
-                <span class="valor ${pct >= 80 ? 'positivo' : pct >= 50 ? 'atencao' : 'negativo'}">${pct}% (${item.respondidos}/${item.total})</span>
-            </div>`;
-        });
-        div.innerHTML = html;
-    } catch (erro) {
-        div.innerHTML = `<div class="card-vazio">❌ ${erro.message}</div>`;
-        console.error(erro);
-    }
-}
-
-// ============================================
-// CARD 5: PRODUTIVIDADE (Gráfico)
-// ============================================
-async function carregarCardProdutividade() {
-    const canvas = document.getElementById('graficoProdutividade');
-    if (!canvas) return;
-    try {
-        const promotorId = document.getElementById('filtroPromotorDashboard').value;
-        const inicio = document.getElementById('filtroDataInicio').value;
-        const fim = document.getElementById('filtroDataFim').value;
-        if (!inicio || !fim) {
-            if (graficoProdutividade) { graficoProdutividade.destroy(); graficoProdutividade = null; }
-            return;
-        }
-        
-        const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-        const mesInicio = new Date(inicio + 'T00:00:00').getMonth();
-        const mesFim = new Date(fim + 'T00:00:00').getMonth();
-        
-        let labels = [];
-        for (let i = mesInicio; i <= mesFim && i < 12; i++) {
-            labels.push(meses[i]);
-        }
-        if (labels.length === 0) labels = meses.slice(0, 6);
-        
-        let datasets = [];
-        if (promotorId === 'todos') {
-            const dados = [];
-            for (let i = 0; i < labels.length; i++) {
-                dados.push(Math.round(50 + Math.random() * 40));
-            }
-            datasets.push({ 
-                label: 'Produtividade Média', 
-                data: dados, 
-                borderColor: '#2563eb', 
-                backgroundColor: 'rgba(37,99,235,0.1)',
-                tension: 0.3, 
-                fill: true 
-            });
-        } else {
-            const dados = [];
-            for (let i = 0; i < labels.length; i++) {
-                dados.push(Math.round(60 + Math.random() * 35));
-            }
-            datasets.push({ 
-                label: 'Produtividade', 
-                data: dados, 
-                borderColor: '#22c55e', 
-                backgroundColor: 'rgba(34,197,94,0.1)',
-                tension: 0.3, 
-                fill: true 
-            });
-        }
-        if (graficoProdutividade) { graficoProdutividade.destroy(); }
-        const ctx = canvas.getContext('2d');
-        graficoProdutividade = new Chart(ctx, {
-            type: 'line',
-            data: { labels: labels, datasets: datasets },
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                plugins: { 
-                    legend: { display: true, position: 'top', labels: { font: { size: 11 } } },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `Produtividade: ${context.parsed.y}%`;
-                            }
-                        }
-                    }
-                }, 
-                scales: { 
-                    y: { beginAtZero: true, max: 100, ticks: { font: { size: 10 } } }, 
-                    x: { ticks: { font: { size: 10 } } } 
-                } 
-            }
-        });
-    } catch (erro) { console.error('Erro ao carregar gráfico:', erro); if (graficoProdutividade) { graficoProdutividade.destroy(); graficoProdutividade = null; } }
 }
 
 // ============================================
