@@ -3631,8 +3631,8 @@ async function carregarEspelhoPonto() {
         const dataInicio = `${anoInicio}-${String(mesInicio).padStart(2,'0')}-21`;
         const dataFim = `${anoFim}-${String(mesFim).padStart(2,'0')}-20`;
 
-        const pontos = await apiFetch(
-            `/rest/v1/pontos?promotor_id=eq.${promotorLogado.id}&data=gte.${dataInicio}&data=lte.${dataFim}&order=data.asc,horario_real.asc`
+const pontos = await apiFetch(
+            `/rest/v1/pontos?promotor_id=eq.${promotorLogado.id}&data=gte.${dataInicio}&data=lte.${dataFim}&order=data.asc,horario_real.asc&select=*,roteiros(lojas(id,tipo))`
         );
 
         const atestados = await apiFetch(
@@ -3654,12 +3654,26 @@ async function carregarEspelhoPonto() {
             if (!feriadosMap[f.data] || f.estado) feriadosMap[f.data] = f;
         });
 
-        // ===== CORREÇÃO 2: buscar TODA a carga horária de uma vez só =====
+// ===== CORREÇÃO 2: buscar TODA a carga horária de uma vez só =====
         const todasCargas = await apiFetch('/rest/v1/carga_horaria?select=*');
         const cargaPorDia = {};
         todasCargas.forEach(c => {
             if (!cargaPorDia[c.dia_semana]) cargaPorDia[c.dia_semana] = c;
         });
+
+        function obterCargaHorariaDoPonto(diaSemanaNome, lojaId, tipoLoja) {
+            // 1º: configuração específica dessa loja
+            let cfg = todasCargas.find(c => c.dia_semana === diaSemanaNome && c.tipo_loja === 'especifico' && c.loja_id === lojaId);
+            // 2º: configuração pelo tipo da loja (rua/shopping)
+            if (!cfg && tipoLoja) {
+                cfg = todasCargas.find(c => c.dia_semana === diaSemanaNome && c.tipo_loja === tipoLoja);
+            }
+            // 3º: fallback (caso não exista nenhuma configuração cadastrada)
+            if (!cfg) {
+                return { hora_entrada: '09:00', hora_saida: '17:20', tolerancia_minutos: 10 };
+            }
+            return cfg;
+        }
 
         const dias = {};
         pontos.forEach(p => {
@@ -3853,9 +3867,13 @@ async function carregarEspelhoPonto() {
                     if (almocoMin > 0) totalMin -= almocoMin;
                 }
 
-                const tolerancia = 10;
-                const entradaEsperada = 9 * 60;
-                const saidaEsperada = 17 * 60 + 20;
+const loja = entrada.roteiros?.lojas;
+                const cargaDoPonto = obterCargaHorariaDoPonto(diaSemana, loja?.id, loja?.tipo);
+                const [entHoraCfg, entMinCfg] = cargaDoPonto.hora_entrada.split(':').map(Number);
+                const tolerancia = cargaDoPonto.tolerancia_minutos || 10;
+                const entradaEsperada = entHoraCfg * 60 + entMinCfg;
+                const [saiHoraCfg, saiMinCfg] = cargaDoPonto.hora_saida.split(':').map(Number);
+                const saidaEsperada = saiHoraCfg * 60 + saiMinCfg;
 
                 const atrasoMin = Math.max(0, (entradaH * 60 + entradaM) - entradaEsperada - tolerancia);
                 if (atrasoMin > 0) {
