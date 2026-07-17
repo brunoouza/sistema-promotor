@@ -2755,13 +2755,15 @@ async function carregarFiltrosDashboard() {
         });
 
         const hoje = new Date();
-        const anoAtual = hoje.getFullYear();
-        const mesAtual = String(hoje.getMonth() + 1).padStart(2, '0');
-        const diaAtual = String(hoje.getDate()).padStart(2, '0');
-        
-        document.getElementById('filtroAno').value = anoAtual;
-        document.getElementById('filtroDataInicio').value = `${anoAtual}-${mesAtual}-01`;
-        document.getElementById('filtroDataFim').value = `${anoAtual}-${mesAtual}-${diaAtual}`;
+        let mesFim = hoje.getMonth() + 1;
+        let anoFim = hoje.getFullYear();
+        let mesInicio = mesFim - 1;
+        let anoInicio = anoFim;
+        if (mesInicio < 1) { mesInicio = 12; anoInicio = anoFim - 1; }
+
+        document.getElementById('filtroAno').value = anoFim;
+        document.getElementById('filtroDataInicio').value = `${anoInicio}-${String(mesInicio).padStart(2,'0')}-21`;
+        document.getElementById('filtroDataFim').value = `${anoFim}-${String(mesFim).padStart(2,'0')}-20`;
 
         atualizarResumoFiltros();
         carregarCardsGestao();
@@ -2803,10 +2805,16 @@ function limparFiltrosDashboard() {
     const mesAtual = String(hoje.getMonth() + 1).padStart(2, '0');
     const diaAtual = String(hoje.getDate()).padStart(2, '0');
     
+let mesFimLimpar = hoje.getMonth() + 1;
+    let anoFimLimpar = anoAtual;
+    let mesInicioLimpar = mesFimLimpar - 1;
+    let anoInicioLimpar = anoFimLimpar;
+    if (mesInicioLimpar < 1) { mesInicioLimpar = 12; anoInicioLimpar = anoFimLimpar - 1; }
+
     document.getElementById('filtroAno').value = anoAtual;
     document.getElementById('filtroPromotorDashboard').value = 'todos';
-    document.getElementById('filtroDataInicio').value = `${anoAtual}-${mesAtual}-01`;
-    document.getElementById('filtroDataFim').value = `${anoAtual}-${mesAtual}-${diaAtual}`;
+    document.getElementById('filtroDataInicio').value = `${anoInicioLimpar}-${String(mesInicioLimpar).padStart(2,'0')}-21`;
+    document.getElementById('filtroDataFim').value = `${anoFimLimpar}-${String(mesFimLimpar).padStart(2,'0')}-20`;
     
     atualizarResumoFiltros();
     carregarCardsGestao();
@@ -3317,10 +3325,10 @@ async function calcularCumprimentoRoteiro(promotorId, inicio, fim) {
             const offset = (primeiroDia.getDay() === 0) ? 6 : primeiroDia.getDay() - 1;
             const semanaDoMes = Math.floor((dataAtual.getDate() + offset - 1) / 7) + 1;
 
-            // Roteiro específico daquela semana/mês; senão, cai no recorrente
+// Roteiro específico daquela semana/mês; senão, cai no recorrente (também filtrando pela semana certa)
             let roteirosDoDia = todosRoteiros.filter(r => r.dia_semana === diaSemana && r.mes === mes && r.ano === ano && r.semana === semanaDoMes);
             if (roteirosDoDia.length === 0) {
-                roteirosDoDia = todosRoteiros.filter(r => r.dia_semana === diaSemana && r.roteiro_recorrente);
+                roteirosDoDia = todosRoteiros.filter(r => r.dia_semana === diaSemana && r.roteiro_recorrente && r.semana === semanaDoMes);
             }
 
             if (roteirosDoDia.length > 0) {
