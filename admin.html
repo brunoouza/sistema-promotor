@@ -1230,9 +1230,13 @@
                         <div class="card-titulo">📍 Marcações Fora do Raio</div>
                         <div class="card-conteudo" id="cardForaRaio"><div class="card-vazio">Carregando...</div></div>
                     </div>
-                    <div class="card-gestao">
+<div class="card-gestao">
                         <div class="card-titulo">⚠️ Promotores em Alerta</div>
                         <div class="card-conteudo" id="cardPromotoresAlerta"><div class="card-vazio">Carregando...</div></div>
+                    </div>
+                    <div class="card-gestao">
+                        <div class="card-titulo">🎂 Aniversariantes do Mês</div>
+                        <div class="card-conteudo" id="cardAniversariantesMes"><div class="card-vazio">Carregando...</div></div>
                     </div>
 <div class="card-gestao">
                         <div class="card-titulo">💰 Report Rápido</div>
@@ -2943,6 +2947,7 @@ async function carregarCardsGestao() {
         carregarCardAtrasos(),
         carregarCardForaRaio(),
         carregarCardPromotoresAlerta(),
+        carregarCardAniversariantesMes(),
         carregarCardReportRapido(),
         carregarCardChecklistsConcluidos()
     ]);
@@ -3161,6 +3166,50 @@ async function carregarCardPromotoresAlerta() {
             html += `<div class="item">
                 <span class="nome">${item.nome}</span>
                 <span class="valor negativo">${item.motivo}</span>
+            </div>`;
+        });
+        div.innerHTML = html;
+    } catch (erro) {
+        div.innerHTML = `<div class="card-vazio">❌ ${erro.message}</div>`;
+        console.error(erro);
+    }
+}
+
+// ============================================
+// CARD: ANIVERSARIANTES DO MÊS
+// ============================================
+async function carregarCardAniversariantesMes() {
+    const div = document.getElementById('cardAniversariantesMes');
+    try {
+        const hoje = new Date();
+        const mesAtual = hoje.getMonth() + 1;
+
+        const dados = await apiFetch('/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true&select=id,nome,data_nascimento');
+        const aniversariantes = dados
+            .filter(p => {
+                if (!p.data_nascimento) return false;
+                const data = new Date(p.data_nascimento + 'T00:00:00');
+                return data.getMonth() + 1 === mesAtual;
+            })
+            .map(p => {
+                const data = new Date(p.data_nascimento + 'T00:00:00');
+                return { nome: p.nome, dia: data.getDate() };
+            })
+            .sort((a, b) => a.dia - b.dia);
+
+        if (aniversariantes.length === 0) {
+            div.innerHTML = '<div class="card-vazio">Nenhum aniversariante este mês</div>';
+            return;
+        }
+
+        const hojeDia = hoje.getDate();
+        let html = '';
+        aniversariantes.forEach(a => {
+            const jaPassou = a.dia < hojeDia;
+            const isHoje = a.dia === hojeDia;
+            html += `<div class="item">
+                <span class="nome">${isHoje ? '🎉 ' : ''}${a.nome}</span>
+                <span class="valor ${isHoje ? 'destaque' : jaPassou ? '' : 'positivo'}" style="${jaPassou && !isHoje ? 'color:#94a3b8;' : ''}">Dia ${String(a.dia).padStart(2,'0')}</span>
             </div>`;
         });
         div.innerHTML = html;
