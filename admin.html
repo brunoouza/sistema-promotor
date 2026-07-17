@@ -1234,9 +1234,13 @@
                         <div class="card-titulo">⚠️ Promotores em Alerta</div>
                         <div class="card-conteudo" id="cardPromotoresAlerta"><div class="card-vazio">Carregando...</div></div>
                     </div>
-                    <div class="card-gestao">
+<div class="card-gestao">
                         <div class="card-titulo">🎂 Aniversariantes do Mês</div>
                         <div class="card-conteudo" id="cardAniversariantesMes"><div class="card-vazio">Carregando...</div></div>
+                    </div>
+                    <div class="card-gestao">
+                        <div class="card-titulo">📅 Reuniões do Mês</div>
+                        <div class="card-conteudo" id="cardReunioesMes"><div class="card-vazio">Carregando...</div></div>
                     </div>
 <div class="card-gestao">
                         <div class="card-titulo">💰 Report Rápido</div>
@@ -2948,6 +2952,7 @@ async function carregarCardsGestao() {
         carregarCardForaRaio(),
         carregarCardPromotoresAlerta(),
         carregarCardAniversariantesMes(),
+        carregarCardReunioesMes(),
         carregarCardReportRapido(),
         carregarCardChecklistsConcluidos()
     ]);
@@ -3210,6 +3215,51 @@ async function carregarCardAniversariantesMes() {
             html += `<div class="item">
                 <span class="nome">${isHoje ? '🎉 ' : ''}${a.nome}</span>
                 <span class="valor ${isHoje ? 'destaque' : jaPassou ? '' : 'positivo'}" style="${jaPassou && !isHoje ? 'color:#94a3b8;' : ''}">Dia ${String(a.dia).padStart(2,'0')}</span>
+            </div>`;
+        });
+        div.innerHTML = html;
+    } catch (erro) {
+        div.innerHTML = `<div class="card-vazio">❌ ${erro.message}</div>`;
+        console.error(erro);
+    }
+}
+
+// ============================================
+// CARD: REUNIÕES DO MÊS
+// ============================================
+async function carregarCardReunioesMes() {
+    const div = document.getElementById('cardReunioesMes');
+    try {
+        const hoje = new Date();
+        const mesAtual = hoje.getMonth() + 1;
+        const anoAtual = hoje.getFullYear();
+        const primeiroDia = `${anoAtual}-${String(mesAtual).padStart(2,'0')}-01`;
+        const ultimoDia = new Date(anoAtual, mesAtual, 0).getDate();
+        const ultimoDiaStr = `${anoAtual}-${String(mesAtual).padStart(2,'0')}-${String(ultimoDia).padStart(2,'0')}`;
+
+        const dados = await apiFetch(`/rest/v1/feriados?tipo=eq.reuniao&data=gte.${primeiroDia}&data=lte.${ultimoDiaStr}&order=data.asc&select=*,lojas(nome)`);
+
+        if (dados.length === 0) {
+            div.innerHTML = '<div class="card-vazio">Nenhuma reunião agendada este mês</div>';
+            return;
+        }
+
+        const hojeStr = hoje.toISOString().split('T')[0];
+        let html = '';
+        dados.forEach(r => {
+            // Extrai o título de dentro da descrição (formato "📅 REUNIÃO: Titulo - desc | ...")
+            let titulo = r.descricao || 'Reunião';
+            const match = titulo.match(/REUNIÃO:\s*([^|]+?)(\s*-\s*|\s*\|)/);
+            if (match) titulo = match[1].trim();
+
+            const dataFormat = new Date(r.data + 'T00:00:00').toLocaleDateString('pt-BR');
+            const jaPassou = r.data < hojeStr;
+            const isHoje = r.data === hojeStr;
+            const lojaNome = r.lojas?.nome || 'Matriz';
+
+            html += `<div class="item">
+                <span class="nome" style="${jaPassou ? 'color:#94a3b8;' : ''}">${isHoje ? '🔔 ' : ''}${titulo} — ${lojaNome}</span>
+                <span class="valor ${isHoje ? 'destaque' : ''}" style="${jaPassou && !isHoje ? 'color:#94a3b8;' : ''}">${dataFormat}</span>
             </div>`;
         });
         div.innerHTML = html;
