@@ -1957,9 +1957,8 @@ async function verificarRaio() {
         const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
         const hoje = new Date();
         const diaSemana = diasSemana[hoje.getDay()];
-        const roteiros = await apiFetch(
-            `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&dia_semana=eq.${diaSemana}&select=*,lojas(*)`
-        );
+        const { semana, mes, ano } = calcularSemanaDoMes(hoje);
+        const roteiros = await obterRoteirosDoDiaCerto(diaSemana, mes, ano, semana);
 
         if (roteiros.length === 0 || !roteiros[0].lojas) {
             raioDiv.textContent = '';
@@ -2103,6 +2102,30 @@ function converterArquivoParaBase64(file) {
 }
 
 // ============================================
+// CALCULAR A SEMANA DO MÊS E BUSCAR O ROTEIRO CERTO
+// ============================================
+function calcularSemanaDoMes(data) {
+    const ano = data.getFullYear();
+    const mes = data.getMonth() + 1;
+    const primeiroDia = new Date(ano, mes - 1, 1);
+    const offset = (primeiroDia.getDay() === 0) ? 6 : primeiroDia.getDay() - 1;
+    const semana = Math.floor((data.getDate() + offset - 1) / 7) + 1;
+    return { semana, mes, ano };
+}
+
+async function obterRoteirosDoDiaCerto(diaSemana, mes, ano, semana) {
+    let roteiros = await apiFetch(
+        `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&dia_semana=eq.${diaSemana}&mes=eq.${mes}&ano=eq.${ano}&semana=eq.${semana}&select=*,lojas(*)`
+    );
+    if (roteiros.length === 0) {
+        roteiros = await apiFetch(
+            `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&dia_semana=eq.${diaSemana}&roteiro_recorrente=eq.true&semana=eq.${semana}&select=*,lojas(*)`
+        );
+    }
+    return roteiros;
+}
+
+// ============================================
 // ESCOLHER A LOJA CERTA QUANDO HÁ 2 NO MESMO DIA
 // ============================================
 function selecionarRoteiroDoDia(roteiros, tipo) {
@@ -2219,9 +2242,8 @@ const reuniaoHoje = await buscarReuniaoHoje();
             return;
         }
 
-        const roteiros = await apiFetch(
-            `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&dia_semana=eq.${diaSemana}&select=*,lojas(*)`
-        );
+const { semana, mes, ano } = calcularSemanaDoMes(hoje);
+        const roteiros = await obterRoteirosDoDiaCerto(diaSemana, mes, ano, semana);
 
         if (roteiros.length === 0 || !roteiros[0].lojas) {
             nomeEl.textContent = '📭 Nenhuma loja agendada';
@@ -2492,10 +2514,9 @@ let raioFlexivel = false;
                     roteiro = { id: null, lojas: loja, horario_visita: reuniaoHoje.reuniao.horario_inicio || '09:00' };
                 }
             }
-        } else {
-            const roteiros = await apiFetch(
-                `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&dia_semana=eq.${diaSemana}&select=*,lojas(*)`
-            );
+} else {
+            const { semana, mes, ano } = calcularSemanaDoMes(hoje);
+            const roteiros = await obterRoteirosDoDiaCerto(diaSemana, mes, ano, semana);
 
             if (roteiros.length === 0) {
                 msgDiv.style.display = 'block';
@@ -4337,9 +4358,8 @@ const feriados = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&ativo=eq.
         const reuniaoHoje = await buscarReuniaoHoje();
         if (reuniaoHoje) return reuniaoHoje.loja;
         
-        const roteiros = await apiFetch(
-            `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&dia_semana=eq.${diaSemana}&select=*,lojas(*)`
-        );
+const { semana, mes, ano } = calcularSemanaDoMes(hoje);
+        const roteiros = await obterRoteirosDoDiaCerto(diaSemana, mes, ano, semana);
         
         if (roteiros.length === 0 || !roteiros[0].lojas) return null;
         return roteiros[0].lojas;
