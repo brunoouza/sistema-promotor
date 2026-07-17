@@ -2958,21 +2958,21 @@ async function carregarCardRoteiro() {
         const roteiros = await apiFetch(`/rest/v1/roteiros?ano=eq.${ano}&select=*,promotores(nome)`);
         const pontos = await apiFetch(`/rest/v1/pontos?data=gte.${inicio}&data=lte.${fim}&select=*,promotores(nome)`);
         
-        const promotoresMap = {};
+const promotoresMap = {};
         roteiros.forEach(r => {
             const id = r.promotor_id;
             if (!promotoresMap[id]) {
-                promotoresMap[id] = { id: id, nome: r.promotores?.nome || `Promotor ${id}`, total: 0, visitados: 0 };
+                promotoresMap[id] = { id: id, nome: r.promotores?.nome || `Promotor ${id}`, total: 0, visitadosSet: new Set() };
             }
             promotoresMap[id].total++;
         });
         pontos.forEach(p => {
-            if (promotoresMap[p.promotor_id]) {
-                promotoresMap[p.promotor_id].visitados++;
+            if (promotoresMap[p.promotor_id] && p.roteiro_id) {
+                promotoresMap[p.promotor_id].visitadosSet.add(p.roteiro_id);
             }
         });
 
-        let items = Object.values(promotoresMap);
+        let items = Object.values(promotoresMap).map(item => ({ ...item, visitados: item.visitadosSet.size }));
         if (promotorId !== 'todos') {
             items = items.filter(item => item.id === parseInt(promotorId));
         }
@@ -3126,15 +3126,16 @@ async function carregarCardPromotoresAlerta() {
         const roteiros = await apiFetch(`/rest/v1/roteiros?ano=eq.${ano}&select=*,promotores(nome)`);
         const pontos = await apiFetch(`/rest/v1/pontos?data=gte.${inicio}&data=lte.${fim}&select=*,promotores(nome)`);
 
-        const roteiroMap = {};
+const roteiroMap = {};
         roteiros.forEach(r => {
             const id = r.promotor_id;
-            if (!roteiroMap[id]) roteiroMap[id] = { nome: r.promotores?.nome || `Promotor ${id}`, total: 0, visitados: 0 };
+            if (!roteiroMap[id]) roteiroMap[id] = { nome: r.promotores?.nome || `Promotor ${id}`, total: 0, visitadosSet: new Set() };
             roteiroMap[id].total++;
         });
         pontos.forEach(p => {
-            if (roteiroMap[p.promotor_id]) roteiroMap[p.promotor_id].visitados++;
+            if (roteiroMap[p.promotor_id] && p.roteiro_id) roteiroMap[p.promotor_id].visitadosSet.add(p.roteiro_id);
         });
+        Object.values(roteiroMap).forEach(item => { item.visitados = item.visitadosSet.size; });
 
         // Cumprimento de checklist por promotor
         const checklists = await apiFetch(`/rest/v1/checklists?periodo_inicio=lte.${fim}&periodo_fim=gte.${inicio}&ativo=eq.true`);
