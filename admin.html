@@ -1226,9 +1226,13 @@
                         <div class="card-titulo">⏰ Índice de Atrasos</div>
                         <div class="card-conteudo" id="cardAtrasos"><div class="card-vazio">Carregando...</div></div>
                     </div>
-                    <div class="card-gestao">
+<div class="card-gestao">
                         <div class="card-titulo">📍 Marcações Fora do Raio</div>
                         <div class="card-conteudo" id="cardForaRaio"><div class="card-vazio">Carregando...</div></div>
+                    </div>
+                    <div class="card-gestao">
+                        <div class="card-titulo">⚠️ Promotores em Alerta</div>
+                        <div class="card-conteudo" id="cardPromotoresAlerta"><div class="card-vazio">Carregando...</div></div>
                     </div>
 <div class="card-gestao">
                         <div class="card-titulo">💰 Report Rápido</div>
@@ -2930,6 +2934,7 @@ async function carregarCardsGestao() {
         carregarCardRoteiro(),
         carregarCardAtrasos(),
         carregarCardForaRaio(),
+        carregarCardPromotoresAlerta(),
         carregarCardReportRapido(),
         carregarCardChecklistsConcluidos()
     ]);
@@ -3093,6 +3098,83 @@ async function carregarCardForaRaio() {
             html += `<div class="item">
                 <span class="nome" onclick="abrirDetalheRaio(${item.id})">${item.nome}</span>
                 <span class="valor negativo">${item.count} (média ${media}m)</span>
+            </div>`;
+        });
+        div.innerHTML = html;
+    } catch (erro) {
+        div.innerHTML = `<div class="card-vazio">❌ ${erro.message}</div>`;
+        console.error(erro);
+    }
+}
+
+// ============================================
+// CARD: PROMOTORES EM ALERTA (abaixo de 90%)
+// ============================================
+async function carregarCardPromotoresAlerta() {
+    const div = document.getElementById('cardPromotoresAlerta');
+    try {
+        const inicio = document.getElementById('filtroDataInicio').value;
+        const fim = document.getElementById('filtroDataFim').value;
+        if (!inicio || !fim) {
+            div.innerHTML = '<div class="card-vazio">Selecione um período</div>';
+            return;
+        }
+        const ano = document.getElementById('filtroAno').value || new Date().getFullYear();
+        const promotorId = document.getElementById('filtroPromotorDashboard').value;
+
+        // Cumprimento de roteiro por promotor
+        const roteiros = await apiFetch(`/rest/v1/roteiros?ano=eq.${ano}&select=*,promotores(nome)`);
+        const pontos = await apiFetch(`/rest/v1/pontos?data=gte.${inicio}&data=lte.${fim}&select=*,promotores(nome)`);
+
+        const roteiroMap = {};
+        roteiros.forEach(r => {
+            const id = r.promotor_id;
+            if (!roteiroMap[id]) roteiroMap[id] = { nome: r.promotores?.nome || `Promotor ${id}`, total: 0, visitados: 0 };
+            roteiroMap[id].total++;
+        });
+        pontos.forEach(p => {
+            if (roteiroMap[p.promotor_id]) roteiroMap[p.promotor_id].visitados++;
+        });
+
+        // Cumprimento de checklist por promotor
+        const checklists = await apiFetch(`/rest/v1/checklists?periodo_inicio=lte.${fim}&periodo_fim=gte.${inicio}&ativo=eq.true`);
+        const respostas = await apiFetch(`/rest/v1/respostas_checklist?data_hora_envio=gte.${inicio}T00:00:00&data_hora_envio=lte.${fim}T23:59:59`);
+        const respondidosMap = {};
+        respostas.forEach(r => {
+            if (!respondidosMap[r.promotor_id]) respondidosMap[r.promotor_id] = new Set();
+            respondidosMap[r.promotor_id].add(r.checklist_id);
+        });
+
+        // Juntar tudo por promotor
+        const alertas = [];
+        const idsVistos = new Set([...Object.keys(roteiroMap).map(Number)]);
+        idsVistos.forEach(id => {
+            const r = roteiroMap[id];
+            const pctRoteiro = r.total > 0 ? Math.round((r.visitados / r.total) * 100) : 100;
+            const pctChecklist = checklists.length > 0 ? Math.round(((respondidosMap[id]?.size || 0) / checklists.length) * 100) : 100;
+            const piorPct = Math.min(pctRoteiro, pctChecklist);
+            if (piorPct < 90) {
+                const motivo = pctRoteiro < pctChecklist ? `${pctRoteiro}% roteiro` : `${pctChecklist}% checklist`;
+                alertas.push({ id, nome: r.nome, piorPct, motivo });
+            }
+        });
+
+        let items = alertas;
+        if (promotorId !== 'todos') {
+            items = items.filter(item => item.id === parseInt(promotorId));
+        }
+        items.sort((a, b) => a.piorPct - b.piorPct);
+
+        if (items.length === 0) {
+            div.innerHTML = '<div class="card-vazio">✅ Nenhum promotor abaixo de 90%</div>';
+            return;
+        }
+
+        let html = '';
+        items.forEach(item => {
+            html += `<div class="item">
+                <span class="nome">${item.nome}</span>
+                <span class="valor negativo">${item.motivo}</span>
             </div>`;
         });
         div.innerHTML = html;
