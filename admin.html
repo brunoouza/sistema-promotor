@@ -2952,45 +2952,29 @@ async function carregarCardRoteiro() {
             div.innerHTML = '<div class="card-vazio">Selecione um período</div>';
             return;
         }
-        const ano = document.getElementById('filtroAno').value || new Date().getFullYear();
         const promotorId = document.getElementById('filtroPromotorDashboard').value;
 
-        const roteiros = await apiFetch(`/rest/v1/roteiros?ano=eq.${ano}&select=*,promotores(nome)`);
-        const pontos = await apiFetch(`/rest/v1/pontos?data=gte.${inicio}&data=lte.${fim}&select=*,promotores(nome)`);
-        
-const promotoresMap = {};
-        roteiros.forEach(r => {
-            const id = r.promotor_id;
-            if (!promotoresMap[id]) {
-                promotoresMap[id] = { id: id, nome: r.promotores?.nome || `Promotor ${id}`, total: 0, visitadosSet: new Set() };
-            }
-            promotoresMap[id].total++;
-        });
-        pontos.forEach(p => {
-            if (promotoresMap[p.promotor_id] && p.roteiro_id) {
-                promotoresMap[p.promotor_id].visitadosSet.add(p.roteiro_id);
-            }
-        });
-
-        let items = Object.values(promotoresMap).map(item => ({ ...item, visitados: item.visitadosSet.size }));
+        let promotores = await apiFetch(`/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true&select=id,nome`);
         if (promotorId !== 'todos') {
-            items = items.filter(item => item.id === parseInt(promotorId));
+            promotores = promotores.filter(p => p.id === parseInt(promotorId));
         }
 
-        if (items.length === 0) {
+        if (promotores.length === 0) {
             div.innerHTML = '<div class="card-vazio">Nenhum dado encontrado</div>';
             return;
         }
 
         let html = '';
-        items.forEach(item => {
-            const pct = item.total > 0 ? Math.round((item.visitados / item.total) * 100) : 0;
+        for (const p of promotores) {
+            const { total, visitados } = await calcularCumprimentoRoteiro(p.id, inicio, fim);
+            if (total === 0) continue;
+            const pct = Math.round((visitados / total) * 100);
             html += `<div class="item">
-                <span class="nome" onclick="abrirDetalheRoteiro(${item.id})">${item.nome}</span>
-                <span class="valor ${pct >= 80 ? 'positivo' : pct >= 50 ? 'atencao' : 'negativo'}">${pct}% (${item.visitados}/${item.total})</span>
+                <span class="nome" onclick="abrirDetalheRoteiro(${p.id})">${p.nome}</span>
+                <span class="valor ${pct >= 80 ? 'positivo' : pct >= 50 ? 'atencao' : 'negativo'}">${pct}% (${visitados}/${total})</span>
             </div>`;
-        });
-        div.innerHTML = html;
+        }
+        div.innerHTML = html || '<div class="card-vazio">Nenhum roteiro no período</div>';
     } catch (erro) {
         div.innerHTML = `<div class="card-vazio">❌ ${erro.message}</div>`;
         console.error(erro);
@@ -3122,20 +3106,13 @@ async function carregarCardPromotoresAlerta() {
         const ano = document.getElementById('filtroAno').value || new Date().getFullYear();
         const promotorId = document.getElementById('filtroPromotorDashboard').value;
 
-        // Cumprimento de roteiro por promotor
-        const roteiros = await apiFetch(`/rest/v1/roteiros?ano=eq.${ano}&select=*,promotores(nome)`);
-        const pontos = await apiFetch(`/rest/v1/pontos?data=gte.${inicio}&data=lte.${fim}&select=*,promotores(nome)`);
-
-const roteiroMap = {};
-        roteiros.forEach(r => {
-            const id = r.promotor_id;
-            if (!roteiroMap[id]) roteiroMap[id] = { nome: r.promotores?.nome || `Promotor ${id}`, total: 0, visitadosSet: new Set() };
-            roteiroMap[id].total++;
-        });
-        pontos.forEach(p => {
-            if (roteiroMap[p.promotor_id] && p.roteiro_id) roteiroMap[p.promotor_id].visitadosSet.add(p.roteiro_id);
-        });
-        Object.values(roteiroMap).forEach(item => { item.visitados = item.visitadosSet.size; });
+// Cumprimento de roteiro por promotor (dia a dia, correto)
+        const todosPromotoresRoteiro = await apiFetch(`/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true&select=id,nome`);
+        const roteiroMap = {};
+        for (const p of todosPromotoresRoteiro) {
+            const { total, visitados } = await calcularCumprimentoRoteiro(p.id, inicio, fim);
+            roteiroMap[p.id] = { nome: p.nome, total, visitados };
+        }
 
         // Cumprimento de checklist por promotor
         const checklists = await apiFetch(`/rest/v1/checklists?periodo_inicio=lte.${fim}&periodo_fim=gte.${inicio}&ativo=eq.true`);
@@ -3308,6 +3285,50 @@ async function carregarCardChecklistsConcluidos() {
 }
 
 // ============================================
+// CALCULAR CUMPRIMENTO DE ROTEIRO (dia a dia, com datas)
+// ============================================
+async function calcularCumprimentoRoteiro(promotorId, inicio, fim) {
+    const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+    const diasNomes = { domingo: 'Dom', segunda: 'Seg', terca: 'Ter', quarta: 'Qua', quinta: 'Qui', sexta: 'Sex', sabado: 'Sáb' };
+
+    const todosRoteiros = await apiFetch(`/rest/v1/roteiros?promotor_id=eq.${promotorId}&select=*,lojas(*)`);
+    const pontos = await apiFetch(`/rest/v1/pontos?promotor_id=eq.${promotorId}&data=gte.${inicio}&data=lte.${fim}&select=data`);
+    const diasComPonto = new Set(pontos.map(p => p.data));
+
+    let total = 0, visitados = 0;
+    const dias = [];
+
+    const dataAtual = new Date(inicio + 'T00:00:00');
+    const dataFimObj = new Date(fim + 'T00:00:00');
+    while (dataAtual <= dataFimObj) {
+        const diaSemana = diasSemana[dataAtual.getDay()];
+        if (diaSemana !== 'domingo') {
+            const mes = dataAtual.getMonth() + 1;
+            const ano = dataAtual.getFullYear();
+            let roteiroDoDia = todosRoteiros.find(r => r.dia_semana === diaSemana && r.mes === mes && r.ano === ano);
+            if (!roteiroDoDia) {
+                roteiroDoDia = todosRoteiros.find(r => r.dia_semana === diaSemana && r.roteiro_recorrente);
+            }
+            if (roteiroDoDia && roteiroDoDia.lojas) {
+                total++;
+                const dataStr = dataAtual.toISOString().split('T')[0];
+                const visitou = diasComPonto.has(dataStr);
+                if (visitou) visitados++;
+                dias.push({
+                    data: dataStr,
+                    dataFormat: `${String(dataAtual.getDate()).padStart(2,'0')}/${String(mes).padStart(2,'0')}`,
+                    diaNome: diasNomes[diaSemana],
+                    loja: roteiroDoDia.lojas.nome,
+                    visitou
+                });
+            }
+        }
+        dataAtual.setDate(dataAtual.getDate() + 1);
+    }
+    return { total, visitados, dias };
+}
+
+// ============================================
 // ABRIR MODAIS DE DETALHAMENTO
 // ============================================
 
@@ -3322,34 +3343,20 @@ async function abrirDetalheRoteiro(promotorId) {
     try {
         const inicio = document.getElementById('filtroDataInicio').value;
         const fim = document.getElementById('filtroDataFim').value;
-        const ano = document.getElementById('filtroAno').value || new Date().getFullYear();
 
         const promotor = await apiFetch(`/rest/v1/promotores?id=eq.${promotorId}&select=nome`);
         const nomePromotor = promotor[0]?.nome || 'Promotor';
 
-        const roteiros = await apiFetch(`/rest/v1/roteiros?promotor_id=eq.${promotorId}&ano=eq.${ano}&select=*,lojas(*)`);
-        const pontos = await apiFetch(`/rest/v1/pontos?promotor_id=eq.${promotorId}&data=gte.${inicio}&data=lte.${fim}&select=*,roteiros(lojas(nome))`);
+        const { total, visitados, dias } = await calcularCumprimentoRoteiro(promotorId, inicio, fim);
 
-        const lojasVisitadas = {};
-        pontos.forEach(p => {
-            if (p.roteiros?.lojas?.nome) {
-                lojasVisitadas[p.roteiros.lojas.nome] = true;
-            }
-        });
-
-        let total = roteiros.length;
-        let visitados = 0;
         let listaHtml = '';
-        roteiros.forEach(r => {
-            const lojaNome = r.lojas?.nome || 'Loja não identificada';
-            const visitado = lojasVisitadas[lojaNome] || false;
-            if (visitado) visitados++;
-            const status = visitado ? '✅' : '❌';
-            const statusClass = visitado ? 'ok' : 'falta';
+        dias.forEach(d => {
+            const status = d.visitou ? '✅' : '❌';
+            const statusClass = d.visitou ? 'ok' : 'falta';
             listaHtml += `
                 <div class="item-lista">
-                    <span>${status} ${lojaNome}</span>
-                    <span class="status ${statusClass}">${visitado ? 'Visitada' : 'Não visitada'}</span>
+                    <span>${status} ${d.dataFormat} (${d.diaNome}) — ${d.loja}</span>
+                    <span class="status ${statusClass}">${d.visitou ? 'Visitada' : 'Não visitada'}</span>
                 </div>
             `;
         });
@@ -3363,7 +3370,7 @@ async function abrirDetalheRoteiro(promotorId) {
             <div class="item"><div class="valor">${visitados}</div><div class="label">Visitadas</div></div>
             <div class="item"><div class="valor">${total - visitados}</div><div class="label">Faltaram</div></div>
         `;
-        lista.innerHTML = listaHtml || '<div class="item-lista" style="text-align:center;color:#94a3b8;">Nenhuma loja encontrada</div>';
+        lista.innerHTML = listaHtml || '<div class="item-lista" style="text-align:center;color:#94a3b8;">Nenhum dia com roteiro no período</div>';
         modal.classList.add('active');
     } catch (erro) {
         showToast('❌ Erro ao carregar detalhes: ' + erro.message, 'error');
