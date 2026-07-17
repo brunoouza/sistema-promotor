@@ -1238,9 +1238,13 @@
                         <div class="card-titulo">🎂 Aniversariantes do Mês</div>
                         <div class="card-conteudo" id="cardAniversariantesMes"><div class="card-vazio">Carregando...</div></div>
                     </div>
-                    <div class="card-gestao">
+<div class="card-gestao">
                         <div class="card-titulo">📅 Reuniões do Mês</div>
                         <div class="card-conteudo" id="cardReunioesMes"><div class="card-vazio">Carregando...</div></div>
+                    </div>
+                    <div class="card-gestao">
+                        <div class="card-titulo">📍 Sugestões de Coordenadas Pendentes</div>
+                        <div class="card-conteudo" id="cardSugestoesCoordenadas"><div class="card-vazio">Carregando...</div></div>
                     </div>
 <div class="card-gestao">
                         <div class="card-titulo">💰 Report Rápido</div>
@@ -2953,6 +2957,7 @@ async function carregarCardsGestao() {
         carregarCardPromotoresAlerta(),
         carregarCardAniversariantesMes(),
         carregarCardReunioesMes(),
+        carregarCardSugestoesCoordenadas(),
         carregarCardReportRapido(),
         carregarCardChecklistsConcluidos()
     ]);
@@ -3262,6 +3267,36 @@ async function carregarCardReunioesMes() {
                 <span class="valor ${isHoje ? 'destaque' : ''}" style="${jaPassou && !isHoje ? 'color:#94a3b8;' : ''}">${dataFormat}</span>
             </div>`;
         });
+        div.innerHTML = html;
+    } catch (erro) {
+        div.innerHTML = `<div class="card-vazio">❌ ${erro.message}</div>`;
+        console.error(erro);
+    }
+}
+
+// ============================================
+// CARD: SUGESTÕES DE COORDENADAS PENDENTES
+// ============================================
+async function carregarCardSugestoesCoordenadas() {
+    const div = document.getElementById('cardSugestoesCoordenadas');
+    try {
+        const dados = await apiFetch(`/rest/v1/sugestoes_coordenadas?status=eq.pendente&select=*,promotores(nome),lojas(nome)`);
+
+        if (dados.length === 0) {
+            div.innerHTML = '<div class="card-vazio">✅ Nenhuma sugestão pendente</div>';
+            return;
+        }
+
+        let html = '';
+        dados.forEach(s => {
+            html += `<div class="item">
+                <span class="nome" onclick="abrirTab('tabValidador')" style="cursor:pointer;">${s.lojas?.nome || 'Loja'}</span>
+                <span class="valor atencao">👤 ${s.promotores?.nome || 'N/A'}</span>
+            </div>`;
+        });
+        html += `<div style="margin-top:8px;text-align:center;">
+            <button class="btn btn-primary btn-sm" onclick="abrirTab('tabValidador')">📍 Ir para o Validador</button>
+        </div>`;
         div.innerHTML = html;
     } catch (erro) {
         div.innerHTML = `<div class="card-vazio">❌ ${erro.message}</div>`;
