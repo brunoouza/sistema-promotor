@@ -3884,7 +3884,7 @@ const loja = entrada.roteiros?.lojas;
                 }
 
 // Duração de almoço esperada (pra calcular a jornada líquida esperada)
-                let duracaoAlmocoEsperado = 0;
+                let duracaoAlmocoEsperado = 60; // padrão: 1 hora de direito, mesmo com almoço flexível
                 if (cargaDoPonto.hora_almoco_inicio && cargaDoPonto.hora_almoco_fim) {
                     const [aiH, aiM] = cargaDoPonto.hora_almoco_inicio.split(':').map(Number);
                     const [afH, afM] = cargaDoPonto.hora_almoco_fim.split(':').map(Number);
