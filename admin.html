@@ -1246,10 +1246,6 @@
                         <div class="card-titulo">📍 Sugestões de Coordenadas Pendentes</div>
                         <div class="card-conteudo" id="cardSugestoesCoordenadas"><div class="card-vazio">Carregando...</div></div>
                     </div>
-<div class="card-gestao">
-                        <div class="card-titulo">💰 Report Rápido</div>
-                        <div class="card-conteudo" id="cardReportRapido"><div class="card-vazio">Carregando...</div></div>
-                    </div>
                     <div class="card-gestao" style="grid-column: span 2;">
                         <div class="card-titulo">📋 Cumprimento do Check-list</div>
                         <div class="card-conteudo" id="cardChecklistsConcluidos"><div class="card-vazio">Carregando...</div></div>
@@ -2958,7 +2954,6 @@ async function carregarCardsGestao() {
         carregarCardAniversariantesMes(),
         carregarCardReunioesMes(),
         carregarCardSugestoesCoordenadas(),
-        carregarCardReportRapido(),
         carregarCardChecklistsConcluidos()
     ]);
 }
@@ -3309,6 +3304,33 @@ async function carregarCardSugestoesCoordenadas() {
 }
 
 // ============================================
+// CALCULAR CUMPRIMENTO DE CHECKLIST (por visita esperada, não por "alguém respondeu")
+// ============================================
+async function calcularCumprimentoChecklist(promotorId, inicio, fim) {
+    const { dias } = await calcularCumprimentoRoteiro(promotorId, inicio, fim);
+    const checklists = await apiFetch(`/rest/v1/checklists?periodo_inicio=lte.${fim}&periodo_fim=gte.${inicio}&ativo=eq.true`);
+    const respostas = await apiFetch(`/rest/v1/respostas_checklist?promotor_id=eq.${promotorId}&data_hora_envio=gte.${inicio}T00:00:00&data_hora_envio=lte.${fim}T23:59:59&select=checklist_id,loja_id,data_hora_envio`);
+
+    const respostasSet = new Set();
+    respostas.forEach(r => {
+        const dataResp = r.data_hora_envio ? r.data_hora_envio.split('T')[0] : '';
+        respostasSet.add(`${r.checklist_id}|${r.loja_id}|${dataResp}`);
+    });
+
+    let total = 0, respondidos = 0;
+    dias.forEach(d => {
+        checklists.forEach(c => {
+            const aplicaLoja = !c.lojas_ids || c.lojas_ids.length === 0 || c.lojas_ids.includes(d.lojaId);
+            if (aplicaLoja) {
+                total++;
+                if (respostasSet.has(`${c.id}|${d.lojaId}|${d.data}`)) respondidos++;
+            }
+        });
+    });
+    return { total, respondidos };
+}
+
+// ============================================
 // CARD 6: REPORT RÁPIDO
 // ============================================
 async function carregarCardReportRapido() {
@@ -3364,54 +3386,32 @@ async function carregarCardChecklistsConcluidos() {
             return;
         }
         const promotorId = document.getElementById('filtroPromotorDashboard').value;
-        
-        // Buscar todas as respostas
-        let filtroPromotor = promotorId !== 'todos' ? `&promotor_id=eq.${promotorId}` : '';
-        const respostas = await apiFetch(`/rest/v1/respostas_checklist?data_hora_envio=gte.${inicio}T00:00:00&data_hora_envio=lte.${fim}T23:59:59${filtroPromotor}`);
-        
-        // Buscar checklists ativos
-        const checklists = await apiFetch(`/rest/v1/checklists?periodo_inicio=lte.${fim}&periodo_fim=gte.${inicio}&ativo=eq.true`);
-        
-        if (checklists.length === 0) {
-            div.innerHTML = '<div class="card-vazio">Nenhum checklist ativo</div>';
+
+        let promotores = await apiFetch(`/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true&select=id,nome`);
+        if (promotorId !== 'todos') {
+            promotores = promotores.filter(p => p.id === parseInt(promotorId));
+        }
+
+        let totalGeral = 0, respondidosGeral = 0;
+        const items = [];
+        for (const p of promotores) {
+            const { total, respondidos } = await calcularCumprimentoChecklist(p.id, inicio, fim);
+            if (total === 0) continue;
+            totalGeral += total;
+            respondidosGeral += respondidos;
+            items.push({ nome: p.nome, total, respondidos });
+        }
+
+        if (totalGeral === 0) {
+            div.innerHTML = '<div class="card-vazio">Nenhum checklist esperado no período</div>';
             return;
         }
 
-        // Contar checklists únicos respondidos
-        const respondidos = new Set();
-        respostas.forEach(r => respondidos.add(r.checklist_id));
-        
-        const totalChecklists = checklists.length;
-        const respondidosCount = respondidos.size;
-        const pct = totalChecklists > 0 ? Math.round((respondidosCount / totalChecklists) * 100) : 0;
-        
-        // Agrupar por promotor (última resposta de cada checklist)
-        const promotorStatus = {};
-        const promotores = await apiFetch(`/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true&select=id,nome${promotorId !== 'todos' ? `&id=eq.${promotorId}` : ''}`);
-        
-        // Para cada promotor, verificar quantos checklists ele respondeu
-        const promotorRespostas = {};
-        promotores.forEach(p => {
-            promotorRespostas[p.id] = { nome: p.nome, respondidos: 0, total: totalChecklists };
-        });
-        
-        respostas.forEach(r => {
-            if (promotorRespostas[r.promotor_id]) {
-                promotorRespostas[r.promotor_id].respondidos++;
-            }
-        });
+        const pctGeral = Math.round((respondidosGeral / totalGeral) * 100);
+        let html = `<div class="item"><span class="nome">📊 Total Esperado</span><span class="valor destaque">${totalGeral}</span></div>`;
+        html += `<div class="item"><span class="nome">✅ Respondidos</span><span class="valor positivo">${respondidosGeral} (${pctGeral}%)</span></div>`;
 
-        let items = Object.values(promotorRespostas);
-        if (items.length === 0) {
-            div.innerHTML = '<div class="card-vazio">Nenhum dado disponível</div>';
-            return;
-        }
-
-        let html = `<div class="item"><span class="nome">📊 Total de Checklists</span><span class="valor destaque">${totalChecklists}</span></div>`;
-        html += `<div class="item"><span class="nome">✅ Respondidos</span><span class="valor positivo">${respondidosCount} (${pct}%)</span></div>`;
-        
-        // Mostrar top 3 promotores
-        items.sort((a, b) => b.respondidos - a.respondidos);
+        items.sort((a, b) => (b.respondidos / b.total) - (a.respondidos / a.total));
         const top3 = items.slice(0, 3);
         html += `<div style="margin-top:8px;border-top:1px solid #e2e8f0;padding-top:8px;">`;
         top3.forEach((item, i) => {
@@ -3476,13 +3476,14 @@ async function calcularCumprimentoRoteiro(promotorId, inicio, fim) {
                     total++;
                     const visitou = diasComPonto.has(dataStr);
                     if (visitou) visitados++;
-                    dias.push({
-                        data: dataStr,
-                        dataFormat: `${String(dataAtual.getDate()).padStart(2,'0')}/${String(mes).padStart(2,'0')}`,
-                        diaNome: diasNomes[diaSemana],
-                        loja: loja.nome,
-                        visitou
-                    });
+dias.push({
+                    data: dataStr,
+                    dataFormat: `${String(dataAtual.getDate()).padStart(2,'0')}/${String(mes).padStart(2,'0')}`,
+                    diaNome: diasNomes[diaSemana],
+                    loja: loja.nome,
+                    lojaId: loja.id,
+                    visitou
+                });
                 });
             }
         }
