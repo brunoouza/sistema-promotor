@@ -1275,7 +1275,7 @@
         <div class="email" id="sidebarEmail">carregando@email.com</div>
     </div>
 <button class="menu-item ativo" onclick="abrirAba('tabPonto')">
-        <span class="icon"><i data-lucide="home"></i></span> Ponto
+        <span class="icon"><i data-lucide="home"></i></span> Início
     </button>
     <button class="menu-item" onclick="abrirAba('tabChecklistApp')">
         <span class="icon"><i data-lucide="list-checks"></i></span> Check-list
@@ -1289,11 +1289,8 @@
     <button class="menu-item" onclick="abrirAba('tabValidador')">
         <span class="icon"><i data-lucide="map-pin"></i></span> Validador
     </button>
-    <button class="menu-item" onclick="abrirAba('tabEspelho')">
-        <span class="icon"><i data-lucide="clock"></i></span> Espelho Ponto
-    </button>
+    <!-- Espelho Ponto oculto do menu (mantido no código, ver tabEspelho mais abaixo) -->
     <button class="menu-item" onclick="abrirAba('tabAtestados')">
-        <span class="icon"><i data-lucide="file-text"></i></span> Atestados
     </button>
     <button class="menu-item" onclick="abrirAba('tabMateriais')">
         <span class="icon"><i data-lucide="folder"></i></span> Materiais
@@ -1372,8 +1369,8 @@
                 </div>
             </div>
 
-            <!-- BOTÕES DE PONTO -->
-            <div class="grid-pontos">
+<!-- BOTÕES DE PONTO (OCULTOS - registro de ponto desativado, sem integração com o Kalunga) -->
+            <div class="grid-pontos" style="display:none;">
 <button class="btn btn-entrada" onclick="registrarPonto('entrada')" id="btnEntrada"><i data-lucide="log-in" style="width:18px;height:18px;color:#22c55e;flex-shrink:0;"></i> ENTRADA</button>
                 <button class="btn btn-almoco" onclick="registrarPonto('inicio_almoco')" id="btnAlmoco"><i data-lucide="utensils" style="width:18px;height:18px;color:#eab308;flex-shrink:0;"></i> ALMOÇO</button>
                 <button class="btn btn-volta" onclick="registrarPonto('fim_almoco')" id="btnVolta"><i data-lucide="rotate-ccw" style="width:18px;height:18px;color:#3b82f6;flex-shrink:0;"></i> VOLTA ALMOÇO</button>
@@ -1393,8 +1390,8 @@
                 📴 <span id="qtdPendentes">0</span> ponto(s) aguardando internet para sincronizar
             </div>
 
-            <!-- HISTÓRICO DO DIA -->
-            <div style="margin-top:16px;">
+<!-- HISTÓRICO DO DIA (OCULTO - sem registro de ponto ativo) -->
+            <div style="margin-top:16px;display:none;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                     <span style="font-weight:700;font-size:16px;color:#1a1a2e;"><i data-lucide="clipboard-list" style="width:18px;height:18px;vertical-align:-4px;"></i> Histórico de Hoje</span>
                 </div>
