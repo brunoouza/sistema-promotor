@@ -1827,7 +1827,8 @@ function verificarGPS() {
         function() {
             // Não conseguiu sozinho (permissão ainda não concedida, ou negada) — mostra o botão manual
             alerta.style.display = 'block';
-            alerta.querySelector('.texto').textContent = '📍 GPS Obrigatório!';
+            alerta.querySelector('.texto').innerHTML = '<i data-lucide="map-pin" style="width:18px;height:18px;vertical-align:-3px;"></i> GPS Obrigatório!';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
             alerta.querySelector('.subtexto').textContent = 'Ative o GPS para registrar seu ponto de trabalho';
         },
         { enableHighAccuracy: true, timeout: 8000 }
