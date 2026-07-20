@@ -1111,7 +1111,7 @@
 <!-- ===== MODAL MÊS COMPLETO ===== -->
 <div id="modalMesCompleto" class="modal-mes">
     <div class="modal-content">
-        <h3>📅 Roteiro Completo</h3>
+        <h3><i data-lucide="calendar" style="width:18px;height:18px;vertical-align:-3px;"></i> Roteiro Completo</h3>
         <div id="conteudoMesCompleto">
             <div class="loading"><div class="spinner"></div>Carregando...</div>
         </div>
@@ -1124,7 +1124,7 @@
 <!-- ========================================== -->
 <div id="modalFiltrosProdutos" class="modal-mes">
     <div class="modal-content" style="max-width:400px;">
-        <h3 style="margin-bottom:16px;">🔍 Filtros</h3>
+        <h3 style="margin-bottom:16px;"><i data-lucide="filter" style="width:18px;height:18px;vertical-align:-3px;"></i> Filtros</h3>
         
         <div class="form-group">
             <label>🏷️ Marca</label>
@@ -1153,9 +1153,9 @@
         </div>
 
         <div style="display:flex;gap:8px;margin-top:16px;">
-            <button class="close-modal" onclick="aplicarFiltrosProdutos()" style="flex:1;background:#2563eb;">✅ Aplicar</button>
-            <button class="close-modal" onclick="limparFiltrosProdutos()" style="flex:1;background:#eab308;">🔄 Limpar</button>
-            <button class="close-modal" onclick="fecharModalFiltrosProdutos()" style="flex:1;background:#ef4444;">❌ Fechar</button>
+<button class="close-modal" onclick="aplicarFiltrosProdutos()" style="flex:1;background:#2563eb;"><i data-lucide="check" style="width:14px;height:14px;vertical-align:-2px;"></i> Aplicar</button>
+            <button class="close-modal" onclick="limparFiltrosProdutos()" style="flex:1;background:#eab308;"><i data-lucide="refresh-cw" style="width:14px;height:14px;vertical-align:-2px;"></i> Limpar</button>
+            <button class="close-modal" onclick="fecharModalFiltrosProdutos()" style="flex:1;background:#ef4444;"><i data-lucide="x" style="width:14px;height:14px;vertical-align:-2px;"></i> Fechar</button>
         </div>
     </div>
 </div>
@@ -1166,14 +1166,14 @@
 <div id="modalChecklistResposta" class="modal-mes">
     <div class="modal-content" style="max-width:700px;max-height:85vh;overflow-y:auto;">
         <div class="flex-between" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <h3 id="modalRespostaTitulo">📋 Responder Checklist</h3>
-            <button class="btn btn-danger btn-sm" onclick="fecharModalChecklistResposta()" style="padding:6px 14px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;">✕ Fechar</button>
+<h3 id="modalRespostaTitulo"><i data-lucide="clipboard-check" style="width:18px;height:18px;vertical-align:-3px;"></i> Responder Checklist</h3>
+            <button class="btn btn-danger btn-sm" onclick="fecharModalChecklistResposta()" style="padding:6px 14px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;"><i data-lucide="x" style="width:14px;height:14px;vertical-align:-2px;"></i> Fechar</button>
         </div>
         <div id="modalRespostaConteudo">
             <div class="loading"><div class="spinner"></div>Carregando perguntas...</div>
         </div>
         <div style="margin-top:16px;">
-            <button class="btn-enviar" onclick="enviarRespostasChecklist()" id="btnEnviarChecklist">📤 Enviar Respostas</button>
+            <button class="btn-enviar" onclick="enviarRespostasChecklist()" id="btnEnviarChecklist"><i data-lucide="upload" style="width:16px;height:16px;vertical-align:-3px;"></i> Enviar Respostas</button>
         </div>
         <div id="modalRespostaStatus" style="margin-top:12px;font-size:14px;color:#64748b;"></div>
     </div>
@@ -1185,8 +1185,8 @@
 <div id="modalFotoPonto" class="modal-mes">
     <div class="modal-content" style="max-width:500px;">
         <div class="flex-between" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <h3 id="modalFotoPontoTitulo">📸 Foto do Registro</h3>
-            <button class="btn btn-danger btn-sm" onclick="fecharModalFotoPonto()" style="padding:6px 14px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;">✕ Fechar</button>
+<h3 id="modalFotoPontoTitulo"><i data-lucide="camera" style="width:18px;height:18px;vertical-align:-3px;"></i> Foto do Registro</h3>
+            <button class="btn btn-danger btn-sm" onclick="fecharModalFotoPonto()" style="padding:6px 14px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;"><i data-lucide="x" style="width:14px;height:14px;vertical-align:-2px;"></i> Fechar</button>
         </div>
         <div style="text-align:center;">
             <img id="modalFotoPontoImg" src="" alt="Foto do ponto" style="max-width:100%;max-height:60vh;border-radius:8px;">
@@ -1201,8 +1201,8 @@
 <div id="modalMapaRelatorio" class="modal-mes">
     <div class="modal-content" style="max-width:600px;">
         <div class="flex-between" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <h3 id="modalMapaRelatorioTitulo">🗺️ Localização</h3>
-            <button class="btn btn-danger btn-sm" onclick="fecharModalMapaRelatorio()" style="padding:6px 14px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;">✕ Fechar</button>
+<h3 id="modalMapaRelatorioTitulo"><i data-lucide="map" style="width:18px;height:18px;vertical-align:-3px;"></i> Localização</h3>
+            <button class="btn btn-danger btn-sm" onclick="fecharModalMapaRelatorio()" style="padding:6px 14px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;"><i data-lucide="x" style="width:14px;height:14px;vertical-align:-2px;"></i> Fechar</button>
         </div>
         <div id="mapaRelatorioContainer" class="mapa-container"></div>
         <div id="modalMapaRelatorioInfo" style="margin-top:12px;font-size:14px;color:#64748b;"></div>
@@ -1215,8 +1215,8 @@
 <div id="modalJustificativa" class="modal-mes">
     <div class="modal-content" style="max-width:500px;">
         <div class="flex-between" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <h3 id="modalJustificativaTitulo">📋 Justificar - <span id="justificativaData"></span></h3>
-            <button class="btn btn-danger btn-sm" onclick="fecharModalJustificativa()" style="padding:6px 14px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;">✕ Fechar</button>
+<h3 id="modalJustificativaTitulo"><i data-lucide="clipboard-list" style="width:18px;height:18px;vertical-align:-3px;"></i> Justificar - <span id="justificativaData"></span></h3>
+            <button class="btn btn-danger btn-sm" onclick="fecharModalJustificativa()" style="padding:6px 14px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;"><i data-lucide="x" style="width:14px;height:14px;vertical-align:-2px;"></i> Fechar</button>
         </div>
 
         <div style="margin-bottom:16px;background:#f8fafc;padding:12px;border-radius:8px;">
@@ -1234,8 +1234,8 @@
         </div>
 
         <div class="form-group">
-            <label>📎 Anexar Arquivo (opcional)</label>
-            <button class="btn-enviar" onclick="anexarArquivoJustificativa()" style="background:#8b5cf6;padding:10px;font-size:14px;">📤 Selecionar Arquivo</button>
+<label><i data-lucide="paperclip" style="width:14px;height:14px;vertical-align:-2px;"></i> Anexar Arquivo (opcional)</label>
+            <button class="btn-enviar" onclick="anexarArquivoJustificativa()" style="background:#8b5cf6;padding:10px;font-size:14px;"><i data-lucide="upload" style="width:16px;height:16px;vertical-align:-3px;"></i> Selecionar Arquivo</button>
             <div id="justificativaArquivoNome" style="font-size:12px;color:#64748b;margin-top:4px;display:none;"></div>
         </div>
 
@@ -1243,7 +1243,7 @@
         <input type="hidden" id="justificativaArquivoUrl">
 
         <div class="btn-group" style="margin-top:16px;display:flex;gap:8px;">
-            <button class="btn btn-success" onclick="enviarJustificativa()" style="flex:1;padding:12px;background:#22c55e;color:white;border:none;border-radius:10px;font-weight:700;font-size:16px;cursor:pointer;">📤 Enviar Justificativa</button>
+<button class="btn btn-success" onclick="enviarJustificativa()" style="flex:1;padding:12px;background:#22c55e;color:white;border:none;border-radius:10px;font-weight:700;font-size:16px;cursor:pointer;"><i data-lucide="upload" style="width:16px;height:16px;vertical-align:-3px;"></i> Enviar Justificativa</button>
             <button class="btn btn-danger" onclick="fecharModalJustificativa()" style="flex:1;padding:12px;background:#ef4444;color:white;border:none;border-radius:10px;font-weight:700;font-size:16px;cursor:pointer;">Cancelar</button>
         </div>
 
@@ -1351,8 +1351,8 @@
                     <div class="endereco" id="lojaEndereco">Carregando...</div>
                     <div class="horario" id="lojaHorario">Carregando...</div>
                     <div class="status-gps">
-                        <span class="dot amarelo" id="gpsDot"></span>
-                        <span id="gpsStatus">📍 Aguardando localização...</span>
+<span class="dot amarelo" id="gpsDot"></span>
+                        <span id="gpsStatus"><i data-lucide="map-pin" style="width:14px;height:14px;vertical-align:-2px;"></i> Aguardando localização...</span>
                         <span id="gpsRaio" style="font-size:13px;color:#64748b;margin-left:8px;"></span>
                     </div>
                     <div style="font-size:12px;color:#94a3b8;margin-top:4px;" id="gpsCoords">Lat: - | Lon: -</div>
