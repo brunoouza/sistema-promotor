@@ -1809,9 +1809,26 @@ function verificarGPS() {
         return;
     }
     
-    alerta.style.display = 'block';
-    alerta.querySelector('.texto').textContent = '📍 GPS Obrigatório!';
-    alerta.querySelector('.subtexto').textContent = 'Ative o GPS para registrar seu ponto de trabalho';
+    // Tenta pegar a localização automaticamente (silencioso).
+    // Se a permissão já foi concedida antes, o navegador responde na hora, sem pedir de novo.
+    alerta.style.display = 'none';
+    navigator.geolocation.getCurrentPosition(
+        function(posicao) {
+            localizacaoAtual = { lat: posicao.coords.latitude, lon: posicao.coords.longitude };
+            gpsAtivo = true;
+            document.getElementById('gpsCoords').textContent = `Lat: ${localizacaoAtual.lat.toFixed(6)} | Lon: ${localizacaoAtual.lon.toFixed(6)}`;
+            document.getElementById('gpsStatus').textContent = '📍 Localização capturada';
+            document.getElementById('gpsDot').className = 'dot verde';
+            verificarRaio();
+        },
+        function() {
+            // Não conseguiu sozinho (permissão ainda não concedida, ou negada) — mostra o botão manual
+            alerta.style.display = 'block';
+            alerta.querySelector('.texto').textContent = '📍 GPS Obrigatório!';
+            alerta.querySelector('.subtexto').textContent = 'Ative o GPS para registrar seu ponto de trabalho';
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+    );
 }
 
 function ativarGPS() {
