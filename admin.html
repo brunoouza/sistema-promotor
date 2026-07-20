@@ -1118,11 +1118,11 @@
     <button class="menu-item" onclick="abrirTab('tabPromotores')"><span class="icon">👤</span> Promotores</button>
     <button class="menu-item" onclick="abrirTab('tabLojas')"><span class="icon">🏪</span> Lojas</button>
     <button class="menu-item" onclick="abrirTab('tabRoteiros')"><span class="icon">📋</span> Roteiros</button>
-    <button class="menu-item" onclick="abrirTab('tabCargaHoraria')"><span class="icon">⏰</span> Carga Horária</button>
+<!-- Carga Horária oculta do menu (mantida no código) -->
     <button class="menu-item" onclick="abrirTab('tabFeriados')"><span class="icon">📅</span> Feriados</button>
     <button class="menu-item" onclick="abrirTab('tabValidador')"><span class="icon">📍</span> Validador</button>
     <button class="menu-item" onclick="abrirTab('tabMateriais')"><span class="icon">📁</span> Materiais</button>
-    <button class="menu-item" onclick="abrirTab('tabEspelhoAdmin')"><span class="icon">📊</span> Espelho Ponto</button>
+    <!-- Espelho Ponto oculto do menu (mantido no código) -->
     <button class="menu-item" onclick="abrirTab('tabRelatorios')"><span class="icon">📈</span> Relatórios</button>
     <button class="menu-item" onclick="abrirTab('tabChecklistAdmin')"><span class="icon">📋</span> Checklist</button>
     <button class="menu-item" onclick="abrirTab('tabProdutos')"><span class="icon">📦</span> Produtos</button>
@@ -1217,20 +1217,9 @@
 
             <div class="card">
                 <h2>📊 Cards de Gestão</h2>
-                <div class="cards-gestao" id="cardsGestao">
+<div class="cards-gestao" id="cardsGestao">
+                    <!-- Cumprimento do Roteiro, Índice de Atrasos e Marcações Fora do Raio ocultos (mantidos no código) -->
                     <div class="card-gestao">
-                        <div class="card-titulo">🎯 % Cumprimento do Roteiro</div>
-                        <div class="card-conteudo" id="cardRoteiro"><div class="card-vazio">Carregando...</div></div>
-                    </div>
-                    <div class="card-gestao">
-                        <div class="card-titulo">⏰ Índice de Atrasos</div>
-                        <div class="card-conteudo" id="cardAtrasos"><div class="card-vazio">Carregando...</div></div>
-                    </div>
-<div class="card-gestao">
-                        <div class="card-titulo">📍 Marcações Fora do Raio</div>
-                        <div class="card-conteudo" id="cardForaRaio"><div class="card-vazio">Carregando...</div></div>
-                    </div>
-<div class="card-gestao">
                         <div class="card-titulo">⚠️ Promotores em Alerta</div>
                         <div class="card-conteudo" id="cardPromotoresAlerta"><div class="card-vazio">Carregando...</div></div>
                     </div>
@@ -1819,10 +1808,9 @@
                 <h2>📈 Relatórios</h2>
                 
                 <!-- SUB-ABAS DOS RELATÓRIOS -->
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;border-bottom:2px solid #e2e8f0;padding-bottom:12px;">
-                    <button class="btn btn-sm btn-primary" onclick="carregarRelatorio('fora_raio')">📍 Pontos Fora do Raio</button>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;border-bottom:2px solid #e2e8f0;padding-bottom:12px;">
+                    <!-- Pontos Fora do Raio e Pontos de Hoje ocultos (mantidos no código) -->
                     <button class="btn btn-sm btn-info" onclick="carregarRelatorio('exposicoes')">📸 Exposições</button>
-                    <button class="btn btn-sm btn-warning" onclick="carregarRelatorio('pontos_hoje')">🕐 Pontos de Hoje</button>
                     <button class="btn btn-sm btn-success" onclick="carregarRelatorio('respostas_checklist')">📋 Respostas do Checklist</button>
                 </div>
 
@@ -2714,7 +2702,7 @@ async function carregarDadosIniciais() {
     if (!adminLogado) return;
     await carregarLojas();
     
-    await Promise.all([
+await Promise.all([
         carregarDashboard(),
         carregarPromotores(),
         carregarLojasAdmin(),
@@ -2723,19 +2711,15 @@ async function carregarDadosIniciais() {
         carregarValidadorPromotores(),
         carregarSolicitacoes(),
         carregarMateriaisAdmin(),
-        carregarSelectsEspelhoAdmin(),
         carregarAniversariantes(),
         carregarSelectsExpo(),
         carregarFiltrosDashboard(),
         carregarCardsGestao(),
         carregarProdutos(),
         carregarChecklistsAdmin(),
-        carregarCargaHoraria(),
         carregarAdmMaster(),
-        carregarFiltrosRespostas(),
-        carregarConfiguracaoRaio()
+        carregarFiltrosRespostas()
     ]);
-}
 
 // ============================================
 // CARREGAR LOJAS
@@ -2947,9 +2931,6 @@ async function carregarAniversariantes() {
 // ============================================
 async function carregarCardsGestao() {
     await Promise.all([
-        carregarCardRoteiro(),
-        carregarCardAtrasos(),
-        carregarCardForaRaio(),
         carregarCardPromotoresAlerta(),
         carregarCardAniversariantesMes(),
         carregarCardReunioesMes(),
@@ -5103,9 +5084,9 @@ async function enviarMaterial() {
     const nome = document.getElementById('formMaterialNome').value.trim();
     const descricao = document.getElementById('formMaterialDescricao').value.trim();
     if (!nome) { showToast('⚠️ Digite o nome do material!', 'error'); return; }
-    const input = document.createElement('input');
+const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx';
+    input.accept = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png';
     input.onchange = async function(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -5115,7 +5096,9 @@ async function enviarMaterial() {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('upload_preset', 'promotor_app');
-            const response = await fetch(`https://api.cloudinary.com/v1_1/zv2yyqo2/raw/upload`, { method: 'POST', body: formData });
+            const ehImagem = file.type.startsWith('image/');
+            const endpointUpload = ehImagem ? 'image' : 'raw';
+            const response = await fetch(`https://api.cloudinary.com/v1_1/zv2yyqo2/${endpointUpload}/upload`, { method: 'POST', body: formData });
             const data = await response.json();
             if (!response.ok) throw new Error(data.error?.message || 'Erro no upload');
             await salvarMaterialAdmin(nome, descricao, data.secure_url, file.name);
