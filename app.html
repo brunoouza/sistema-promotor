@@ -286,29 +286,37 @@
             margin: 16px 0;
         }
 .grid-pontos .btn {
-            padding: 14px;
+            min-height: 60px;
+            padding: 8px 10px;
             border: 2px solid #e2e8f0;
             border-left: 4px solid #94a3b8;
             border-radius: 12px;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             transition: 0.3s;
             background: white;
+            color: #1a1a2e;
             position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            text-align: center;
+            line-height: 1.2;
         }
         .grid-pontos .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
         .grid-pontos .btn:hover:not(:disabled) { transform: scale(1.02); }
-        .grid-pontos .btn-entrada { border-left-color: #22c55e; color: #16a34a; }
+        .grid-pontos .btn-entrada { border-left-color: #22c55e; }
         .grid-pontos .btn-entrada:hover:not(:disabled) { background: #f0fdf4; }
-        .grid-pontos .btn-almoco { border-left-color: #eab308; color: #ca8a04; }
+        .grid-pontos .btn-almoco { border-left-color: #eab308; }
         .grid-pontos .btn-almoco:hover:not(:disabled) { background: #fefce8; }
-        .grid-pontos .btn-volta { border-left-color: #3b82f6; color: #2563eb; }
+        .grid-pontos .btn-volta { border-left-color: #3b82f6; }
         .grid-pontos .btn-volta:hover:not(:disabled) { background: #eff6ff; }
-        .grid-pontos .btn-saida { border-left-color: #ef4444; color: #dc2626; }
+        .grid-pontos .btn-saida { border-left-color: #ef4444; }
         .grid-pontos .btn-saida:hover:not(:disabled) { background: #fef2f2; }
         .grid-pontos .btn .badge-foto {
             position: absolute;
