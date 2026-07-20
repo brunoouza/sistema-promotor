@@ -10,11 +10,13 @@
     <link rel="apple-touch-icon" href="/launchericon-192x192.png">
     <meta name="theme-color" content="#1a1a2e">
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <style>
         /* ===== ESTILOS EXISTENTES (mantidos) ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -289,7 +291,8 @@
             background: #dbeafe;
             color: #2563eb;
         }
-        .sidebar .menu-item .icon { font-size: 22px; width: 32px; text-align: center; }
+        .sidebar .menu-item .icon { font-size: 22px; width: 32px; text-align: center; display: inline-flex; align-items: center; justify-content: center; }
+        .sidebar .menu-item .icon svg { width: 20px; height: 20px; }
         .sidebar .logout-btn {
             margin-top: 24px;
             border-top: 2px solid #f1f5f9;
@@ -1114,20 +1117,20 @@
         <div class="nome" id="sidebarNome">Carregando...</div>
         <div class="email" id="sidebarEmail">carregando@email.com</div>
     </div>
-    <button class="menu-item ativo" onclick="abrirTab('tabDashboard')"><span class="icon">📊</span> Dashboard</button>
-    <button class="menu-item" onclick="abrirTab('tabPromotores')"><span class="icon">👤</span> Promotores</button>
-    <button class="menu-item" onclick="abrirTab('tabLojas')"><span class="icon">🏪</span> Lojas</button>
-    <button class="menu-item" onclick="abrirTab('tabRoteiros')"><span class="icon">📋</span> Roteiros</button>
-<!-- Carga Horária oculta do menu (mantida no código) -->
-    <button class="menu-item" onclick="abrirTab('tabFeriados')"><span class="icon">📅</span> Feriados</button>
-    <button class="menu-item" onclick="abrirTab('tabValidador')"><span class="icon">📍</span> Validador</button>
-    <button class="menu-item" onclick="abrirTab('tabMateriais')"><span class="icon">📁</span> Materiais</button>
+<button class="menu-item ativo" onclick="abrirTab('tabDashboard')"><span class="icon"><i data-lucide="layout-dashboard"></i></span> Dashboard</button>
+    <button class="menu-item" onclick="abrirTab('tabPromotores')"><span class="icon"><i data-lucide="users"></i></span> Promotores</button>
+    <button class="menu-item" onclick="abrirTab('tabLojas')"><span class="icon"><i data-lucide="store"></i></span> Lojas</button>
+    <button class="menu-item" onclick="abrirTab('tabRoteiros')"><span class="icon"><i data-lucide="route"></i></span> Roteiros</button>
+    <!-- Carga Horária oculta do menu (mantida no código) -->
+    <button class="menu-item" onclick="abrirTab('tabFeriados')"><span class="icon"><i data-lucide="calendar"></i></span> Feriados</button>
+    <button class="menu-item" onclick="abrirTab('tabValidador')"><span class="icon"><i data-lucide="map-pin"></i></span> Validador</button>
+    <button class="menu-item" onclick="abrirTab('tabMateriais')"><span class="icon"><i data-lucide="folder"></i></span> Materiais</button>
     <!-- Espelho Ponto oculto do menu (mantido no código) -->
-    <button class="menu-item" onclick="abrirTab('tabRelatorios')"><span class="icon">📈</span> Relatórios</button>
-    <button class="menu-item" onclick="abrirTab('tabChecklistAdmin')"><span class="icon">📋</span> Checklist</button>
-    <button class="menu-item" onclick="abrirTab('tabProdutos')"><span class="icon">📦</span> Produtos</button>
-    <button class="menu-item" id="menuAdmMaster" style="display:none;" onclick="abrirTab('tabAdmMaster')"><span class="icon">👑</span> Adm Master</button>
-    <button class="menu-item logout-btn" onclick="logoutAdmin()"><span class="icon">🚪</span> Sair</button>
+    <button class="menu-item" onclick="abrirTab('tabRelatorios')"><span class="icon"><i data-lucide="bar-chart-3"></i></span> Relatórios</button>
+    <button class="menu-item" onclick="abrirTab('tabChecklistAdmin')"><span class="icon"><i data-lucide="clipboard-list"></i></span> Checklist</button>
+    <button class="menu-item" onclick="abrirTab('tabProdutos')"><span class="icon"><i data-lucide="package"></i></span> Produtos</button>
+    <button class="menu-item" id="menuAdmMaster" style="display:none;" onclick="abrirTab('tabAdmMaster')"><span class="icon"><i data-lucide="crown"></i></span> Adm Master</button>
+    <button class="menu-item logout-btn" onclick="logoutAdmin()"><span class="icon"><i data-lucide="log-out"></i></span> Sair</button>
 </div>
 
 <!-- ===== CONTAINER PRINCIPAL ===== -->
@@ -1138,7 +1141,7 @@
     <!-- ========================================== -->
     <div id="loginAdmin" class="login-admin">
         <div class="card">
-            <h1>👔 Admin</h1>
+            <h1><i data-lucide="briefcase-business" style="width:26px;height:26px;vertical-align:-4px;"></i> Admin</h1>
             <p class="subtitle">Acesso restrito ao gestor</p>
             <div class="form-group"><label>Email</label><input type="email" id="adminEmail" placeholder="admin@meusistema.com" value=""></div>
             <div class="form-group"><label>Senha</label><input type="password" id="adminSenha" placeholder="••••••••" value=""></div>
@@ -1154,7 +1157,7 @@
         <div class="header">
             <div>
                 <button class="menu-hamburger" onclick="abrirMenu()">☰</button>
-                <span class="logo">👔 <span>Admin</span> Promotor</span>
+                <span class="logo"><i data-lucide="briefcase-business" style="width:20px;height:20px;vertical-align:-4px;"></i> <span>Admin</span> Promotor</span>
             </div>
             <div class="user">
                 <span id="headerNome">Carregando...</span>
@@ -8186,7 +8189,10 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-console.log('👔 Admin carregado!');
+// ============================================
+// ATIVAR ÍCONES LUCIDE
+// ============================================
+if (typeof lucide !== 'undefined') lucide.createIcons();
 </script>
 </body>
 </html>
