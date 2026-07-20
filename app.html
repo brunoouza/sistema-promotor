@@ -1289,8 +1289,9 @@
     <button class="menu-item" onclick="abrirAba('tabValidador')">
         <span class="icon"><i data-lucide="map-pin"></i></span> Validador
     </button>
-    <!-- Espelho Ponto oculto do menu (mantido no código, ver tabEspelho mais abaixo) -->
+<!-- Espelho Ponto oculto do menu (mantido no código, ver tabEspelho mais abaixo) -->
     <button class="menu-item" onclick="abrirAba('tabAtestados')">
+        <span class="icon"><i data-lucide="file-text"></i></span> Atestados
     </button>
     <button class="menu-item" onclick="abrirAba('tabMateriais')">
         <span class="icon"><i data-lucide="folder"></i></span> Materiais
@@ -1886,10 +1887,9 @@ async function carregarDadosIniciais() {
         verificarGPS();
         atualizarIndicadorPendentes();
         if (navigator.onLine) sincronizarPontosOffline();
-        await Promise.all([
+await Promise.all([
             carregarLojaDoDia(),
             carregarRoteiroSemana(),
-            carregarHistoricoHoje(),
             carregarLojasExposicao(),
             carregarValidador(),
             carregarEspelhoPonto(),
