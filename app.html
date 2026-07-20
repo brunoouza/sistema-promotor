@@ -2604,25 +2604,10 @@ if (raioFlexivel) {
         };
 
 let salvouOnline = true;
-        let horarioFinal = horario; // usa o horário do celular só se cair no modo offline
+        let horarioFinal = horario;
         try {
             if (!navigator.onLine) throw new Error('Sem conexão');
-const resposta = await apiFetch('/rest/v1/pontos', 'POST', registro, true);
-            if (Array.isArray(resposta) && resposta[0] && resposta[0].id && resposta[0].created_at) {
-                console.log('🔍 DIAGNÓSTICO HORÁRIO:');
-                console.log('  Horário do celular (palpite):', horario);
-                console.log('  created_at bruto do banco:', resposta[0].created_at);
-                const horarioServidor = converterParaHorarioBrasil(resposta[0].created_at);
-                console.log('  Horário calculado (Brasília):', horarioServidor.hora, horarioServidor.data);
-                horarioFinal = horarioServidor.hora;
-                // Corrige o registro no banco com o horário real do servidor (não o do celular)
-                if (horarioServidor.hora !== horario || horarioServidor.data !== data) {
-                    await apiFetch(`/rest/v1/pontos?id=eq.${resposta[0].id}`, 'PATCH', {
-                        horario_real: horarioServidor.hora,
-                        data: horarioServidor.data
-                    });
-                }
-            }
+            await apiFetch('/rest/v1/pontos', 'POST', registro);
         } catch (erroConexao) {
             salvouOnline = false;
             salvarPontoOffline(registro, fotoBase64Atual);
