@@ -1641,8 +1641,16 @@
                         </div>
                     </div>
 
-                    <!-- MAPA -->
-                    <div id="mapaLojasContainer" class="mapa-container" style="height:500px;border-radius:12px;border:2px solid #e2e8f0;margin-bottom:12px;"></div>
+<!-- LISTA DE PROMOTORES (localizar no mapa) -->
+            <div style="margin-bottom:12px;background:#f8fafc;border-radius:12px;padding:12px;">
+                <div style="font-weight:600;font-size:13px;color:#334155;margin-bottom:8px;">👥 Promotores (clique para localizar no mapa)</div>
+                <div id="listaPromotoresMapa" style="display:flex;flex-wrap:wrap;gap:8px;">
+                    <span style="color:#94a3b8;font-size:13px;">Carregando...</span>
+                </div>
+            </div>
+
+            <!-- MAPA -->
+            <div id="mapaLojasContainer" class="mapa-container" style="height:500px;border-radius:12px;border:2px solid #e2e8f0;margin-bottom:12px;"></div>
 
                     <!-- LEGENDA -->
                     <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#64748b;padding:8px 12px;background:#f8fafc;border-radius:8px;">
@@ -7370,6 +7378,7 @@ function calcularDistancia(lat1, lon1, lat2, lon2) {
 let mapaGlobal = null;
 let marcadoresLojas = [];
 let marcadoresPromotores = [];
+let marcadoresPromotoresPorId = {};
 let raiosLojas = [];
 let raiosConfig = {
     rua: 75,      // padrão para lojas de rua
@@ -7403,6 +7412,16 @@ async function carregarConfiguracaoRaio() {
     } catch (erro) {
         console.error('Erro ao carregar configuração de raio:', erro);
     }
+}
+
+// ============================================
+// LOCALIZAR PROMOTOR NO MAPA (a partir da lista)
+// ============================================
+function localizarPromotorNoMapa(promotorId) {
+    const info = marcadoresPromotoresPorId[promotorId];
+    if (!info || !mapaGlobal) return;
+    mapaGlobal.setView([info.lat, info.lon], 17, { animate: true });
+    info.marker.openPopup();
 }
 
 // ============================================
@@ -7549,9 +7568,10 @@ async function carregarMapaLojas() {
             raiosLojas.push(circle);
         });
         
-        // ===== 5. ADICIONAR PROMOTORES AO MAPA =====
+// ===== 5. ADICIONAR PROMOTORES AO MAPA =====
         const promotoresComLocalizacao = promotores.filter(p => ultimaLocalizacao[p.id]);
-        
+        marcadoresPromotoresPorId = {};
+
         promotoresComLocalizacao.forEach(promotor => {
             const loc = ultimaLocalizacao[promotor.id];
             const lat = loc.lat;
@@ -7592,12 +7612,35 @@ const icon = L.divIcon({
                     ${lojaMaisProxima ? `📍 Próximo a: ${lojaMaisProxima}` : '📍 Não está próximo a nenhuma loja'}
                 `);
             
-            // Tooltip com nome (hover)
+// Tooltip com nome (hover)
             marker.bindTooltip(promotor.nome, {
                 permanent: false,
                 direction: 'top',
                 className: 'promotor-tooltip'
             });
+            
+            marcadoresPromotores.push(marker);
+            marcadoresPromotoresPorId[promotor.id] = { marker, lat, lon, dentroRaio, nome: promotor.nome };
+        });
+
+        // ===== MONTAR LISTA DE PROMOTORES (localizar no mapa) =====
+        const divLista = document.getElementById('listaPromotoresMapa');
+        if (promotoresComLocalizacao.length === 0) {
+            divLista.innerHTML = '<span style="color:#94a3b8;font-size:13px;">Nenhum promotor com localização hoje</span>';
+        } else {
+            let htmlLista = '';
+            promotoresComLocalizacao.forEach(p => {
+                const info = marcadoresPromotoresPorId[p.id];
+                const cor = info.dentroRaio ? '#22c55e' : '#ef4444';
+                htmlLista += `
+                    <button onclick="localizarPromotorNoMapa(${p.id})" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:white;border:2px solid ${cor};border-radius:20px;cursor:pointer;font-size:13px;font-weight:600;color:#1a1a2e;">
+                        <span style="width:8px;height:8px;border-radius:50%;background:${cor};display:inline-block;"></span>
+                        ${p.nome}
+                    </button>
+                `;
+            });
+            divLista.innerHTML = htmlLista;
+        }
             
             marcadoresPromotores.push(marker);
         });
