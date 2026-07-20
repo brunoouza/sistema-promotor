@@ -1833,8 +1833,9 @@ function verificarGPS() {
             localizacaoAtual = { lat: posicao.coords.latitude, lon: posicao.coords.longitude };
             gpsAtivo = true;
             document.getElementById('gpsCoords').textContent = `Lat: ${localizacaoAtual.lat.toFixed(6)} | Lon: ${localizacaoAtual.lon.toFixed(6)}`;
-            document.getElementById('gpsStatus').textContent = '📍 Localização capturada';
+document.getElementById('gpsStatus').innerHTML = '<i data-lucide="map-pin" style="width:14px;height:14px;vertical-align:-2px;color:#22c55e;"></i> Localização capturada';
             document.getElementById('gpsDot').className = 'dot verde';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
             verificarRaio();
         },
         function() {
@@ -1968,8 +1969,9 @@ function pegarGPS() {
             };
             gpsAtivo = true;
             coordsDiv.textContent = `Lat: ${localizacaoAtual.lat.toFixed(6)} | Lon: ${localizacaoAtual.lon.toFixed(6)}`;
-            statusDiv.textContent = '📍 Localização capturada';
+statusDiv.innerHTML = '<i data-lucide="map-pin" style="width:14px;height:14px;vertical-align:-2px;color:#22c55e;"></i> Localização capturada';
             dot.className = 'dot verde';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
             document.getElementById('gpsAlerta').style.display = 'none';
             verificarRaio();
         },
@@ -2012,13 +2014,14 @@ async function verificarRaio() {
             parseFloat(loja.longitude)
         );
 
-        if (distancia <= 50) {
-            raioDiv.textContent = '✅ Dentro do raio (50m)';
+if (distancia <= 50) {
+            raioDiv.innerHTML = '<i data-lucide="check-circle-2" style="width:14px;height:14px;vertical-align:-2px;"></i> Dentro do raio (50m)';
             raioDiv.style.color = '#22c55e';
         } else {
-            raioDiv.textContent = `❌ Fora do raio (${Math.round(distancia)}m)`;
+            raioDiv.innerHTML = `<i data-lucide="x-circle" style="width:14px;height:14px;vertical-align:-2px;"></i> Fora do raio (${Math.round(distancia)}m)`;
             raioDiv.style.color = '#ef4444';
         }
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     } catch (erro) {
         console.error('Erro ao verificar raio:', erro);
         raioDiv.textContent = '';
