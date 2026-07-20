@@ -6645,10 +6645,11 @@ async function carregarProdutos() {
         produtosPorPagina = parseInt(document.getElementById('produtosPorPagina').value);
         
         let endpoint = '/rest/v1/produtos?order=codigo.asc';
-        let filters = [];
+let filters = [];
         
         if (busca) {
-            filters.push(`or=(codigo.ilike.%${busca}%,descricao.ilike.%${busca}%)`);
+            const buscaEnc = encodeURIComponent(busca);
+            filters.push(`or=(codigo.ilike.%25${buscaEnc}%25,descricao.ilike.%25${buscaEnc}%25)`);
         }
         if (marca) {
             filters.push(`marca=eq.${marca}`);
