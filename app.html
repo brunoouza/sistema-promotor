@@ -3847,10 +3847,34 @@ const pontos = await apiFetch(
                 continue;
             }
 
-            batidas = entrada ? entrada.horario_real : '';
+batidas = entrada ? entrada.horario_real : '';
             batidas += almoco ? ` ${almoco.horario_real}` : '';
             batidas += volta ? ` ${volta.horario_real}` : '';
             batidas += saida ? ` ${saida.horario_real}` : '';
+
+            // ===== REGISTRO INCOMPLETO: tem entrada, mas falta a saída =====
+            if (!saida) {
+                const diaSemanaNomeInc = ['domingo','segunda','terca','quarta','quinta','sexta','sabado'][diaSemana];
+                const cargaDoDiaInc = cargaPorDia[diaSemanaNomeInc];
+                const minutosFaltaInc = cargaDoDiaInc ? calcularMinutosCarga(cargaDoDiaInc) : 440;
+                totalHorasSegundos -= minutosFaltaInc * 60;
+                situacao = `REGISTRO INCOMPLETO (${formatarHoras(-minutosFaltaInc)})`;
+                faltas = 1;
+                totalFaltas++;
+                dadosProcessados.push({
+                    data: dataStr,
+                    dataFormat,
+                    batidas,
+                    situacao,
+                    faltas,
+                    atraso,
+                    horaExtra,
+                    horasFaltantes,
+                    noturno,
+                    totalMinutos: -minutosFaltaInc
+                });
+                continue;
+            }
 
             if (entrada && saida) {
                 const entradaH = parseInt(entrada.horario_real.split(':')[0]);
@@ -3869,8 +3893,9 @@ const pontos = await apiFetch(
                     if (almocoMin > 0) totalMin -= almocoMin;
                 }
 
-const loja = entrada.roteiros?.lojas;
-                const cargaDoPonto = obterCargaHorariaDoPonto(diaSemana, loja?.id, loja?.tipo);
+const diaSemanaNomeCarga = ['domingo','segunda','terca','quarta','quinta','sexta','sabado'][diaSemana];
+                const loja = entrada.roteiros?.lojas;
+                const cargaDoPonto = obterCargaHorariaDoPonto(diaSemanaNomeCarga, loja?.id, loja?.tipo);
                 const [entHoraCfg, entMinCfg] = cargaDoPonto.hora_entrada.split(':').map(Number);
                 const tolerancia = cargaDoPonto.tolerancia_minutos || 10;
                 const entradaEsperada = entHoraCfg * 60 + entMinCfg;
@@ -4034,9 +4059,10 @@ function renderizarMarcacoes(dados) {
 
     dados.forEach(d => {
         // Verificar se o dia precisa de justificativa (falta, atraso, etc.)
-        const precisaJustificar = d.situacao && (
+const precisaJustificar = d.situacao && (
             d.situacao.includes('FALTA') || 
             d.situacao.includes('ATRASO') ||
+            d.situacao.includes('INCOMPLETO') ||
             d.situacao === 'ABONADO/ ATESTADO MÉDICO'
         );
         
@@ -4062,8 +4088,9 @@ function renderizarMarcacoes(dados) {
         if (d.situacao.includes('ATRASO')) situacaoClass = 'atraso';
         if (d.situacao.includes('HORA EXTRA')) situacaoClass = 'extra';
         if (d.situacao.includes('NOTURNO')) situacaoClass = 'noturno';
-        if (d.situacao && d.situacao.includes('FALTA NÃO JUSTIFICADA')) situacaoClass = 'ausente';
+if (d.situacao && d.situacao.includes('FALTA NÃO JUSTIFICADA')) situacaoClass = 'ausente';
         if (d.situacao && d.situacao.includes('HORAS FALTANTES')) situacaoClass = 'ausente';
+        if (d.situacao && d.situacao.includes('INCOMPLETO')) situacaoClass = 'ausente';
         if (d.situacao === 'ABONADO/ ATESTADO MÉDICO') situacaoClass = 'abonado';
         if (d.situacao === 'DOMINGO') situacaoClass = '';
         if (d.situacao.includes('FERIADO')) situacaoClass = 'abonado';
