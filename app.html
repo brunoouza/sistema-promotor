@@ -1337,11 +1337,11 @@
         <div id="tabPonto" class="tab-content active">
 
             <!-- ALERTA GPS OBRIGATÓRIO -->
-            <div id="gpsAlerta" class="gps-obrigatorio" style="display:none;">
-                <div class="icon">📍</div>
+<div id="gpsAlerta" class="gps-obrigatorio" style="display:none;">
+                <div class="icon"><i data-lucide="map-pin" style="width:32px;height:32px;"></i></div>
                 <div class="texto">GPS Obrigatório!</div>
                 <div class="subtexto">Ative o GPS para registrar seu ponto de trabalho</div>
-                <button class="btn-ativar-gps" onclick="ativarGPS()">🔓 Ativar GPS</button>
+                <button class="btn-ativar-gps" onclick="ativarGPS()"><i data-lucide="unlock" style="width:16px;height:16px;vertical-align:-3px;"></i> Ativar GPS</button>
             </div>
 
             <!-- LOJA DO DIA -->
@@ -1383,7 +1383,7 @@
             <!-- HISTÓRICO DO DIA -->
             <div style="margin-top:16px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                    <span style="font-weight:700;font-size:16px;color:#1a1a2e;">📋 Histórico de Hoje</span>
+                    <span style="font-weight:700;font-size:16px;color:#1a1a2e;"><i data-lucide="clipboard-list" style="width:18px;height:18px;vertical-align:-4px;"></i> Histórico de Hoje</span>
                 </div>
                 <div id="historicoHoje">
                     <p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum registro hoje</p>
@@ -1395,7 +1395,7 @@
         <!-- ABA: CHECKLIST (EXECUÇÃO) -->
         <!-- ========================================== -->
         <div id="tabChecklistApp" class="tab-content">
-            <h3 style="color:#1a1a2e;margin-bottom:12px;">✅ Check-list do Dia</h3>
+            <h3 style="color:#1a1a2e;margin-bottom:12px;"><i data-lucide="clipboard-check" style="width:20px;height:20px;vertical-align:-4px;"></i> Check-list do Dia</h3>
             
             <!-- LOJA ATUAL -->
             <div id="checklistLojaAtual" style="background:#f8fafc;border-radius:12px;padding:16px;margin-bottom:16px;border-left:4px solid #2563eb;">
@@ -1413,12 +1413,12 @@
         <!-- ABA 2: ROTEIRO -->
         <!-- ========================================== -->
         <div id="tabRoteiro" class="tab-content">
-            <h3 style="color:#1a1a2e;margin-bottom:12px;" id="roteiroTitulo">📋 Meu Roteiro</h3>
+            <h3 style="color:#1a1a2e;margin-bottom:12px;" id="roteiroTitulo"><i data-lucide="clipboard-list" style="width:20px;height:20px;vertical-align:-4px;"></i> Meu Roteiro</h3>
             <div id="listaRoteiro">
                 <p style="color:#94a3b8;text-align:center;padding:20px 0;">Carregando roteiro...</p>
             </div>
             <div style="margin-top:12px;text-align:center;">
-                <button class="btn-enviar" style="width:auto;padding:10px 24px;font-size:14px;background:#64748b;" onclick="abrirModalMes()">📅 Ver Mês Completo</button>
+<button class="btn-enviar" style="width:auto;padding:10px 24px;font-size:14px;background:#64748b;" onclick="abrirModalMes()"><i data-lucide="calendar" style="width:16px;height:16px;vertical-align:-3px;"></i> Ver Mês Completo</button>
             </div>
         </div>
 
@@ -1426,23 +1426,23 @@
         <!-- ABA 3: EXPOSIÇÕES -->
         <!-- ========================================== -->
         <div id="tabExposicoes" class="tab-content">
-            <h3 style="color:#1a1a2e;margin-bottom:12px;">📸 Exposições</h3>
+            <h3 style="color:#1a1a2e;margin-bottom:12px;"><i data-lucide="camera" style="width:20px;height:20px;vertical-align:-4px;"></i> Exposições</h3>
 
             <!-- FORMULÁRIO -->
             <div class="form-exposicao">
                 <div class="form-group">
-                    <label>🏪 Loja</label>
+<label><i data-lucide="store" style="width:14px;height:14px;vertical-align:-2px;"></i> Loja</label>
                     <select id="expLoja"></select>
                 </div>
                 <div class="form-group">
-                    <label>📌 Tipo de Exposição</label>
+                    <label><i data-lucide="tag" style="width:14px;height:14px;vertical-align:-2px;"></i> Tipo de Exposição</label>
                     <select id="expTipo">
                         <option value="ponta">Ponta de Gondola</option>
                         <option value="check">Check Stand</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>🔢 Número</label>
+                    <label><i data-lucide="hash" style="width:14px;height:14px;vertical-align:-2px;"></i> Número</label>
                     <select id="expNumero">
                         <option value="1">1</option><option value="2">2</option><option value="3">3</option>
                         <option value="4">4</option><option value="5">5</option><option value="6">6</option>
@@ -1454,8 +1454,8 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>📷 Foto</label>
-                    <button class="btn-enviar" onclick="enviarExposicao()" style="background:#8b5cf6;">📸 Selecionar Foto</button>
+<label><i data-lucide="camera" style="width:14px;height:14px;vertical-align:-2px;"></i> Foto</label>
+                    <button class="btn-enviar" onclick="enviarExposicao()" style="background:#8b5cf6;"><i data-lucide="camera" style="width:16px;height:16px;vertical-align:-3px;"></i> Selecionar Foto</button>
                     <img id="expPreview" class="foto-preview" alt="Pré-visualização">
                 </div>
             </div>
@@ -1470,7 +1470,7 @@
         <!-- ABA 4: VALIDADOR -->
         <!-- ========================================== -->
         <div id="tabValidador" class="tab-content">
-            <h3 style="color:#1a1a2e;margin-bottom:12px;">📍 Validador</h3>
+            <h3 style="color:#1a1a2e;margin-bottom:12px;"><i data-lucide="map-pin" style="width:20px;height:20px;vertical-align:-4px;"></i> Validador</h3>
             <p style="color:#64748b;font-size:14px;margin-bottom:16px;">Sugira coordenadas para as lojas do seu roteiro</p>
             <div id="listaValidador">
                 <div class="loading"><div class="spinner"></div>Carregando lojas...</div>
@@ -1482,14 +1482,14 @@
         <!-- ========================================== -->
         <div id="tabEspelho" class="tab-content">
             <div class="espelho-header">
-                <h3 style="color:#1a1a2e;">📊 Espelho de Ponto</h3>
+                <h3 style="color:#1a1a2e;"><i data-lucide="bar-chart-3" style="width:20px;height:20px;vertical-align:-4px;"></i> Espelho de Ponto</h3>
                 <span class="periodo" id="periodoEspelho">Carregando...</span>
             </div>
 
             <!-- Sub-abas -->
             <div class="espelho-subtabs">
-                <button class="ativo" onclick="abrirSubTab('subMarcacoes')">📋 Marcações</button>
-                <button onclick="abrirSubTab('subTotal')">📊 Total</button>
+<button class="ativo" onclick="abrirSubTab('subMarcacoes')"><i data-lucide="clipboard-list" style="width:14px;height:14px;vertical-align:-2px;"></i> Marcações</button>
+                <button onclick="abrirSubTab('subTotal')"><i data-lucide="bar-chart-3" style="width:14px;height:14px;vertical-align:-2px;"></i> Total</button>
             </div>
 
             <!-- SUB-ABA: MARCAÇÕES -->
@@ -1499,7 +1499,7 @@
                     <select id="filtroMesEspelho" onchange="carregarEspelhoPonto()">
                         <option value="0">Mês atual</option>
                     </select>
-                    <button class="btn-pdf" onclick="gerarPDFEspelho()">📄 Baixar PDF</button>
+                    <button class="btn-pdf" onclick="gerarPDFEspelho()"><i data-lucide="file-text" style="width:14px;height:14px;vertical-align:-2px;"></i> Baixar PDF</button>
                 </div>
                 <div id="espelhoContainer">
                     <div class="loading"><div class="spinner"></div>Carregando dados...</div>
@@ -1518,16 +1518,16 @@
         <!-- ABA 6: ATESTADOS -->
         <!-- ========================================== -->
         <div id="tabAtestados" class="tab-content">
-            <h3 style="color:#1a1a2e;margin-bottom:12px;">📋 Atestados</h3>
+            <h3 style="color:#1a1a2e;margin-bottom:12px;"><i data-lucide="file-text" style="width:20px;height:20px;vertical-align:-4px;"></i> Atestados</h3>
 
             <div class="form-exposicao">
                 <div class="form-group">
-                    <label>📅 Data de Ausência</label>
+<label><i data-lucide="calendar" style="width:14px;height:14px;vertical-align:-2px;"></i> Data de Ausência</label>
                     <input type="date" id="atestadoData">
                 </div>
                 <div class="form-group">
-                    <label>📄 Arquivo (PDF, JPG, PNG)</label>
-                    <button class="btn-enviar" onclick="enviarAtestado()" style="background:#8b5cf6;">📤 Selecionar Arquivo</button>
+                    <label><i data-lucide="file-text" style="width:14px;height:14px;vertical-align:-2px;"></i> Arquivo (PDF, JPG, PNG)</label>
+                    <button class="btn-enviar" onclick="enviarAtestado()" style="background:#8b5cf6;"><i data-lucide="upload" style="width:16px;height:16px;vertical-align:-3px;"></i> Selecionar Arquivo</button>
                 </div>
             </div>
 
@@ -1540,7 +1540,7 @@
         <!-- ABA 7: MATERIAIS -->
         <!-- ========================================== -->
         <div id="tabMateriais" class="tab-content">
-            <h3 style="color:#1a1a2e;margin-bottom:12px;">📁 Materiais</h3>
+            <h3 style="color:#1a1a2e;margin-bottom:12px;"><i data-lucide="folder" style="width:20px;height:20px;vertical-align:-4px;"></i> Materiais</h3>
             <p style="color:#64748b;font-size:14px;margin-bottom:16px;">Materiais de referência para as exposições</p>
             <div id="listaMateriais">
                 <p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum material disponível</p>
@@ -1551,22 +1551,22 @@
         <!-- ABA: PRODUTOS (Visualização) -->
         <!-- ========================================== -->
         <div id="tabProdutos" class="tab-content">
-            <h3 style="color:#1a1a2e;margin-bottom:12px;">📦 Catálogo de Produtos</h3>
+            <h3 style="color:#1a1a2e;margin-bottom:12px;"><i data-lucide="package" style="width:20px;height:20px;vertical-align:-4px;"></i> Catálogo de Produtos</h3>
 
             <!-- BARRA DE BUSCA -->
             <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
                 <div style="flex:1;min-width:150px;">
-                    <input type="text" id="produtoBusca" placeholder="🔍 Buscar produto..." 
+                    <input type="text" id="produtoBusca" placeholder="Buscar produto..." 
                            style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;"
                            oninput="carregarProdutosApp()">
                 </div>
-                <button class="btn btn-primary" onclick="abrirFiltrosProdutos()" 
+<button class="btn btn-primary" onclick="abrirFiltrosProdutos()" 
                         style="padding:10px 16px;background:#64748b;border:none;border-radius:10px;color:white;font-weight:600;cursor:pointer;">
-                    🔽 Filtros
+                    <i data-lucide="sliders-horizontal" style="width:16px;height:16px;vertical-align:-3px;"></i> Filtros
                 </button>
                 <button class="btn btn-primary" onclick="carregarProdutosApp()" 
                         style="padding:10px 16px;background:#2563eb;border:none;border-radius:10px;color:white;font-weight:600;cursor:pointer;">
-                    🔄
+                    <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i>
                 </button>
             </div>
 
