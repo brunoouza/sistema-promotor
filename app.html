@@ -10,10 +10,12 @@
     <link rel="apple-touch-icon" href="/launchericon-192x192.png">
     <meta name="theme-color" content="#2563eb">
 
-    <!-- Leaflet CSS -->
+<!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -197,7 +199,8 @@
             background: #dbeafe;
             color: #2563eb;
         }
-        .sidebar .menu-item .icon { font-size: 22px; width: 32px; text-align: center; }
+        .sidebar .menu-item .icon { font-size: 22px; width: 32px; text-align: center; display: inline-flex; align-items: center; justify-content: center; }
+        .sidebar .menu-item .icon svg { width: 20px; height: 20px; }
         .sidebar .logout-btn {
             margin-top: 24px;
             border-top: 2px solid #f1f5f9;
@@ -1258,35 +1261,35 @@
         <div class="nome" id="sidebarNome">Carregando...</div>
         <div class="email" id="sidebarEmail">carregando@email.com</div>
     </div>
-    <button class="menu-item ativo" onclick="abrirAba('tabPonto')">
-        <span class="icon">🏠</span> Ponto
+<button class="menu-item ativo" onclick="abrirAba('tabPonto')">
+        <span class="icon"><i data-lucide="home"></i></span> Ponto
     </button>
     <button class="menu-item" onclick="abrirAba('tabChecklistApp')">
-        <span class="icon">✅</span> Check-list
+        <span class="icon"><i data-lucide="list-checks"></i></span> Check-list
     </button>
     <button class="menu-item" onclick="abrirAba('tabRoteiro')">
-        <span class="icon">📋</span> Roteiro
+        <span class="icon"><i data-lucide="route"></i></span> Roteiro
     </button>
     <button class="menu-item" onclick="abrirAba('tabExposicoes')">
-        <span class="icon">📸</span> Exposições
+        <span class="icon"><i data-lucide="camera"></i></span> Exposições
     </button>
     <button class="menu-item" onclick="abrirAba('tabValidador')">
-        <span class="icon">📍</span> Validador
+        <span class="icon"><i data-lucide="map-pin"></i></span> Validador
     </button>
     <button class="menu-item" onclick="abrirAba('tabEspelho')">
-        <span class="icon">📊</span> Espelho Ponto
+        <span class="icon"><i data-lucide="clock"></i></span> Espelho Ponto
     </button>
     <button class="menu-item" onclick="abrirAba('tabAtestados')">
-        <span class="icon">📋</span> Atestados
+        <span class="icon"><i data-lucide="file-text"></i></span> Atestados
     </button>
     <button class="menu-item" onclick="abrirAba('tabMateriais')">
-        <span class="icon">📁</span> Materiais
+        <span class="icon"><i data-lucide="folder"></i></span> Materiais
     </button>
     <button class="menu-item" onclick="abrirAba('tabProdutos')">
-        <span class="icon">📦</span> Produtos
+        <span class="icon"><i data-lucide="package"></i></span> Produtos
     </button>
     <button class="menu-item logout-btn" onclick="fazerLogout()">
-        <span class="icon">🚪</span> Sair
+        <span class="icon"><i data-lucide="log-out"></i></span> Sair
     </button>
 </div>
 
@@ -1297,7 +1300,7 @@
     <!-- TELA DE LOGIN -->
     <!-- ========================================== -->
     <div id="telaLogin">
-        <h1>🚀 <span>App</span> Promotor</h1>
+        <h1><i data-lucide="briefcase" style="width:26px;height:26px;vertical-align:-4px;"></i> <span>App</span> Promotor</h1>
         <p class="subtitle">Faça login para acessar seu roteiro</p>
 
         <div class="form-group">
@@ -1320,7 +1323,7 @@
         <div class="header">
             <div>
                 <button class="menu-hamburger" onclick="abrirMenu()">☰</button>
-                <span class="logo">🚀 <span>App</span> Promotor</span>
+                <span class="logo"><i data-lucide="briefcase" style="width:20px;height:20px;vertical-align:-4px;"></i> <span>App</span> Promotor</span>
             </div>
             <div class="user">
                 <span id="headerNome">Carregando...</span>
@@ -1358,10 +1361,10 @@
 
             <!-- BOTÕES DE PONTO -->
             <div class="grid-pontos">
-                <button class="btn btn-entrada" onclick="registrarPonto('entrada')" id="btnEntrada">🟢 ENTRADA</button>
-                <button class="btn btn-almoco" onclick="registrarPonto('inicio_almoco')" id="btnAlmoco">🍽️ ALMOÇO</button>
-                <button class="btn btn-volta" onclick="registrarPonto('fim_almoco')" id="btnVolta">✅ VOLTA ALMOÇO</button>
-                <button class="btn btn-saida" onclick="registrarPonto('saida')" id="btnSaida">🔴 SAÍDA</button>
+<button class="btn btn-entrada" onclick="registrarPonto('entrada')" id="btnEntrada"><i data-lucide="log-in" style="width:16px;height:16px;vertical-align:-3px;"></i> ENTRADA</button>
+                <button class="btn btn-almoco" onclick="registrarPonto('inicio_almoco')" id="btnAlmoco"><i data-lucide="utensils" style="width:16px;height:16px;vertical-align:-3px;"></i> ALMOÇO</button>
+                <button class="btn btn-volta" onclick="registrarPonto('fim_almoco')" id="btnVolta"><i data-lucide="rotate-ccw" style="width:16px;height:16px;vertical-align:-3px;"></i> VOLTA ALMOÇO</button>
+                <button class="btn btn-saida" onclick="registrarPonto('saida')" id="btnSaida"><i data-lucide="log-out" style="width:16px;height:16px;vertical-align:-3px;"></i> SAÍDA</button>
             </div>
 
             <div id="cronometroAlmoco" style="display:none;background:#fef9c3;border:2px solid #eab308;border-radius:12px;padding:16px;margin-bottom:16px;text-align:center;">
@@ -5481,7 +5484,10 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-console.log('🚀 App Promotor carregado!');
+// ============================================
+// ATIVAR ÍCONES LUCIDE
+// ============================================
+if (typeof lucide !== 'undefined') lucide.createIcons();
 </script>
 </body>
 </html>
