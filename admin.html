@@ -5109,7 +5109,7 @@ async function enviarMaterial() {
     input.onchange = async function(event) {
         const file = event.target.files[0];
         if (!file) return;
-        if (file.size > 10 * 1024 * 1024) { showToast('⚠️ Arquivo muito grande! Máximo 10MB.', 'error'); return; }
+        if (file.size > 50 * 1024 * 1024) { showToast('⚠️ Arquivo muito grande! Máximo 50MB.', 'error'); return; }
         showToast('⏳ Enviando...', 'info');
         try {
             const formData = new FormData();
