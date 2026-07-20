@@ -1218,11 +1218,7 @@
             <div class="card">
                 <h2>📊 Cards de Gestão</h2>
 <div class="cards-gestao" id="cardsGestao">
-                    <!-- Cumprimento do Roteiro, Índice de Atrasos e Marcações Fora do Raio ocultos (mantidos no código) -->
-                    <div class="card-gestao">
-                        <div class="card-titulo">⚠️ Promotores em Alerta</div>
-                        <div class="card-conteudo" id="cardPromotoresAlerta"><div class="card-vazio">Carregando...</div></div>
-                    </div>
+                    <!-- Cumprimento do Roteiro, Índice de Atrasos, Marcações Fora do Raio e Promotores em Alerta ocultos (mantidos no código) -->
 <div class="card-gestao">
                         <div class="card-titulo">🎂 Aniversariantes do Mês</div>
                         <div class="card-conteudo" id="cardAniversariantesMes"><div class="card-vazio">Carregando...</div></div>
@@ -2932,7 +2928,6 @@ async function carregarAniversariantes() {
 // ============================================
 async function carregarCardsGestao() {
     await Promise.all([
-        carregarCardPromotoresAlerta(),
         carregarCardAniversariantesMes(),
         carregarCardReunioesMes(),
         carregarCardSugestoesCoordenadas(),
