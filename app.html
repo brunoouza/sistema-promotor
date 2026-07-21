@@ -1327,6 +1327,27 @@
         <div id="loginMsg"></div>
     </div>
 
+<!-- ===== TELA DE CONSENTIMENTO (LGPD) ===== -->
+    <div id="telaConsentimento" class="hidden" style="padding:8px;">
+        <h1 style="font-size:22px;color:#1a1a2e;text-align:center;margin-bottom:16px;"><i data-lucide="shield-check" style="width:26px;height:26px;vertical-align:-4px;"></i> Termo de Uso e Privacidade</h1>
+        <div style="background:#f8fafc;border-radius:12px;padding:16px;font-size:14px;color:#334155;line-height:1.6;max-height:50vh;overflow-y:auto;margin-bottom:16px;">
+            <p style="margin-bottom:12px;"><strong>⚠️ RASCUNHO — este texto precisa ser revisado pelo RH/jurídico antes de valer oficialmente.</strong></p>
+            <p style="margin-bottom:12px;">Ao usar este aplicativo, você concorda com a coleta dos seguintes dados, para fins de acompanhamento e organização do trabalho de campo:</p>
+            <p style="margin-bottom:8px;"><strong>📍 Localização (GPS):</strong> sua localização é coletada de forma contínua enquanto o app estiver aberto, para identificar a loja do seu roteiro do dia e apoiar a organização das visitas.</p>
+            <p style="margin-bottom:8px;"><strong>📸 Fotos:</strong> fotos enviadas por você nas tarefas de Exposições, Check-list e Atestados ficam armazenadas para fins de conferência e histórico.</p>
+            <p style="margin-bottom:12px;">Esses dados são usados exclusivamente para fins de trabalho e não são compartilhados com terceiros fora da empresa.</p>
+            <p>Ao marcar a caixa abaixo e continuar, você declara estar ciente e de acordo com o exposto.</p>
+        </div>
+        <label style="display:flex;align-items:center;gap:10px;margin-bottom:16px;cursor:pointer;">
+            <input type="checkbox" id="checkConsentimento" style="width:20px;height:20px;accent-color:#2563eb;">
+            <span style="font-size:14px;color:#334155;">Li e concordo com os termos acima</span>
+        </label>
+        <button class="btn-login" onclick="aceitarConsentimento()" id="btnConsentimento" disabled style="opacity:0.5;">Continuar</button>
+    </div>
+
+    <!-- ===== PAINEL PRINCIPAL (APÓS LOGIN) ===== -->
+    <div id="painelPrincipal" class="hidden">
+
     <!-- ===== PAINEL PRINCIPAL (APÓS LOGIN) ===== -->
     <div id="painelPrincipal" class="hidden">
 
@@ -1753,7 +1774,7 @@ async function fazerLogin() {
     msgDiv.style.display = 'none';
 
     try {
-        const dados = await apiFetch(`/rest/v1/promotores?email=eq.${email}&tipo=eq.promotor&select=id,nome,email,senha,ativo,estado,ctps,pis,matricula,admissao,funcao,departamento,data_nascimento,logo_url,validador_habilitado,ferias_inicio,ferias_fim,banco_horas`);
+        const dados = await apiFetch(`/rest/v1/promotores?email=eq.${email}&tipo=eq.promotor&select=id,nome,email,senha,ativo,estado,ctps,pis,matricula,admissao,funcao,departamento,data_nascimento,logo_url,validador_habilitado,ferias_inicio,ferias_fim,banco_horas,consentimento_lgpd_aceito`);
         if (dados.length === 0) {
             msgDiv.textContent = '❌ Usuário não encontrado!';
             msgDiv.style.display = 'block';
@@ -1775,9 +1796,15 @@ async function fazerLogin() {
             return;
         }
 
-        promotorLogado = promotor;
+promotorLogado = promotor;
                 localStorage.setItem('sessaoPromotor', JSON.stringify({ id: promotor.id, email: promotor.email }));
         document.getElementById('telaLogin').classList.add('hidden');
+
+        if (!promotor.consentimento_lgpd_aceito) {
+            document.getElementById('telaConsentimento').classList.remove('hidden');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            return;
+        }
         document.getElementById('painelPrincipal').classList.remove('hidden');
         document.getElementById('headerNome').textContent = promotor.nome;
         document.getElementById('headerAvatar').textContent = promotor.nome.charAt(0).toUpperCase();
@@ -5251,15 +5278,22 @@ async function tentarLoginAutomatico() {
 
     try {
         const sessao = JSON.parse(sessaoSalva);
-        const dados = await apiFetch(`/rest/v1/promotores?id=eq.${sessao.id}&tipo=eq.promotor&select=id,nome,email,senha,ativo,estado,ctps,pis,matricula,admissao,funcao,departamento,data_nascimento,logo_url,validador_habilitado,ferias_inicio,ferias_fim,banco_horas`);
+        const dados = await apiFetch(`/rest/v1/promotores?id=eq.${sessao.id}&tipo=eq.promotor&select=id,nome,email,senha,ativo,estado,ctps,pis,matricula,admissao,funcao,departamento,data_nascimento,logo_url,validador_habilitado,ferias_inicio,ferias_fim,banco_horas,consentimento_lgpd_aceito`);
 
         if (dados.length === 0 || !dados[0].ativo || dados[0].email !== sessao.email) {
             localStorage.removeItem('sessaoPromotor');
             return;
         }
 
-        promotorLogado = dados[0];
+promotorLogado = dados[0];
         document.getElementById('telaLogin').classList.add('hidden');
+
+        if (!promotorLogado.consentimento_lgpd_aceito) {
+            document.getElementById('telaConsentimento').classList.remove('hidden');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            return;
+        }
+
         document.getElementById('painelPrincipal').classList.remove('hidden');
         document.getElementById('headerNome').textContent = promotorLogado.nome;
         document.getElementById('headerAvatar').textContent = promotorLogado.nome.charAt(0).toUpperCase();
@@ -5273,6 +5307,27 @@ async function tentarLoginAutomatico() {
 }
 
 tentarLoginAutomatico();
+
+document.getElementById('checkConsentimento').addEventListener('change', function() {
+    const btn = document.getElementById('btnConsentimento');
+    btn.disabled = !this.checked;
+    btn.style.opacity = this.checked ? '1' : '0.5';
+});
+
+async function aceitarConsentimento() {
+    try {
+        await apiFetch(`/rest/v1/promotores?id=eq.${promotorLogado.id}`, 'PATCH', {
+            consentimento_lgpd_aceito: true,
+            consentimento_lgpd_em: new Date().toISOString()
+        });
+        promotorLogado.consentimento_lgpd_aceito = true;
+        document.getElementById('telaConsentimento').classList.add('hidden');
+        document.getElementById('painelPrincipal').classList.remove('hidden');
+        carregarDadosIniciais();
+    } catch (erro) {
+        showToast('❌ Erro ao salvar aceite: ' + erro.message, 'error');
+    }
+}
 
 // ============================================
 // EVENTOS DE ENTER NO LOGIN
