@@ -1859,6 +1859,7 @@ document.getElementById('gpsStatus').innerHTML = '<i data-lucide="map-pin" style
             if (typeof lucide !== 'undefined') lucide.createIcons();
             verificarRaio();
             atualizarLocalizacaoServidor();
+            iniciarWatchPosition();
         },
         function() {
             // Não conseguiu sozinho (permissão ainda não concedida, ou negada) — mostra o botão manual
@@ -1892,6 +1893,7 @@ function ativarGPS() {
 showToast('✅ GPS ativado com sucesso!', 'success');
             verificarRaio();
             atualizarLocalizacaoServidor();
+            iniciarWatchPosition();
         },
         function(erro) {
             alerta.querySelector('.texto').textContent = '❌ Erro ao ativar GPS';
@@ -2023,6 +2025,29 @@ function atualizarGPSFresco() {
             console.warn('Não foi possível atualizar localização:', erro);
         },
         { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
+
+// ============================================
+// RASTREAMENTO CONTÍNUO (enquanto o app estiver aberto/em foco)
+// ============================================
+let watchId = null;
+
+function iniciarWatchPosition() {
+    if (!navigator.geolocation || watchId !== null) return;
+    watchId = navigator.geolocation.watchPosition(
+        function(posicao) {
+            localizacaoAtual = { lat: posicao.coords.latitude, lon: posicao.coords.longitude };
+            gpsAtivo = true;
+            const coordsEl = document.getElementById('gpsCoords');
+            if (coordsEl) coordsEl.textContent = `Lat: ${localizacaoAtual.lat.toFixed(6)} | Lon: ${localizacaoAtual.lon.toFixed(6)}`;
+            verificarRaio();
+            atualizarLocalizacaoServidor();
+        },
+        function(erro) {
+            console.warn('Erro no watchPosition:', erro);
+        },
+        { enableHighAccuracy: true, maximumAge: 30000, timeout: 15000 }
     );
 }
 
@@ -5565,10 +5590,17 @@ setInterval(() => {
     if (navigator.onLine) sincronizarPontosOffline();
 }, 2 * 60 * 1000);
 
-// Busca uma localização NOVA a cada 2 minutos, enquanto o app estiver aberto (mantém o status de raio e o mapa sempre atualizados)
+// Atualiza a localização na hora, sempre que o promotor volta pro app (reabre, desbloqueia a tela nele)
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && gpsAtivo) {
+        atualizarGPSFresco();
+    }
+});
+
+// Reserva: se por algum motivo o watchPosition parar de disparar (ex: promotor parado no mesmo lugar por muito tempo), garante uma atualização a cada 10 minutos
 setInterval(() => {
     if (navigator.onLine && gpsAtivo) atualizarGPSFresco();
-}, 2 * 60 * 1000);
+}, 10 * 60 * 1000);
 
 // ============================================
 // REGISTRAR SERVICE WORKER (MODO OFFLINE)
