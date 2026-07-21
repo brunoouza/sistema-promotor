@@ -2008,6 +2008,25 @@ statusDiv.innerHTML = '<i data-lucide="map-pin" style="width:14px;height:14px;ve
 }
 
 // ============================================
+// ATUALIZAR LOCALIZAÇÃO PERIODICAMENTE (de verdade, não só reenviar a antiga)
+// ============================================
+function atualizarGPSFresco() {
+    if (!navigator.geolocation || !gpsAtivo) return;
+    navigator.geolocation.getCurrentPosition(
+        function(posicao) {
+            localizacaoAtual = { lat: posicao.coords.latitude, lon: posicao.coords.longitude };
+            document.getElementById('gpsCoords').textContent = `Lat: ${localizacaoAtual.lat.toFixed(6)} | Lon: ${localizacaoAtual.lon.toFixed(6)}`;
+            verificarRaio();
+            atualizarLocalizacaoServidor();
+        },
+        function(erro) {
+            console.warn('Não foi possível atualizar localização:', erro);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
+
+// ============================================
 // ATUALIZAR LOCALIZAÇÃO ATUAL NO SERVIDOR (independente de registro de ponto)
 // ============================================
 async function atualizarLocalizacaoServidor() {
@@ -5546,9 +5565,9 @@ setInterval(() => {
     if (navigator.onLine) sincronizarPontosOffline();
 }, 2 * 60 * 1000);
 
-// Atualiza a localização no servidor a cada 5 minutos, enquanto o app estiver aberto
+// Busca uma localização NOVA a cada 2 minutos, enquanto o app estiver aberto (mantém o status de raio e o mapa sempre atualizados)
 setInterval(() => {
-    if (navigator.onLine && gpsAtivo) atualizarLocalizacaoServidor();
+    if (navigator.onLine && gpsAtivo) atualizarGPSFresco();
 }, 5 * 60 * 1000);
 
 // ============================================
