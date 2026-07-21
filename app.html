@@ -5568,7 +5568,7 @@ setInterval(() => {
 // Busca uma localização NOVA a cada 2 minutos, enquanto o app estiver aberto (mantém o status de raio e o mapa sempre atualizados)
 setInterval(() => {
     if (navigator.onLine && gpsAtivo) atualizarGPSFresco();
-}, 5 * 60 * 1000);
+}, 2 * 60 * 1000);
 
 // ============================================
 // REGISTRAR SERVICE WORKER (MODO OFFLINE)
