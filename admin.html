@@ -7475,22 +7475,22 @@ async function carregarMapaLojas() {
         // Buscar todas as lojas
         const lojas = await apiFetch('/rest/v1/lojas?order=id');
         
-        // Buscar promotores ativos
-        const promotores = await apiFetch('/rest/v1/promotores?ativo=eq.true&tipo=eq.promotor&select=id,nome');
-        
-        // Buscar último ponto de cada promotor (para localização)
-        const hoje = new Date().toISOString().split('T')[0];
-        const pontos = await apiFetch(`/rest/v1/pontos?data=eq.${hoje}&select=promotor_id,latitude,longitude,data`);
+// Buscar promotores ativos (já com a última localização conhecida)
+        const promotores = await apiFetch('/rest/v1/promotores?ativo=eq.true&tipo=eq.promotor&select=id,nome,ultima_latitude,ultima_longitude,ultima_localizacao_em');
         
         // ===== 2. PROCESSAR DADOS =====
-        // Mapear última localização de cada promotor
+        // Considera "online" quem atualizou a localização nas últimas 4 horas
+        const quatroHorasAtras = new Date(Date.now() - 4 * 60 * 60 * 1000);
         const ultimaLocalizacao = {};
-        pontos.forEach(p => {
-            if (p.latitude && p.longitude) {
-                ultimaLocalizacao[p.promotor_id] = {
-                    lat: p.latitude,
-                    lon: p.longitude
-                };
+        promotores.forEach(p => {
+            if (p.ultima_latitude && p.ultima_longitude && p.ultima_localizacao_em) {
+                const atualizadoEm = new Date(p.ultima_localizacao_em);
+                if (atualizadoEm >= quatroHorasAtras) {
+                    ultimaLocalizacao[p.id] = {
+                        lat: p.ultima_latitude,
+                        lon: p.ultima_longitude
+                    };
+                }
             }
         });
         
