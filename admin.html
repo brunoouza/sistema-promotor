@@ -5812,7 +5812,7 @@ async function carregarNomesExposicaoCache() {
 async function construirTipoLabelsExposicao() {
     await carregarNomesExposicaoCache();
     const tipoLabels = {};
-    for (let i = 1; i <= 20; i++) {
+    for (let i = 1; i <= 30; i++) {
         const nomePonta = nomesExposicaoCache[`ponta_${i}`];
         const nomeCheck = nomesExposicaoCache[`check_${i}`];
         tipoLabels['ponta_' + i] = `Ponta de Gôndola ${i}` + (nomePonta ? ` - ${nomePonta}` : '');
@@ -5833,7 +5833,7 @@ async function carregarNomearExposicoes() {
             <div>
                 <h4 style="margin-bottom:8px;color:#1a1a2e;">📦 Ponta de Gôndola</h4>
     `;
-    for (let i = 1; i <= 20; i++) {
+    for (let i = 1; i <= 30; i++) {
         const valor = nomesExposicaoCache[`ponta_${i}`] || '';
         html += `
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
@@ -5843,7 +5843,7 @@ async function carregarNomearExposicoes() {
         `;
     }
     html += `</div><div><h4 style="margin-bottom:8px;color:#1a1a2e;">🛒 Check Stand</h4>`;
-    for (let i = 1; i <= 20; i++) {
+    for (let i = 1; i <= 30; i++) {
         const valor = nomesExposicaoCache[`check_${i}`] || '';
         html += `
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
