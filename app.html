@@ -1464,7 +1464,7 @@
                 </div>
                 <div class="form-group">
                     <label><i data-lucide="tag" style="width:14px;height:14px;vertical-align:-2px;"></i> Tipo de Exposição</label>
-                    <select id="expTipo">
+<select id="expTipo" onchange="atualizarNumerosExposicao()">
                         <option value="ponta">Ponta de Gondola</option>
                         <option value="check">Check Stand</option>
                     </select>
@@ -1707,7 +1707,7 @@ function abrirAba(abaId) {
     const item = document.querySelector(`.sidebar .menu-item[onclick*="${abaId}"]`);
     if (item) item.classList.add('ativo');
     if (abaId === 'tabChecklistApp') { carregarChecklistsApp(); }
-    if (abaId === 'tabExposicoes') { carregarLojasExposicao(); carregarExposicoes(); }
+    if (abaId === 'tabExposicoes') { carregarLojasExposicao(); carregarExposicoes(); carregarNomesExposicaoApp(); }
     if (abaId === 'tabValidador') carregarValidador();
     if (abaId === 'tabEspelho') carregarEspelhoPonto();
     if (abaId === 'tabAtestados') carregarAtestados();
@@ -3137,6 +3137,36 @@ function fecharModalMes() {
 }
 
 // ============================================
+// NOMES DE EXPOSIÇÃO (Ponta de Gôndola / Check Stand)
+// ============================================
+let nomesExposicaoAppCache = {};
+
+async function carregarNomesExposicaoApp() {
+    try {
+        const dados = await apiFetch('/rest/v1/nomes_exposicao?select=*');
+        nomesExposicaoAppCache = {};
+        dados.forEach(n => { nomesExposicaoAppCache[`${n.tipo}_${n.numero}`] = n.nome; });
+    } catch (erro) {
+        console.error('Erro ao carregar nomes de exposição:', erro);
+        nomesExposicaoAppCache = {};
+    }
+    atualizarNumerosExposicao();
+}
+
+function atualizarNumerosExposicao() {
+    const tipo = document.getElementById('expTipo').value;
+    const select = document.getElementById('expNumero');
+    const valorAtual = select.value;
+    select.innerHTML = '';
+    for (let i = 1; i <= 20; i++) {
+        const nome = nomesExposicaoAppCache[`${tipo}_${i}`];
+        const texto = nome ? `${i} - ${nome}` : `${i}`;
+        select.innerHTML += `<option value="${i}">${texto}</option>`;
+    }
+    if (valorAtual) select.value = valorAtual;
+}
+
+// ============================================
 // EXPOSIÇÕES
 // ============================================
 async function carregarLojasExposicao() {
@@ -3360,10 +3390,12 @@ async function carregarExposicoes() {
             }
         }
 
-        const tipoLabels = {};
+const tipoLabels = {};
         for (let i = 1; i <= 20; i++) {
-            tipoLabels['ponta_' + i] = `Ponta de Gondola ${i}`;
-            tipoLabels['check_' + i] = `Check Stand ${i}`;
+            const nomePonta = nomesExposicaoAppCache[`ponta_${i}`];
+            const nomeCheck = nomesExposicaoAppCache[`check_${i}`];
+            tipoLabels['ponta_' + i] = `Ponta de Gondola ${i}` + (nomePonta ? ` - ${nomePonta}` : '');
+            tipoLabels['check_' + i] = `Check Stand ${i}` + (nomeCheck ? ` - ${nomeCheck}` : '');
         }
 
         let html = '';
