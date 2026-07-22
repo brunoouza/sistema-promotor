@@ -3143,8 +3143,19 @@ async function carregarLojasExposicao() {
     const select = document.getElementById('expLoja');
     select.innerHTML = '<option value="">Selecione uma loja...</option>';
     try {
-        const lojas = await apiFetch('/rest/v1/lojas?select=id,nome&order=nome');
-        lojas.forEach(l => {
+        const hoje = new Date();
+        const mes = hoje.getMonth() + 1;
+        const ano = hoje.getFullYear();
+
+        let roteiros = await apiFetch(`/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&mes=eq.${mes}&ano=eq.${ano}&select=*,lojas(id,nome)`);
+        if (roteiros.length === 0) {
+            roteiros = await apiFetch(`/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&roteiro_recorrente=eq.true&select=*,lojas(id,nome)`);
+        }
+
+        const lojasUnicas = [...new Map(roteiros.filter(r => r.lojas).map(r => [r.lojas.id, r.lojas])).values()]
+            .sort((a, b) => a.nome.localeCompare(b.nome));
+
+        lojasUnicas.forEach(l => {
             select.innerHTML += `<option value="${l.id}">${l.nome}</option>`;
         });
     } catch (erro) {
