@@ -6820,7 +6820,7 @@ async function zerarPromocoesVencidas() {
 // CARREGAR PRODUTOS
 async function carregarProdutos() {
     await zerarPromocoesVencidas();
-    const div = document.getElementById('listaProdutos');
+    const div = document.getElementById('tabelaProdutos');
     div.innerHTML = '<tr><td colspan="7" class="loading">🔄 Carregando...</td></tr>';
     
     try {
