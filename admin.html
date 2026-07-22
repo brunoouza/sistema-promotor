@@ -1817,8 +1817,9 @@
                 <!-- SUB-ABAS DOS RELATÓRIOS -->
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;border-bottom:2px solid #e2e8f0;padding-bottom:12px;">
                     <!-- Pontos Fora do Raio e Pontos de Hoje ocultos (mantidos no código) -->
-                    <button class="btn btn-sm btn-info" onclick="carregarRelatorio('exposicoes')">📸 Exposições</button>
+<button class="btn btn-sm btn-info" onclick="carregarRelatorio('exposicoes')">📸 Exposições</button>
                     <button class="btn btn-sm btn-success" onclick="carregarRelatorio('respostas_checklist')">📋 Respostas do Checklist</button>
+                    <button class="btn btn-sm" style="background:#8b5cf6;color:white;" onclick="carregarRelatorio('nomear_exposicoes')">🏷️ Nomear Exposições</button>
                 </div>
 
 <!-- FILTROS PARA PONTOS FORA DO RAIO -->
@@ -5425,9 +5426,14 @@ async function carregarRelatorio(tipo) {
         return;
     }
     
-    if (tipo === 'respostas_checklist') {
+if (tipo === 'respostas_checklist') {
         filtrosRespostas.style.display = 'block';
         await carregarRespostasChecklist();
+        return;
+    }
+
+    if (tipo === 'nomear_exposicoes') {
+        await carregarNomearExposicoes();
         return;
     }
 
@@ -5788,6 +5794,111 @@ const gruposPdf = agruparRespostasChecklist(respostasChecklistCache);
 }
 
 // ============================================
+// NOMEAR EXPOSIÇÕES (Ponta de Gôndola / Check Stand)
+// ============================================
+let nomesExposicaoCache = {};
+
+async function carregarNomesExposicaoCache() {
+    try {
+        const dados = await apiFetch('/rest/v1/nomes_exposicao?select=*');
+        nomesExposicaoCache = {};
+        dados.forEach(n => { nomesExposicaoCache[`${n.tipo}_${n.numero}`] = n.nome; });
+    } catch (erro) {
+        console.error('Erro ao carregar nomes de exposição:', erro);
+        nomesExposicaoCache = {};
+    }
+}
+
+async function construirTipoLabelsExposicao() {
+    await carregarNomesExposicaoCache();
+    const tipoLabels = {};
+    for (let i = 1; i <= 20; i++) {
+        const nomePonta = nomesExposicaoCache[`ponta_${i}`];
+        const nomeCheck = nomesExposicaoCache[`check_${i}`];
+        tipoLabels['ponta_' + i] = `Ponta de Gôndola ${i}` + (nomePonta ? ` - ${nomePonta}` : '');
+        tipoLabels['check_' + i] = `Check Stand ${i}` + (nomeCheck ? ` - ${nomeCheck}` : '');
+    }
+    return tipoLabels;
+}
+
+async function carregarNomearExposicoes() {
+    const div = document.getElementById('relatorioResultado');
+    div.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+    await carregarNomesExposicaoCache();
+
+    let html = `
+        <h3>🏷️ Nomear Exposições</h3>
+        <p style="color:#64748b;font-size:14px;margin-bottom:16px;">Dê um nome a cada número, pra facilitar a identificação dos promotores. Pode deixar em branco os que não quiser nomear.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+            <div>
+                <h4 style="margin-bottom:8px;color:#1a1a2e;">📦 Ponta de Gôndola</h4>
+    `;
+    for (let i = 1; i <= 20; i++) {
+        const valor = nomesExposicaoCache[`ponta_${i}`] || '';
+        html += `
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="width:24px;font-weight:600;font-size:13px;">${i}</span>
+                <input type="text" class="input-nome-exposicao" data-tipo="ponta" data-numero="${i}" value="${valor}" placeholder="Sem nome" style="flex:1;padding:6px 10px;border:2px solid #e2e8f0;border-radius:8px;font-size:13px;">
+            </div>
+        `;
+    }
+    html += `</div><div><h4 style="margin-bottom:8px;color:#1a1a2e;">🛒 Check Stand</h4>`;
+    for (let i = 1; i <= 20; i++) {
+        const valor = nomesExposicaoCache[`check_${i}`] || '';
+        html += `
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="width:24px;font-weight:600;font-size:13px;">${i}</span>
+                <input type="text" class="input-nome-exposicao" data-tipo="check" data-numero="${i}" value="${valor}" placeholder="Sem nome" style="flex:1;padding:6px 10px;border:2px solid #e2e8f0;border-radius:8px;font-size:13px;">
+            </div>
+        `;
+    }
+    html += `
+        </div>
+        </div>
+        <div style="margin-top:16px;">
+            <button class="btn btn-success" onclick="salvarNomesExposicao()">💾 Salvar Nomes</button>
+        </div>
+        <div id="statusNomesExposicao" style="margin-top:12px;font-size:14px;color:#64748b;"></div>
+    `;
+    div.innerHTML = html;
+}
+
+async function salvarNomesExposicao() {
+    const status = document.getElementById('statusNomesExposicao');
+    status.textContent = '⏳ Salvando...';
+
+    const inputs = document.querySelectorAll('.input-nome-exposicao');
+    const registros = Array.from(inputs).map(inp => ({
+        tipo: inp.dataset.tipo,
+        numero: parseInt(inp.dataset.numero),
+        nome: inp.value.trim() || null
+    }));
+
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/nomes_exposicao?on_conflict=tipo,numero`, {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify(registros)
+        });
+        if (!response.ok) {
+            const erro = await response.text();
+            throw new Error(erro);
+        }
+        status.textContent = '✅ Nomes salvos com sucesso!';
+        showToast('✅ Nomes de exposição salvos!', 'success');
+    } catch (erro) {
+        status.textContent = '❌ Erro: ' + erro.message;
+        showToast('❌ Erro ao salvar: ' + erro.message, 'error');
+        console.error(erro);
+    }
+}
+
+// ============================================
 // EXPOSIÇÕES GRID
 // ============================================
 async function carregarExposicoesGrid() {
@@ -5800,7 +5911,7 @@ async function carregarExposicoesGrid() {
         let exposicoes = await apiFetch(endpoint);
         if (lojaId) { exposicoes = exposicoes.filter(e => e.roteiros?.lojas?.id === parseInt(lojaId)); }
         if (promotorId) { exposicoes = exposicoes.filter(e => e.promotor_id === parseInt(promotorId)); }
-        dadosExposicoesAtuais = exposicoes;
+dadosExposicoesAtuais = exposicoes;
         if (exposicoes.length === 0) { div.innerHTML = `<div class="expo-empty"><div class="icon">📭</div><p>Nenhuma exposição encontrada com os filtros selecionados.</p></div>`; return; }
         let totalPonta = 0, totalCheck = 0;
         exposicoes.forEach(e => {
@@ -5808,11 +5919,7 @@ async function carregarExposicoesGrid() {
             else if (e.tipo_exposicao && e.tipo_exposicao.startsWith('check')) totalCheck++;
         });
         let html = `<div class="expo-resumo"><span class="item"><strong>📊 Total:</strong> ${exposicoes.length} exposições</span><span class="item"><strong>📦 Pontas:</strong> ${totalPonta}</span><span class="item"><strong>🛒 Check Stands:</strong> ${totalCheck}</span></div><div class="expo-grid">`;
-        const tipoLabels = {};
-        for (let i = 1; i <= 20; i++) {
-            tipoLabels['ponta_' + i] = `Ponta de Gondola ${i}`;
-            tipoLabels['check_' + i] = `Check Stand ${i}`;
-        }
+        const tipoLabels = await construirTipoLabelsExposicao();
         exposicoes.forEach((exp, index) => {
             const tipoLabel = tipoLabels[exp.tipo_exposicao] || exp.tipo_exposicao || 'Exposição';
             const nomeLoja = exp.roteiros?.lojas?.nome || 'Loja não identificada';
@@ -5828,15 +5935,11 @@ async function carregarExposicoesGrid() {
     } catch (erro) { div.innerHTML = `<div class="loading">❌ Erro ao carregar: ${erro.message}</div>`; }
 }
 
-function abrirModalExpo(index) {
+async function abrirModalExpo(index) {
     const exp = dadosExposicoesAtuais[index];
     if (!exp) return;
     expoIndexAtual = index;
-    const tipoLabels = {};
-    for (let i = 1; i <= 20; i++) {
-        tipoLabels['ponta_' + i] = `Ponta de Gondola ${i}`;
-        tipoLabels['check_' + i] = `Check Stand ${i}`;
-    }
+    const tipoLabels = await construirTipoLabelsExposicao();
     const tipoLabel = tipoLabels[exp.tipo_exposicao] || exp.tipo_exposicao || 'Exposição';
     const nomeLoja = exp.roteiros?.lojas?.nome || 'Loja não identificada';
     const endereco = exp.roteiros?.lojas?.endereco || '';
@@ -5872,7 +5975,7 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-function gerarPDFExposicoes() {
+async function gerarPDFExposicoes() {
     const dados = dadosExposicoesAtuais;
     if (!dados || dados.length === 0) {
         showToast('⚠️ Nenhuma exposição para gerar PDF.', 'error');
@@ -5884,11 +5987,7 @@ function gerarPDFExposicoes() {
         showToast('❌ Permita pop-ups para gerar o PDF', 'error');
         return;
     }
-    const tipoLabels = {};
-    for (let i = 1; i <= 20; i++) {
-        tipoLabels['ponta_' + i] = `Ponta de Gondola ${i}`;
-        tipoLabels['check_' + i] = `Check Stand ${i}`;
-    }
+    const tipoLabels = await construirTipoLabelsExposicao();
     const promotorId = document.getElementById('filtroExpoPromotor').value;
     const promotorNome = document.getElementById('filtroExpoPromotor').selectedOptions[0]?.text || 'Todos';
     const lojaNome = document.getElementById('filtroExpoLoja').selectedOptions[0]?.text || 'Todas';
