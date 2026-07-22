@@ -7425,6 +7425,20 @@ function localizarPromotorNoMapa(promotorId) {
 }
 
 // ============================================
+// FORMATAR TEMPO DECORRIDO (pra mostrar no balão do mapa)
+// ============================================
+function formatarTempoDecorrido(dataIso) {
+    if (!dataIso) return 'sem informação';
+    const diffMs = Date.now() - new Date(dataIso).getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return 'agora mesmo';
+    if (diffMin < 60) return `há ${diffMin} min`;
+    const diffHoras = Math.floor(diffMin / 60);
+    const minRestantes = diffMin % 60;
+    return `há ${diffHoras}h${String(minRestantes).padStart(2, '0')}`;
+}
+
+// ============================================
 // ALTERAR RAIO
 // ============================================
 async function alterarRaio(tipo, valor) {
@@ -7603,13 +7617,15 @@ const icon = L.divIcon({
                 iconAnchor: [15, 28]
             });
             
-            // Marcador do promotor
+// Marcador do promotor
+            const tempoDecorrido = formatarTempoDecorrido(promotor.ultima_localizacao_em);
             const marker = L.marker([lat, lon], { icon: icon })
                 .addTo(mapaGlobal)
                 .bindPopup(`
                     <strong>👤 ${promotor.nome}</strong><br>
                     Status: ${status}<br>
-                    ${lojaMaisProxima ? `📍 Próximo a: ${lojaMaisProxima}` : '📍 Não está próximo a nenhuma loja'}
+                    ${lojaMaisProxima ? `📍 Próximo a: ${lojaMaisProxima}` : '📍 Não está próximo a nenhuma loja'}<br>
+                    <span style="font-size:11px;color:#94a3b8;">🕐 Atualizado ${tempoDecorrido}</span>
                 `);
             
 // Tooltip com nome (hover)
