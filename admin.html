@@ -5397,6 +5397,10 @@ async function carregarSelectsExpo() {
     } catch (erro) { console.error('Erro ao carregar promotores:', erro); }
 }
 
+function aplicarFiltroExposicoes() {
+    carregarExposicoesGrid();
+}
+
 async function carregarLojasExpoFiltro() {
     const promotorId = document.getElementById('filtroExpoPromotor').value;
     const selLoja = document.getElementById('filtroExpoLoja');
