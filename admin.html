@@ -7158,7 +7158,7 @@ async function confirmarImportacaoExcel() {
     showToast('⏳ Importando produtos...', 'info');
     
     let atualizados = 0;
-    let naoEncontrados = 0;
+    const naoEncontrados = [];
     
     try {
         for (const item of excelDados) {
@@ -7171,16 +7171,42 @@ async function confirmarImportacaoExcel() {
                 await apiFetch(`/rest/v1/produtos?id=eq.${produtos[0].id}`, 'PATCH', dados);
                 atualizados++;
             } else {
-                naoEncontrados++;
+                naoEncontrados.push(item);
             }
         }
         
-        document.getElementById('excelStatus').textContent = `✅ ${atualizados} produtos atualizados${naoEncontrados > 0 ? `, ${naoEncontrados} não encontrados` : ''}`;
-        showToast(`✅ ${atualizados} produtos atualizados!`, 'success');
         document.getElementById('btnConfirmarExcel').disabled = false;
-        
-        fecharModal('modalImportarExcel');
-        carregarProdutos();
+
+        if (naoEncontrados.length > 0) {
+            const htmlNaoEncontrados = `
+                <div style="background:#fef3c7;border:2px solid #eab308;border-radius:8px;padding:12px;margin-top:12px;">
+                    <div style="font-weight:700;color:#92400e;margin-bottom:8px;">⚠️ ${naoEncontrados.length} código(s) não encontrado(s) no catálogo — NÃO foram atualizados:</div>
+                    <div style="max-height:200px;overflow-y:auto;">
+                        <table style="width:100%;font-size:12px;">
+                            <thead><tr><th style="text-align:left;padding:4px;">Código</th><th style="text-align:left;padding:4px;">Preço</th><th style="text-align:left;padding:4px;">Promocional</th></tr></thead>
+                            <tbody>
+                                ${naoEncontrados.map(item => `
+                                    <tr>
+                                        <td style="padding:4px;font-weight:600;">${item.codigo}</td>
+                                        <td style="padding:4px;">R$ ${item.preco_venda.toFixed(2)}</td>
+                                        <td style="padding:4px;">${item.preco_promocional ? 'R$ ' + item.preco_promocional.toFixed(2) : '-'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="font-size:12px;color:#92400e;margin-top:8px;">Esses códigos precisam ser cadastrados manualmente (Marca e Descrição não vêm da planilha) pelo botão "➕ Novo Produto".</div>
+                </div>
+            `;
+            document.getElementById('excelStatus').innerHTML = `✅ ${atualizados} produtos atualizados.` + htmlNaoEncontrados;
+            showToast(`✅ ${atualizados} atualizados, ${naoEncontrados.length} não encontrados`, 'info');
+            carregarProdutos();
+        } else {
+            document.getElementById('excelStatus').textContent = `✅ ${atualizados} produtos atualizados! Todos os códigos foram encontrados.`;
+            showToast(`✅ ${atualizados} produtos atualizados!`, 'success');
+            fecharModal('modalImportarExcel');
+            carregarProdutos();
+        }
         
     } catch (erro) {
         showToast('❌ Erro: ' + erro.message, 'error');
