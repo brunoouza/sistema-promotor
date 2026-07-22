@@ -4751,7 +4751,23 @@ let filtrosApp = {
     ordenacao: 'nome_asc'
 };
 
+// ============================================
+// ZERAR PROMOÇÕES VENCIDAS (verifica toda vez que a lista carrega)
+// ============================================
+async function zerarPromocoesVencidasApp() {
+    try {
+        const hojeStr = new Date().toISOString().split('T')[0];
+        const vencidos = await apiFetch(`/rest/v1/produtos?preco_promocional=not.is.null&promocao_validade=lt.${hojeStr}&select=id`);
+        for (const p of vencidos) {
+            await apiFetch(`/rest/v1/produtos?id=eq.${p.id}`, 'PATCH', { preco_promocional: null, promocao_validade: null });
+        }
+    } catch (erro) {
+        console.error('Erro ao zerar promoções vencidas:', erro);
+    }
+}
+
 async function carregarProdutosApp() {
+    await zerarPromocoesVencidasApp();
     const div = document.getElementById('listaProdutosApp');
     div.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
     
