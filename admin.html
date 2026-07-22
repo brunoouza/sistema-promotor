@@ -2348,9 +2348,13 @@
                 <label>💰 Preço de Venda *</label>
                 <input type="number" id="formProdutoPrecoVenda" placeholder="0.00" step="0.01" min="0">
             </div>
-            <div class="form-group">
+<div class="form-group">
                 <label>🏷️ Preço Promocional</label>
                 <input type="number" id="formProdutoPrecoPromo" placeholder="0.00 (opcional)" step="0.01" min="0">
+            </div>
+            <div class="form-group">
+                <label>📅 Validade da Promoção</label>
+                <input type="date" id="formProdutoPromoValidade">
             </div>
         </div>
 <input type="hidden" id="formProdutoId">
@@ -6942,7 +6946,6 @@ function irPaginaProdutos(pagina) {
     carregarProdutos();
 }
 
-// ABRIR MODAL PRODUTO
 function abrirModalProduto() {
     document.getElementById('formProdutoId').value = '';
     document.getElementById('modalProdutoTitulo').textContent = '➕ Novo Produto';
@@ -6951,6 +6954,7 @@ function abrirModalProduto() {
     document.getElementById('formProdutoDescricao').value = '';
     document.getElementById('formProdutoPrecoVenda').value = '';
     document.getElementById('formProdutoPrecoPromo').value = '';
+    document.getElementById('formProdutoPromoValidade').value = '';
     document.getElementById('modalProduto').classList.add('active');
 }
 
@@ -6966,8 +6970,9 @@ async function editarProduto(id) {
         document.getElementById('formProdutoMarca').value = p.marca || '';
         document.getElementById('formProdutoCodigo').value = p.codigo || '';
         document.getElementById('formProdutoDescricao').value = p.descricao || '';
-        document.getElementById('formProdutoPrecoVenda').value = p.preco_venda || '';
+document.getElementById('formProdutoPrecoVenda').value = p.preco_venda || '';
         document.getElementById('formProdutoPrecoPromo').value = p.preco_promocional || '';
+        document.getElementById('formProdutoPromoValidade').value = p.promocao_validade || '';
         document.getElementById('modalProduto').classList.add('active');
     } catch (erro) {
         showToast('❌ Erro: ' + erro.message, 'error');
@@ -6981,7 +6986,8 @@ async function salvarProduto() {
     const codigo = document.getElementById('formProdutoCodigo').value.trim();
     const descricao = document.getElementById('formProdutoDescricao').value.trim();
     const preco_venda = parseFloat(document.getElementById('formProdutoPrecoVenda').value) || 0;
-    const preco_promocional = parseFloat(document.getElementById('formProdutoPrecoPromo').value) || null;
+const preco_promocional = parseFloat(document.getElementById('formProdutoPrecoPromo').value) || null;
+    const promocao_validade = document.getElementById('formProdutoPromoValidade').value || null;
     
 if (!marca || !codigo || !descricao || preco_venda <= 0) {
         showToast('⚠️ Preencha todos os campos obrigatórios!', 'error');
@@ -6992,7 +6998,7 @@ if (!marca || !codigo || !descricao || preco_venda <= 0) {
     if (btnSalvarProduto) btnSalvarProduto.disabled = true;
     
     try {
-        const dados = { marca, codigo, descricao, preco_venda, preco_promocional };
+        const dados = { marca, codigo, descricao, preco_venda, preco_promocional, promocao_validade };
         
         if (id) {
             await apiFetch(`/rest/v1/produtos?id=eq.${id}`, 'PATCH', dados);
@@ -7092,7 +7098,7 @@ async function processarExcelFile(file) {
         }
         
         const data = await file.arrayBuffer();
-        const workbook = XLSX.read(data, { type: 'array' });
+        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json(firstSheet);
         
@@ -7102,31 +7108,49 @@ async function processarExcelFile(file) {
         }
         
         const headers = Object.keys(jsonData[0]);
-        const colunas = {
+const colunas = {
             codigo: headers.find(h => h.toLowerCase().includes('cod') || h.toLowerCase().includes('cód')) || headers[0],
             preco_venda: headers.find(h => h.toLowerCase().includes('venda') || h.toLowerCase().includes('preço v')) || headers[1],
-            preco_promocional: headers.find(h => h.toLowerCase().includes('promoc') || h.toLowerCase().includes('promo'))
+            preco_promocional: headers.find(h => h.toLowerCase().includes('promoc') || h.toLowerCase().includes('promo')),
+            promocao_validade: headers.find(h => h.toLowerCase().includes('valid') || h.toLowerCase().includes('venc'))
         };
         
-        excelDados = jsonData.map(row => ({
-            codigo: String(row[colunas.codigo] || '').trim(),
-            preco_venda: parseFloat(row[colunas.preco_venda]) || 0,
-            preco_promocional: colunas.preco_promocional ? (parseFloat(row[colunas.preco_promocional]) || null) : null
-        })).filter(item => item.codigo && item.preco_venda > 0);
+excelDados = jsonData.map(row => {
+            let validade = null;
+            if (colunas.promocao_validade && row[colunas.promocao_validade]) {
+                const valorData = row[colunas.promocao_validade];
+                if (valorData instanceof Date) {
+                    validade = valorData.toISOString().split('T')[0];
+                } else if (typeof valorData === 'string' && valorData.trim()) {
+                    // Tenta interpretar formatos comuns tipo DD/MM/AAAA
+                    const partes = valorData.trim().split('/');
+                    if (partes.length === 3) {
+                        validade = `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}`;
+                    }
+                }
+            }
+            return {
+                codigo: String(row[colunas.codigo] || '').trim().padStart(6, '0'),
+                preco_venda: parseFloat(row[colunas.preco_venda]) || 0,
+                preco_promocional: colunas.preco_promocional ? (parseFloat(row[colunas.preco_promocional]) || null) : null,
+                promocao_validade: validade
+            };
+        }).filter(item => item.codigo && item.preco_venda > 0);
         
         const previewDiv = document.getElementById('excelPreview');
         previewDiv.style.display = 'block';
         previewDiv.innerHTML = `
             <h4 style="margin-bottom:8px;">📋 Preview (${excelDados.length} produtos)</h4>
-            <div class="table-wrapper">
+<div class="table-wrapper">
                 <table>
-                    <thead><tr><th>Código</th><th>Preço Venda</th><th>Preço Promocional</th></tr></thead>
+                    <thead><tr><th>Código</th><th>Preço Venda</th><th>Preço Promocional</th><th>Validade Promoção</th></tr></thead>
                     <tbody>
                         ${excelDados.slice(0, 20).map(item => `
                             <tr>
                                 <td><strong>${item.codigo}</strong></td>
                                 <td>R$ ${item.preco_venda.toFixed(2)}</td>
                                 <td>${item.preco_promocional ? `R$ ${item.preco_promocional.toFixed(2)}` : '-'}</td>
+                                <td>${item.promocao_validade ? new Date(item.promocao_validade + 'T00:00:00').toLocaleDateString('pt-BR') : '-'}</td>
                             </tr>
                         `).join('')}
                         ${excelDados.length > 20 ? `<tr><td colspan="3" style="text-align:center;color:#94a3b8;">... e mais ${excelDados.length - 20} produtos</td></tr>` : ''}
@@ -7154,19 +7178,24 @@ async function confirmarImportacaoExcel() {
     if (!confirm(`⚠️ Confirmar importação de ${excelDados.length} produtos?\n\nApenas produtos existentes serão atualizados.`)) return;
     
     document.getElementById('btnConfirmarExcel').disabled = true;
-    document.getElementById('excelStatus').textContent = '⏳ Importando...';
     showToast('⏳ Importando produtos...', 'info');
     
     let atualizados = 0;
     const naoEncontrados = [];
     
     try {
-        for (const item of excelDados) {
+        for (let i = 0; i < excelDados.length; i++) {
+            const item = excelDados[i];
+            document.getElementById('excelStatus').innerHTML = `⏳ Processando ${i + 1} de ${excelDados.length}...`;
+
             const produtos = await apiFetch(`/rest/v1/produtos?codigo=eq.${item.codigo}&select=id`);
-            if (produtos.length > 0) {
+if (produtos.length > 0) {
                 const dados = { preco_venda: item.preco_venda };
                 if (item.preco_promocional !== null && item.preco_promocional !== undefined) {
                     dados.preco_promocional = item.preco_promocional > 0 ? item.preco_promocional : null;
+                }
+                if (item.promocao_validade) {
+                    dados.promocao_validade = item.promocao_validade;
                 }
                 await apiFetch(`/rest/v1/produtos?id=eq.${produtos[0].id}`, 'PATCH', dados);
                 atualizados++;
@@ -7177,9 +7206,15 @@ async function confirmarImportacaoExcel() {
         
         document.getElementById('btnConfirmarExcel').disabled = false;
 
+        let htmlResultado = `
+            <div style="background:#dcfce7;border:2px solid #22c55e;border-radius:8px;padding:12px;margin-top:12px;">
+                <div style="font-weight:700;color:#166534;">✅ Importação concluída! ${atualizados} de ${excelDados.length} produtos atualizados.</div>
+            </div>
+        `;
+
         if (naoEncontrados.length > 0) {
-            const htmlNaoEncontrados = `
-                <div style="background:#fef3c7;border:2px solid #eab308;border-radius:8px;padding:12px;margin-top:12px;">
+            htmlResultado += `
+                <div style="background:#fef3c7;border:2px solid #eab308;border-radius:8px;padding:12px;margin-top:8px;">
                     <div style="font-weight:700;color:#92400e;margin-bottom:8px;">⚠️ ${naoEncontrados.length} código(s) não encontrado(s) no catálogo — NÃO foram atualizados:</div>
                     <div style="max-height:200px;overflow-y:auto;">
                         <table style="width:100%;font-size:12px;">
@@ -7195,23 +7230,19 @@ async function confirmarImportacaoExcel() {
                             </tbody>
                         </table>
                     </div>
-                    <div style="font-size:12px;color:#92400e;margin-top:8px;">Esses códigos precisam ser cadastrados manualmente (Marca e Descrição não vêm da planilha) pelo botão "➕ Novo Produto".</div>
+                    <div style="font-size:12px;color:#92400e;margin-top:8px;">Esses códigos precisam ser cadastrados manualmente pelo botão "➕ Novo Produto".</div>
                 </div>
             `;
-            document.getElementById('excelStatus').innerHTML = `✅ ${atualizados} produtos atualizados.` + htmlNaoEncontrados;
-            showToast(`✅ ${atualizados} atualizados, ${naoEncontrados.length} não encontrados`, 'info');
-            carregarProdutos();
-        } else {
-            document.getElementById('excelStatus').textContent = `✅ ${atualizados} produtos atualizados! Todos os códigos foram encontrados.`;
-            showToast(`✅ ${atualizados} produtos atualizados!`, 'success');
-            fecharModal('modalImportarExcel');
-            carregarProdutos();
         }
+
+        document.getElementById('excelStatus').innerHTML = htmlResultado;
+        showToast(`✅ Importação concluída: ${atualizados} atualizados!`, 'success');
+        carregarProdutos();
         
     } catch (erro) {
         showToast('❌ Erro: ' + erro.message, 'error');
         document.getElementById('btnConfirmarExcel').disabled = false;
-        document.getElementById('excelStatus').textContent = '❌ Erro na importação';
+        document.getElementById('excelStatus').innerHTML = `<div style="color:#ef4444;">❌ Erro na importação: ${erro.message}</div>`;
     }
 }
 
