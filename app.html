@@ -3382,9 +3382,21 @@ function atualizarNumerosExposicao() {
 // ============================================
 let historicoExpoCache = [];
 
+async function limparExposicoesAntigasApp() {
+    try {
+        const hoje = new Date();
+        const limite = new Date(hoje.getFullYear(), hoje.getMonth() - 3, hoje.getDate());
+        const limiteStr = limite.toISOString().split('T')[0];
+        await apiFetch(`/rest/v1/exposicoes?promotor_id=eq.${promotorLogado.id}&data=lt.${limiteStr}`, 'DELETE');
+    } catch (erro) {
+        console.error('Erro ao limpar exposições antigas:', erro);
+    }
+}
+
 async function carregarLojasComExposicoes() {
     const div = document.getElementById('listaLojasExposicoes');
     div.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+    await limparExposicoesAntigasApp();
     try {
         const dados = await apiFetch(
             `/rest/v1/exposicoes?promotor_id=eq.${promotorLogado.id}&select=*,lojas(id,nome)&order=data.desc`
