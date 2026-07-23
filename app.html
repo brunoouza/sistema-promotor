@@ -1138,6 +1138,22 @@
 </div>
 
 <!-- ========================================== -->
+<!-- MODAL PREÇOS ATUALIZADOS -->
+<!-- ========================================== -->
+<div id="modalPrecosAtualizados" class="modal-mes">
+    <div class="modal-content" style="max-width:600px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3><i data-lucide="trending-up" style="width:18px;height:18px;vertical-align:-3px;"></i> Preços Atualizados (últimos 7 dias)</h3>
+            <button class="btn btn-danger btn-sm" onclick="fecharModalPrecosAtualizados()" style="padding:6px 14px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;"><i data-lucide="x" style="width:14px;height:14px;vertical-align:-2px;"></i> Fechar</button>
+        </div>
+        <div id="listaPrecosAtualizados" style="max-height:50vh;overflow-y:auto;"></div>
+        <div style="margin-top:16px;">
+            <button class="btn-enviar" onclick="baixarPDFPrecosAtualizados()" style="background:#2563eb;"><i data-lucide="file-text" style="width:16px;height:16px;vertical-align:-3px;"></i> Baixar PDF</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
 <!-- MODAL REUNIÃO HOJE -->
 <!-- ========================================== -->
 <div id="modalReuniaoHoje" class="modal-mes">
@@ -1408,6 +1424,17 @@
         <!-- ABA 1: PONTO (COM GPS OBRIGATÓRIO E FOTO) -->
         <!-- ========================================== -->
         <div id="tabPonto" class="tab-content active">
+
+<!-- ALERTA DE ATUALIZAÇÃO DE PREÇOS -->
+            <div id="alertaPrecosAtualizados" onclick="abrirModalPrecosAtualizados()" style="display:none;cursor:pointer;background:#dbeafe;border:2px solid #2563eb;border-radius:12px;padding:12px 16px;margin-bottom:16px;align-items:center;gap:10px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <i data-lucide="trending-up" style="width:24px;height:24px;color:#1d4ed8;flex-shrink:0;"></i>
+                    <div style="flex:1;">
+                        <div style="font-weight:700;color:#1d4ed8;font-size:14px;"><span id="qtdPrecosAtualizados">0</span> preço(s) atualizado(s) esta semana</div>
+                        <div style="font-size:12px;color:#1d4ed8;">Toque para ver os detalhes</div>
+                    </div>
+                </div>
+            </div>
 
             <!-- ALERTA DE REUNIÃO HOJE -->
             <div id="alertaReuniaoHoje" onclick="abrirModalReuniaoHoje()" style="display:none;cursor:pointer;background:#ede9fe;border:2px solid #8b5cf6;border-radius:12px;padding:12px 16px;margin-bottom:16px;align-items:center;gap:10px;">
@@ -1985,7 +2012,8 @@ async function carregarDadosIniciais() {
         verificarGPS();
         atualizarIndicadorPendentes();
         if (navigator.onLine) sincronizarPontosOffline();
-verificarPromocoesVencendo();
+        verificarPromocoesVencendo();
+        verificarPrecosAtualizados();
         verificarReuniaoHojeBanner();
         await Promise.all([
             carregarLojaDoDia(),
@@ -2398,6 +2426,100 @@ function calcularDistancia(lat1, lon1, lat2, lon2) {
               Math.sin(dLon/2) * Math.sin(dLon/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c * 1000;
+}
+
+// ============================================
+// PREÇOS ATUALIZADOS (últimos 7 dias)
+// ============================================
+let precosAtualizadosCache = [];
+
+async function verificarPrecosAtualizados() {
+    try {
+        const seteDiasAtras = new Date();
+        seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
+        const limiteStr = seteDiasAtras.toISOString();
+
+        const produtos = await apiFetch(
+            `/rest/v1/produtos?preco_atualizado_em=gte.${limiteStr}&order=preco_atualizado_em.desc&select=*`
+        );
+        precosAtualizadosCache = produtos;
+
+        const banner = document.getElementById('alertaPrecosAtualizados');
+        if (produtos.length > 0) {
+            document.getElementById('qtdPrecosAtualizados').textContent = produtos.length;
+            banner.style.display = 'flex';
+        } else {
+            banner.style.display = 'none';
+        }
+    } catch (erro) {
+        console.error('Erro ao verificar preços atualizados:', erro);
+    }
+}
+
+function abrirModalPrecosAtualizados() {
+    const div = document.getElementById('listaPrecosAtualizados');
+    if (precosAtualizadosCache.length === 0) {
+        div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum preço atualizado</p>';
+    } else {
+        let html = '<div class="table-wrapper"><table><thead><tr><th>Código</th><th>Descrição</th><th>Preço</th><th>Promo</th><th>Atualizado em</th></tr></thead><tbody>';
+        precosAtualizadosCache.forEach(p => {
+            const dataFormat = new Date(p.preco_atualizado_em).toLocaleDateString('pt-BR');
+            html += `<tr>
+                <td>${p.codigo}</td>
+                <td>${p.descricao}</td>
+                <td>R$ ${p.preco_venda.toFixed(2)}</td>
+                <td>${p.preco_promocional ? 'R$ ' + p.preco_promocional.toFixed(2) : '-'}</td>
+                <td>${dataFormat}</td>
+            </tr>`;
+        });
+        html += '</tbody></table></div>';
+        div.innerHTML = html;
+    }
+    document.getElementById('modalPrecosAtualizados').classList.add('active');
+}
+
+function fecharModalPrecosAtualizados() {
+    document.getElementById('modalPrecosAtualizados').classList.remove('active');
+}
+
+function baixarPDFPrecosAtualizados() {
+    if (precosAtualizadosCache.length === 0) {
+        showToast('⚠️ Nenhum preço atualizado pra gerar PDF.', 'error');
+        return;
+    }
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+
+    pdf.setFontSize(14);
+    pdf.text('Preços Atualizados (últimos 7 dias)', 105, 15, { align: 'center' });
+    pdf.setFontSize(9);
+    pdf.setTextColor(100);
+    pdf.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`, 105, 21, { align: 'center' });
+
+    let y = 32;
+    pdf.setTextColor(30);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('Código', 15, y);
+    pdf.text('Descrição', 40, y);
+    pdf.text('Preço', 130, y);
+    pdf.text('Promo', 152, y);
+    pdf.text('Atualizado', 175, y);
+    pdf.setFont(undefined, 'normal');
+    y += 6;
+
+    precosAtualizadosCache.forEach(p => {
+        const dataFormat = new Date(p.preco_atualizado_em).toLocaleDateString('pt-BR');
+        pdf.text(String(p.codigo), 15, y);
+        pdf.text(String(p.descricao).slice(0, 42), 40, y);
+        pdf.text(`R$ ${p.preco_venda.toFixed(2)}`, 130, y);
+        pdf.text(p.preco_promocional ? `R$ ${p.preco_promocional.toFixed(2)}` : '-', 152, y);
+        pdf.text(dataFormat, 175, y);
+        y += 6;
+        if (y > 280) { pdf.addPage(); y = 20; }
+    });
+
+    pdf.save(`precos_atualizados_${new Date().toISOString().split('T')[0]}.pdf`);
+    showToast('✅ PDF baixado!', 'success');
 }
 
 // ============================================
