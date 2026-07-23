@@ -1606,7 +1606,7 @@
                     <div style="margin-bottom:12px;text-align:right;">
                         <button class="btn btn-success" onclick="abrirModalLoja()">+ Nova Loja</button>
                     </div>
-                    <div class="table-wrapper"><table><thead><tr><th>ID</th><th>Nome</th><th>Endereço</th><th>Cidade</th><th>UF</th><th>Tipo</th><th>Coordenadas</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaLojas"><tr><td colspan="9" class="loading">Carregando...</td></tr></tbody></table></div>
+                    <div class="table-wrapper"><table><thead><tr><th>ID</th><th>Nome</th><th>Endereço</th><th>Cidade</th><th>UF</th><th>Tipo</th><th>Coordenadas</th><th>Status</th><th>Cobertura</th><th>Ações</th></tr></thead><tbody id="tabelaLojas"><tr><td colspan="10" class="loading">Carregando...</td></tr></tbody></table></div>
                 </div>
 
                 <!-- SUB-ABA: MAPA DE LOJAS E PROMOTORES -->
@@ -3868,16 +3868,22 @@ async function carregarLojasAdmin() {
     const tbody = document.getElementById('tabelaLojas');
     try {
         const dados = await apiFetch('/rest/v1/lojas?order=id');
-        if (dados.length === 0) { tbody.innerHTML = `<tr><td colspan="9" class="empty-state">Nenhuma loja cadastrada</td></tr>`; return; }
+        if (dados.length === 0) { tbody.innerHTML = `<tr><td colspan="10" class="empty-state">Nenhuma loja cadastrada</td></tr>`; return; }
+
+        // Descobrir quais lojas já têm pelo menos um roteiro fixo
+        const roteiros = await apiFetch('/rest/v1/roteiros?select=loja_id');
+        const lojasComRoteiro = new Set(roteiros.map(r => r.loja_id).filter(id => id));
+
         let html = '';
         dados.forEach(l => {
             const tipoClass = l.tipo === 'rua' ? 'rua' : 'shopping';
             const coords = l.latitude && l.longitude ? `${l.latitude}, ${l.longitude}` : 'Não definido';
             const status = l.ativo !== false ? '<span class="badge badge-success">Ativo</span>' : '<span class="badge badge-danger">Inativo</span>';
-            html += `<tr><td>${l.id}</td><td><strong>${l.nome}</strong></td><td>${l.endereco || '-'}</td><td>${l.cidade || '-'}</td><td><span class="badge badge-info">${l.estado || '-'}</span></td><td><span class="loja-tipo ${tipoClass}">${l.tipo === 'rua' ? '🏪 Rua' : '🛍️ Shopping'}</span></td><td style="font-size:12px;">${coords}</td><td>${status}</td><td><button class="btn btn-primary btn-sm" onclick="editarLoja(${l.id})">Editar</button><button class="btn btn-warning btn-sm" onclick="toggleLoja(${l.id}, ${l.ativo === false})">${l.ativo !== false ? '🔴' : '🟢'}</button></td></tr>`;
+            const cobertura = lojasComRoteiro.has(l.id) ? '<span class="badge badge-success">✅ Sim</span>' : '<span class="badge badge-danger">⚠️ Sem promotor</span>';
+            html += `<tr><td>${l.id}</td><td><strong>${l.nome}</strong></td><td>${l.endereco || '-'}</td><td>${l.cidade || '-'}</td><td><span class="badge badge-info">${l.estado || '-'}</span></td><td><span class="loja-tipo ${tipoClass}">${l.tipo === 'rua' ? '🏪 Rua' : '🛍️ Shopping'}</span></td><td style="font-size:12px;">${coords}</td><td>${status}</td><td>${cobertura}</td><td><button class="btn btn-primary btn-sm" onclick="editarLoja(${l.id})">Editar</button><button class="btn btn-warning btn-sm" onclick="toggleLoja(${l.id}, ${l.ativo === false})">${l.ativo !== false ? '🔴' : '🟢'}</button></td></tr>`;
         });
         tbody.innerHTML = html;
-    } catch (erro) { tbody.innerHTML = `<tr><td colspan="9" class="loading">❌ ${erro.message}</td></tr>`; }
+    } catch (erro) { tbody.innerHTML = `<tr><td colspan="10" class="loading">❌ ${erro.message}</td></tr>`; }
 }
 
 async function toggleLoja(id, ativo) {
