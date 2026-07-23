@@ -2075,6 +2075,7 @@
                                 <th>Descrição</th>
                                 <th style="width:130px;">Preço Venda</th>
                                 <th style="width:130px;">Preço Promocional</th>
+                                <th style="width:90px;">Status</th>
                                 <th style="width:120px;">Ações</th>
                             </tr>
                         </thead>
@@ -2580,6 +2581,7 @@ const SUPABASE_KEY = 'sb_publishable_ut1As4DmUMGCw-XUbAdjTw_dQ-uXEoo';
 // VARIÁVEIS GLOBAIS
 // ============================================
 let adminLogado = null;
+let souMaster = false;
 let todasLojas = [];
 let lojasSelecionadas = [];
 let roteiroEditando = null;
@@ -2778,7 +2780,8 @@ async function loginAdmin() {
 async function verificarMaster(adminId) {
     try {
         const master = await apiFetch(`/rest/v1/administradores_master?administrador_id=eq.${adminId}&is_master=eq.true`);
-        if (master.length > 0) {
+        souMaster = master.length > 0;
+        if (souMaster) {
             document.getElementById('menuAdmMaster').style.display = 'block';
             console.log('👑 Usuário Master detectado!');
         } else {
@@ -2786,6 +2789,7 @@ async function verificarMaster(adminId) {
         }
     } catch (erro) {
         console.error('Erro ao verificar Master:', erro);
+        souMaster = false;
         document.getElementById('menuAdmMaster').style.display = 'none';
     }
 }
@@ -3970,13 +3974,15 @@ async function carregarLojasAdmin() {
             const coords = l.latitude && l.longitude ? `${l.latitude}, ${l.longitude}` : 'Não definido';
             const status = l.ativo !== false ? '<span class="badge badge-success">Ativo</span>' : '<span class="badge badge-danger">Inativo</span>';
             const cobertura = lojasComRoteiro.has(l.id) ? '<span class="badge badge-success">✅ Sim</span>' : '<span class="badge badge-danger">⚠️ Sem promotor</span>';
-            html += `<tr><td>${l.id}</td><td><strong>${l.nome}</strong></td><td>${l.endereco || '-'}</td><td>${l.cidade || '-'}</td><td><span class="badge badge-info">${l.estado || '-'}</span></td><td><span class="loja-tipo ${tipoClass}">${l.tipo === 'rua' ? '🏪 Rua' : '🛍️ Shopping'}</span></td><td style="font-size:12px;">${coords}</td><td>${status}</td><td>${cobertura}</td><td><button class="btn btn-primary btn-sm" onclick="editarLoja(${l.id})">Editar</button><button class="btn btn-warning btn-sm" onclick="toggleLoja(${l.id}, ${l.ativo === false})">${l.ativo !== false ? '🔴' : '🟢'}</button></td></tr>`;
+            const btnToggleLoja = souMaster ? `<button class="btn btn-warning btn-sm" onclick="toggleLoja(${l.id}, ${l.ativo === false})">${l.ativo !== false ? '🔴' : '🟢'}</button>` : '';
+            html += `<tr><td>${l.id}</td><td><strong>${l.nome}</strong></td><td>${l.endereco || '-'}</td><td>${l.cidade || '-'}</td><td><span class="badge badge-info">${l.estado || '-'}</span></td><td><span class="loja-tipo ${tipoClass}">${l.tipo === 'rua' ? '🏪 Rua' : '🛍️ Shopping'}</span></td><td style="font-size:12px;">${coords}</td><td>${status}</td><td>${cobertura}</td><td><button class="btn btn-primary btn-sm" onclick="editarLoja(${l.id})">Editar</button>${btnToggleLoja}</td></tr>`;
         });
         tbody.innerHTML = html;
     } catch (erro) { tbody.innerHTML = `<tr><td colspan="10" class="loading">❌ ${erro.message}</td></tr>`; }
 }
 
 async function toggleLoja(id, ativo) {
+    if (!souMaster) { showToast('⛔ Apenas o Master pode ativar/desativar lojas!', 'error'); return; }
     try {
         await apiFetch(`/rest/v1/lojas?id=eq.${id}`, 'PATCH', { ativo });
         showToast(ativo ? '✅ Loja ativada!' : '⛔ Loja desativada!');
@@ -7118,6 +7124,8 @@ function renderizarTabelaProdutos(dados) {
         const precoVenda = p.preco_venda ? `R$ ${p.preco_venda.toFixed(2)}` : '-';
         const precoPromo = p.preco_promocional ? `R$ ${p.preco_promocional.toFixed(2)}` : '-';
         
+const statusProduto = p.ativo !== false ? '<span class="badge badge-success">Ativo</span>' : '<span class="badge badge-danger">Inativo</span>';
+        const btnToggleProduto = souMaster ? `<button class="btn btn-warning btn-sm" onclick="toggleProduto(${p.id}, ${p.ativo === false})">${p.ativo !== false ? '🔴' : '🟢'}</button>` : '';
         html += `
             <tr>
                 <td style="width:40px;text-align:center;">
@@ -7130,18 +7138,19 @@ function renderizarTabelaProdutos(dados) {
                 <td>
                     <input type="number" class="preco-edit" data-id="${p.id}" data-campo="preco_venda" 
                            value="${p.preco_venda || ''}" step="0.01" min="0" 
-                           style="width:100px;padding:4px 8px;border:2px solid #e2e8f0;border-radius:6px;font-size:13px;"
-                           onchange="atualizarPrecoProduto(${p.id}, 'preco_venda', this.value)">
+                           style="width:100px;padding:4px 8px;border:2px solid #e2e8f0;border-radius:6px;font-size:13px;transition:0.3s;"
+                           onchange="atualizarPrecoProduto(${p.id}, 'preco_venda', this.value, this)">
                 </td>
                 <td>
                     <input type="number" class="preco-edit" data-id="${p.id}" data-campo="preco_promocional" 
                            value="${p.preco_promocional || ''}" step="0.01" min="0" 
-                           style="width:100px;padding:4px 8px;border:2px solid #e2e8f0;border-radius:6px;font-size:13px;"
-                           onchange="atualizarPrecoProduto(${p.id}, 'preco_promocional', this.value)">
+                           style="width:100px;padding:4px 8px;border:2px solid #e2e8f0;border-radius:6px;font-size:13px;transition:0.3s;"
+                           onchange="atualizarPrecoProduto(${p.id}, 'preco_promocional', this.value, this)">
                 </td>
+                <td>${statusProduto}</td>
                 <td>
                     <button class="btn btn-primary btn-sm" onclick="editarProduto(${p.id})">✏️</button>
-                    <button class="btn btn-danger btn-sm" onclick="excluirProduto(${p.id})">🗑️</button>
+                    ${btnToggleProduto}
                 </td>
             </tr>
         `;
@@ -7153,24 +7162,51 @@ function renderizarTabelaProdutos(dados) {
     atualizarContadorSelecionados();
 }
 
-// ATUALIZAR PREÇO
-async function atualizarPrecoProduto(id, campo, valor) {
+// ATUALIZAR PREÇO (com efeito visual de confirmação)
+async function atualizarPrecoProduto(id, campo, valor, inputEl) {
     const novoValor = valor === '' ? null : parseFloat(valor);
     if (isNaN(novoValor) && valor !== '') {
         showToast('⚠️ Valor inválido!', 'error');
         carregarProdutos();
         return;
     }
-    
+
+    if (inputEl) {
+        inputEl.style.borderColor = '#eab308';
+        inputEl.style.backgroundColor = '#fefce8';
+    }
+
     try {
         const dados = {};
         dados[campo] = novoValor;
         await apiFetch(`/rest/v1/produtos?id=eq.${id}`, 'PATCH', dados);
         showToast(`✅ ${campo === 'preco_venda' ? 'Preço de venda' : 'Preço promocional'} atualizado!`, 'success');
+
+        if (inputEl) {
+            inputEl.style.borderColor = '#22c55e';
+            inputEl.style.backgroundColor = '#f0fdf4';
+            setTimeout(() => {
+                inputEl.style.borderColor = '#e2e8f0';
+                inputEl.style.backgroundColor = 'white';
+            }, 1200);
+        }
     } catch (erro) {
         showToast('❌ Erro: ' + erro.message, 'error');
+        if (inputEl) {
+            inputEl.style.borderColor = '#ef4444';
+            inputEl.style.backgroundColor = '#fef2f2';
+        }
         carregarProdutos();
     }
+}
+
+async function toggleProduto(id, ativo) {
+    if (!souMaster) { showToast('⛔ Apenas o Master pode ativar/desativar produtos!', 'error'); return; }
+    try {
+        await apiFetch(`/rest/v1/produtos?id=eq.${id}`, 'PATCH', { ativo });
+        showToast(ativo ? '✅ Produto ativado!' : '⛔ Produto desativado!');
+        carregarProdutos();
+    } catch (erro) { showToast('❌ Erro: ' + erro.message, 'error'); }
 }
 
 // PAGINAÇÃO
