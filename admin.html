@@ -1122,7 +1122,8 @@
 <button class="menu-item ativo" onclick="abrirTab('tabDashboard')"><span class="icon"><i data-lucide="layout-dashboard"></i></span> Dashboard</button>
     <button class="menu-item" onclick="abrirTab('tabPromotores')"><span class="icon"><i data-lucide="users"></i></span> Promotores</button>
     <button class="menu-item" onclick="abrirTab('tabLojas')"><span class="icon"><i data-lucide="store"></i></span> Lojas</button>
-    <button class="menu-item" onclick="abrirTab('tabRoteiros')"><span class="icon"><i data-lucide="route"></i></span> Roteiros</button>
+<button class="menu-item" onclick="abrirTab('tabRoteiros')"><span class="icon"><i data-lucide="route"></i></span> Roteiros</button>
+    <button class="menu-item" onclick="abrirTab('tabSugestaoLojas')"><span class="icon"><i data-lucide="compass"></i></span> Sugestão de Lojas</button>
     <!-- Carga Horária oculta do menu (mantida no código) -->
     <button class="menu-item" onclick="abrirTab('tabFeriados')"><span class="icon"><i data-lucide="calendar"></i></span> Feriados</button>
     <button class="menu-item" onclick="abrirTab('tabValidador')"><span class="icon"><i data-lucide="map-pin"></i></span> Validador</button>
@@ -1667,10 +1668,35 @@
             </div>
         </div>
 
-        <div id="tabRoteiros" class="tab-content">
+<div id="tabRoteiros" class="tab-content">
             <div class="card">
                 <div class="flex-between"><h2>📋 Gerenciar Roteiros</h2><button class="btn btn-success" onclick="abrirModalRoteiro()">+ Novo Roteiro</button></div>
                 <div class="table-wrapper"><table><thead><tr><th>ID</th><th>Promotor</th><th>Mês/Ano</th><th>Recorrente</th><th>Ações</th></tr></thead><tbody id="tabelaRoteiros"><tr><td colspan="5" class="loading">Carregando...</td></tr></tbody></table></div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB: SUGESTÃO DE LOJAS -->
+        <!-- ========================================== -->
+        <div id="tabSugestaoLojas" class="tab-content">
+            <div class="card">
+                <h2>🧭 Sugestão de Lojas por Proximidade</h2>
+                <p style="color:#64748b;font-size:14px;margin-bottom:16px;">
+                    Selecione um promotor pra ver todas as lojas ativas ordenadas pela distância até o endereço residencial dele.
+                </p>
+                <div class="form-group" style="max-width:400px;margin-bottom:16px;">
+                    <label>👤 Promotor</label>
+                    <select id="sugestaoLojasPromotor" onchange="carregarSugestaoLojas()">
+                        <option value="">Selecione...</option>
+                    </select>
+                </div>
+                <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#64748b;margin-bottom:12px;">
+                    <span>🟢 <strong>Com cobertura</strong> (já tem promotor)</span>
+                    <span>⚪ <strong>Sem cobertura</strong></span>
+                </div>
+                <div id="listaSugestaoLojas">
+                    <p style="color:#94a3b8;text-align:center;padding:20px 0;">Selecione um promotor acima</p>
+                </div>
             </div>
         </div>
 
@@ -2596,6 +2622,7 @@ function abrirTab(tabId) {
     if (tabId === 'tabPromotores') carregarPromotores();
     if (tabId === 'tabLojas') carregarLojasAdmin();
     if (tabId === 'tabRoteiros') carregarRoteiros();
+    if (tabId === 'tabSugestaoLojas') carregarSelectSugestaoLojas();
     if (tabId === 'tabCargaHoraria') carregarCargaHoraria();
     if (tabId === 'tabFeriados') carregarFeriados();
     if (tabId === 'tabValidador') { carregarValidadorPromotores(); carregarSolicitacoes(); }
@@ -7681,6 +7708,94 @@ async function carregarConfiguracaoRaio() {
         }
     } catch (erro) {
         console.error('Erro ao carregar configuração de raio:', erro);
+    }
+}
+
+// ============================================
+// SUGESTÃO DE LOJAS POR PROXIMIDADE
+// ============================================
+async function carregarSelectSugestaoLojas() {
+    try {
+        const promotores = await apiFetch('/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true&order=nome&select=id,nome');
+        const select = document.getElementById('sugestaoLojasPromotor');
+        const valorAtual = select.value;
+        select.innerHTML = '<option value="">Selecione...</option>';
+        promotores.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.nome}</option>`; });
+        if (valorAtual) select.value = valorAtual;
+    } catch (erro) {
+        console.error('Erro ao carregar promotores para sugestão de lojas:', erro);
+    }
+}
+
+async function carregarSugestaoLojas() {
+    const promotorId = document.getElementById('sugestaoLojasPromotor').value;
+    const div = document.getElementById('listaSugestaoLojas');
+
+    if (!promotorId) {
+        div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Selecione um promotor acima</p>';
+        return;
+    }
+
+    div.innerHTML = '<div class="loading"><div class="spinner"></div>Calculando distâncias...</div>';
+
+    try {
+        const promotorData = await apiFetch(`/rest/v1/promotores?id=eq.${promotorId}&select=nome,latitude_residencial,longitude_residencial`);
+        if (promotorData.length === 0) return;
+        const promotor = promotorData[0];
+
+        if (!promotor.latitude_residencial || !promotor.longitude_residencial) {
+            div.innerHTML = `<div class="empty-state"><div class="icon">📍</div><p>Esse promotor ainda não tem endereço/coordenadas cadastradas.</p><p style="font-size:13px;">Cadastre em Promotores → Editar.</p></div>`;
+            return;
+        }
+
+        const latPromotor = parseFloat(promotor.latitude_residencial);
+        const lonPromotor = parseFloat(promotor.longitude_residencial);
+
+        // Todas as lojas ativas com coordenadas
+        const lojas = await apiFetch('/rest/v1/lojas?ativo=eq.true&select=id,nome,cidade,estado,latitude,longitude');
+        const lojasComCoords = lojas.filter(l => l.latitude && l.longitude);
+
+        // Quem é o promotor responsável por cada loja (via roteiros)
+        const roteiros = await apiFetch('/rest/v1/roteiros?select=loja_id,promotores(nome)');
+        const responsavelPorLoja = {};
+        roteiros.forEach(r => {
+            if (!r.loja_id || !r.promotores) return;
+            if (!responsavelPorLoja[r.loja_id]) responsavelPorLoja[r.loja_id] = new Set();
+            responsavelPorLoja[r.loja_id].add(r.promotores.nome);
+        });
+
+        // Calcular distância e ordenar
+        const lojasComDistancia = lojasComCoords.map(l => {
+            const dist = calcularDistancia(latPromotor, lonPromotor, parseFloat(l.latitude), parseFloat(l.longitude));
+            const responsaveis = responsavelPorLoja[l.id] ? Array.from(responsavelPorLoja[l.id]) : [];
+            return { ...l, distancia: dist, responsaveis };
+        }).sort((a, b) => a.distancia - b.distancia);
+
+        if (lojasComDistancia.length === 0) {
+            div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhuma loja ativa com coordenadas cadastradas</p>';
+            return;
+        }
+
+        let html = `<div class="table-wrapper"><table><thead><tr><th>Loja</th><th>Cidade/UF</th><th>Distância</th><th>Cobertura</th></tr></thead><tbody>`;
+        lojasComDistancia.forEach(l => {
+            const temCobertura = l.responsaveis.length > 0;
+            const distanciaKm = (l.distancia / 1000).toFixed(1);
+            const corLinha = temCobertura ? '#f0fdf4' : '#f8fafc';
+            const bolinha = temCobertura ? '🟢' : '⚪';
+            const coberturaTexto = temCobertura ? l.responsaveis.join(', ') : '<span style="color:#94a3b8;">Sem promotor</span>';
+            html += `<tr style="background:${corLinha};">
+                <td><strong>${l.nome}</strong></td>
+                <td>${l.cidade || '-'}/${l.estado || '-'}</td>
+                <td>${distanciaKm} km</td>
+                <td>${bolinha} ${coberturaTexto}</td>
+            </tr>`;
+        });
+        html += '</tbody></table></div>';
+        div.innerHTML = html;
+
+    } catch (erro) {
+        div.innerHTML = `<div class="loading">❌ ${erro.message}</div>`;
+        console.error(erro);
     }
 }
 
