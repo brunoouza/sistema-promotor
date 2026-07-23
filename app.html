@@ -4980,7 +4980,7 @@ async function carregarProdutosApp() {
         filtrosApp.marca = marca;
         filtrosApp.ordenacao = ordenacao;
         
-        let endpoint = '/rest/v1/produtos?order=';
+        let endpoint = '/rest/v1/produtos?ativo=eq.true&order=';
         
         switch(ordenacao) {
             case 'nome_asc': endpoint += 'descricao.asc'; break;
