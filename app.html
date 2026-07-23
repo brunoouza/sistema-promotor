@@ -1124,6 +1124,20 @@
 <div id="toast" class="toast"></div>
 
 <!-- ========================================== -->
+<!-- MODAL HISTÓRICO DE EXPOSIÇÕES (navegação) -->
+<!-- ========================================== -->
+<div id="modalHistoricoExpo" class="modal-mes">
+    <div class="modal-content" style="max-width:500px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 id="tituloHistoricoExpo">Histórico</h3>
+            <button class="btn btn-danger btn-sm" onclick="fecharModalHistoricoExpo()" style="padding:6px 14px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;"><i data-lucide="x" style="width:14px;height:14px;vertical-align:-2px;"></i> Fechar</button>
+        </div>
+        <button id="btnVoltarHistoricoExpo" onclick="" style="display:none;background:none;border:none;color:#2563eb;font-weight:600;font-size:13px;cursor:pointer;margin-bottom:12px;">← Voltar</button>
+        <div id="conteudoHistoricoExpo" style="max-height:60vh;overflow-y:auto;"></div>
+    </div>
+</div>
+
+<!-- ========================================== -->
 <!-- MODAL REUNIÃO HOJE -->
 <!-- ========================================== -->
 <div id="modalReuniaoHoje" class="modal-mes">
@@ -1544,9 +1558,10 @@
                 </div>
             </div>
 
-            <!-- LISTA DE EXPOSIÇÕES -->
-            <div id="listaExposicoes">
-                <p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhuma exposição registrada</p>
+<!-- HISTÓRICO DE EXPOSIÇÕES (Loja → Mês → Pontas → Foto) -->
+            <h3 style="margin-top:20px;margin-bottom:8px;color:#1a1a2e;font-size:16px;">📁 Histórico por Loja</h3>
+            <div id="listaLojasExposicoes">
+                <p style="color:#94a3b8;text-align:center;padding:20px 0;">Carregando...</p>
             </div>
         </div>
 
@@ -1763,7 +1778,7 @@ function abrirAba(abaId) {
     const item = document.querySelector(`.sidebar .menu-item[onclick*="${abaId}"]`);
     if (item) item.classList.add('ativo');
     if (abaId === 'tabChecklistApp') { carregarChecklistsApp(); }
-    if (abaId === 'tabExposicoes') { carregarLojasExposicao(); carregarExposicoes(); carregarNomesExposicaoApp(); }
+    if (abaId === 'tabExposicoes') { carregarLojasExposicao(); carregarLojasComExposicoes(); carregarNomesExposicaoApp(); }
     if (abaId === 'tabValidador') carregarValidador();
     if (abaId === 'tabEspelho') carregarEspelhoPonto();
     if (abaId === 'tabAtestados') carregarAtestados();
@@ -3363,6 +3378,118 @@ function atualizarNumerosExposicao() {
 }
 
 // ============================================
+// HISTÓRICO DE EXPOSIÇÕES (Loja → Mês → Pontas → Foto)
+// ============================================
+let historicoExpoCache = [];
+
+async function carregarLojasComExposicoes() {
+    const div = document.getElementById('listaLojasExposicoes');
+    div.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+    try {
+        const dados = await apiFetch(
+            `/rest/v1/exposicoes?promotor_id=eq.${promotorLogado.id}&select=*,lojas(id,nome)&order=data.desc`
+        );
+        historicoExpoCache = dados;
+
+        const lojasMap = new Map();
+        dados.forEach(e => {
+            if (e.lojas && !lojasMap.has(e.lojas.id)) lojasMap.set(e.lojas.id, e.lojas.nome);
+        });
+
+        if (lojasMap.size === 0) {
+            div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhuma exposição registrada ainda</p>';
+            return;
+        }
+
+        let html = '';
+        lojasMap.forEach((nome, id) => {
+            html += `
+                <div class="lista-item" onclick="abrirMesesExpo(${id}, '${nome.replace(/'/g, "\\'")}')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#f8fafc;border-radius:12px;margin-bottom:8px;cursor:pointer;">
+                    <span style="font-weight:600;color:#1a1a2e;">🏪 ${nome}</span>
+                    <span style="color:#94a3b8;">›</span>
+                </div>
+            `;
+        });
+        div.innerHTML = html;
+    } catch (erro) {
+        div.innerHTML = `<p style="color:#ef4444;text-align:center;">❌ ${erro.message}</p>`;
+    }
+}
+
+function abrirMesesExpo(lojaId, nomeLoja) {
+    const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const doLoja = historicoExpoCache.filter(e => e.lojas && e.lojas.id === lojaId);
+
+    const mesesMap = new Map(); // "AAAA-MM" -> label
+    doLoja.forEach(e => {
+        if (!e.data) return;
+        const [ano, mes] = e.data.split('-');
+        const chave = `${ano}-${mes}`;
+        if (!mesesMap.has(chave)) mesesMap.set(chave, `${meses[parseInt(mes)-1]} ${ano}`);
+    });
+
+    let html = '';
+    if (mesesMap.size === 0) {
+        html = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum mês encontrado</p>';
+    } else {
+        Array.from(mesesMap.entries()).sort((a,b) => b[0].localeCompare(a[0])).forEach(([chave, label]) => {
+            html += `
+                <div class="lista-item" onclick="abrirPontasDoMesExpo(${lojaId}, '${chave}', '${nomeLoja.replace(/'/g, "\\'")}', '${label}')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#f8fafc;border-radius:12px;margin-bottom:8px;cursor:pointer;">
+                    <span style="font-weight:600;color:#1a1a2e;">📅 ${label}</span>
+                    <span style="color:#94a3b8;">›</span>
+                </div>
+            `;
+        });
+    }
+
+    document.getElementById('tituloHistoricoExpo').textContent = `🏪 ${nomeLoja}`;
+    document.getElementById('conteudoHistoricoExpo').innerHTML = html;
+    document.getElementById('btnVoltarHistoricoExpo').style.display = 'none';
+    document.getElementById('modalHistoricoExpo').classList.add('active');
+}
+
+async function abrirPontasDoMesExpo(lojaId, mesAnoChave, nomeLoja, labelMes) {
+    const [ano, mes] = mesAnoChave.split('-');
+    const doMes = historicoExpoCache.filter(e => e.lojas && e.lojas.id === lojaId && e.data && e.data.startsWith(mesAnoChave));
+
+    // Buscar nomes personalizados das pontas (se cadastrados)
+    let nomesExpo = {};
+    try {
+        const nomesData = await apiFetch('/rest/v1/nomes_exposicao?select=*');
+        nomesData.forEach(n => { nomesExpo[`${n.tipo}_${n.numero}`] = n.nome; });
+    } catch (e) { /* segue sem nomes personalizados se der erro */ }
+
+    let html = '';
+    doMes.forEach(e => {
+        const [tipo, numero] = e.tipo_exposicao.split('_');
+        const tipoLabel = tipo === 'ponta' ? 'Ponta de Gôndola' : 'Check Stand';
+        const nomePersonalizado = nomesExpo[e.tipo_exposicao];
+        const texto = `${tipoLabel} ${numero}` + (nomePersonalizado ? ` - ${nomePersonalizado}` : '');
+        html += `
+            <div class="lista-item" onclick="abrirFotoExpo('${e.foto_url}')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#f0fdf4;border-radius:12px;margin-bottom:8px;cursor:pointer;border-left:4px solid #22c55e;">
+                <span style="font-weight:600;color:#16a34a;">✅ ${texto}</span>
+                <span style="color:#94a3b8;">›</span>
+            </div>
+        `;
+    });
+
+    document.getElementById('tituloHistoricoExpo').textContent = `📅 ${labelMes}`;
+    document.getElementById('conteudoHistoricoExpo').innerHTML = html || '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhuma foto nesse mês</p>';
+    const btnVoltar = document.getElementById('btnVoltarHistoricoExpo');
+    btnVoltar.style.display = 'block';
+    btnVoltar.onclick = () => abrirMesesExpo(lojaId, nomeLoja);
+}
+
+function abrirFotoExpo(url) {
+    document.getElementById('tituloHistoricoExpo').textContent = '📸 Foto';
+    document.getElementById('conteudoHistoricoExpo').innerHTML = `<img src="${url}" style="width:100%;border-radius:12px;">`;
+}
+
+function fecharModalHistoricoExpo() {
+    document.getElementById('modalHistoricoExpo').classList.remove('active');
+}
+
+// ============================================
 // EXPOSIÇÕES
 // ============================================
 async function carregarLojasExposicao() {
@@ -3498,11 +3625,10 @@ async function salvarExposicao(lojaId, tipo, numero, fotoUrl) {
         const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
         const diaSemana = diasSemana[hoje.getDay()];
         const lojaIdSelecionada = parseInt(lojaId);
+        const tipoExposicao = tipo + '_' + numero;
 
         const { semana, mes, ano } = calcularSemanaDoMes(hoje);
         const roteirosHoje = await obterRoteirosDoDiaCerto(diaSemana, mes, ano, semana);
-
-        // Encontra, entre os roteiros de hoje, o que corresponde EXATAMENTE à loja escolhida no dropdown
         const roteiroCorreto = roteirosHoje.find(r => r.lojas && r.lojas.id === lojaIdSelecionada);
 
         if (!roteiroCorreto) {
@@ -3510,34 +3636,37 @@ async function salvarExposicao(lojaId, tipo, numero, fotoUrl) {
             return;
         }
 
-        const dados = {
-            promotor_id: promotorLogado.id,
-            roteiro_id: roteiroCorreto.id,
-            foto_url: fotoUrl,
-            data: data,
-            tipo_exposicao: tipo + '_' + numero
-        };
+        // Verifica se já existe uma exposição dessa mesma ponta, nessa mesma loja, nesse mesmo mês
+        const primeiroDiaMes = `${ano}-${String(mes).padStart(2,'0')}-01`;
+        const ultimoDiaMes = new Date(ano, mes, 0).getDate();
+        const ultimoDiaMesStr = `${ano}-${String(mes).padStart(2,'0')}-${String(ultimoDiaMes).padStart(2,'0')}`;
 
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/exposicoes`, {
-            method: 'POST',
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=representation'
-            },
-            body: JSON.stringify(dados)
-        });
+        const existentes = await apiFetch(
+            `/rest/v1/exposicoes?promotor_id=eq.${promotorLogado.id}&loja_id=eq.${lojaIdSelecionada}&tipo_exposicao=eq.${tipoExposicao}&data=gte.${primeiroDiaMes}&data=lte.${ultimoDiaMesStr}&select=id`
+        );
 
-        if (!response.ok) {
-            const erro = await response.text();
-            throw new Error(`Erro ao salvar: ${erro}`);
+        if (existentes.length > 0) {
+            // Já existe uma foto dessa ponta esse mês: substitui em vez de duplicar
+            await apiFetch(`/rest/v1/exposicoes?id=eq.${existentes[0].id}`, 'PATCH', {
+                foto_url: fotoUrl,
+                data: data,
+                roteiro_id: roteiroCorreto.id
+            });
+        } else {
+            await apiFetch('/rest/v1/exposicoes', 'POST', {
+                promotor_id: promotorLogado.id,
+                roteiro_id: roteiroCorreto.id,
+                loja_id: lojaIdSelecionada,
+                foto_url: fotoUrl,
+                data: data,
+                tipo_exposicao: tipoExposicao
+            });
         }
 
         showToast('✅ Exposição enviada com sucesso!', 'success');
         document.getElementById('expLoja').value = '';
         document.getElementById('expPreview').style.display = 'none';
-        carregarExposicoes();
+        carregarLojasComExposicoes();
 
     } catch (erro) {
         showToast('❌ Erro ao salvar: ' + erro.message, 'error');
