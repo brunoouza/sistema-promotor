@@ -2054,6 +2054,9 @@
             <div class="form-group"><label>Departamento</label><input type="text" id="formPromotorDepartamento" placeholder="Departamento"></div>
             <div class="form-group"><label>Férias Início</label><input type="date" id="formPromotorFeriasInicio"></div>
             <div class="form-group"><label>Férias Fim</label><input type="date" id="formPromotorFeriasFim"></div>
+            <div class="form-group" style="grid-column:1/-1;"><label>🏠 Endereço Residencial</label><input type="text" id="formPromotorEndereco" placeholder="Rua, número, bairro, cidade"></div>
+            <div class="form-group"><label>Latitude Residencial</label><input type="text" id="formPromotorLat" placeholder="-23.5505"></div>
+            <div class="form-group"><label>Longitude Residencial</label><input type="text" id="formPromotorLon" placeholder="-46.6333"></div>
             <div class="form-group" style="grid-column:1/-1;">
                 <label>Logo da Empresa</label>
                 <div class="logo-upload-area" onclick="document.getElementById('logoUploadInput').click()">
@@ -3735,6 +3738,9 @@ function abrirModalPromotor() {
     document.getElementById('formPromotorFeriasInicio').value = '';
     document.getElementById('formPromotorFeriasFim').value = '';
     document.getElementById('formPromotorLogo').value = '';
+    document.getElementById('formPromotorEndereco').value = '';
+    document.getElementById('formPromotorLat').value = '';
+    document.getElementById('formPromotorLon').value = '';
     document.getElementById('logoPreviewImg').className = 'logo-preview';
     document.getElementById('logoUploadInput').value = '';
     document.getElementById('modalPromotor').classList.add('active');
@@ -3742,7 +3748,7 @@ function abrirModalPromotor() {
 
 async function editarPromotor(id) {
     try {
-        const dados = await apiFetch(`/rest/v1/promotores?id=eq.${id}&select=id,nome,email,senha,estado,ativo,ctps,pis,matricula,admissao,data_nascimento,funcao,departamento,ferias_inicio,ferias_fim,logo_url,banco_horas`);
+        const dados = await apiFetch(`/rest/v1/promotores?id=eq.${id}&select=id,nome,email,senha,estado,ativo,ctps,pis,matricula,admissao,data_nascimento,funcao,departamento,ferias_inicio,ferias_fim,logo_url,banco_horas,endereco_residencial,latitude_residencial,longitude_residencial`);
         if (dados.length === 0) return;
         const p = dados[0];
         document.getElementById('formPromotorId').value = p.id;
@@ -3761,6 +3767,9 @@ async function editarPromotor(id) {
         document.getElementById('formPromotorFeriasInicio').value = p.ferias_inicio || '';
         document.getElementById('formPromotorFeriasFim').value = p.ferias_fim || '';
         document.getElementById('formPromotorLogo').value = p.logo_url || '';
+        document.getElementById('formPromotorEndereco').value = p.endereco_residencial || '';
+        document.getElementById('formPromotorLat').value = p.latitude_residencial || '';
+        document.getElementById('formPromotorLon').value = p.longitude_residencial || '';
         if (p.logo_url) {
             const preview = document.getElementById('logoPreviewImg');
             preview.src = p.logo_url;
@@ -3788,6 +3797,11 @@ async function salvarPromotor() {
     const ferias_inicio = document.getElementById('formPromotorFeriasInicio').value || null;
     const ferias_fim = document.getElementById('formPromotorFeriasFim').value || null;
     const logo_url = document.getElementById('formPromotorLogo').value.trim() || null;
+    const endereco_residencial = document.getElementById('formPromotorEndereco').value.trim() || null;
+    const latRes = document.getElementById('formPromotorLat').value.trim();
+    const lonRes = document.getElementById('formPromotorLon').value.trim();
+    const latitude_residencial = latRes ? parseFloat(latRes) : null;
+    const longitude_residencial = lonRes ? parseFloat(lonRes) : null;
     
     if (!nome || !email || !senha) { showToast('⚠️ Preencha nome, email e senha!', 'error'); return; }
     
@@ -3810,7 +3824,10 @@ async function salvarPromotor() {
             departamento, 
             ferias_inicio, 
             ferias_fim, 
-            logo_url 
+            logo_url,
+            endereco_residencial,
+            latitude_residencial,
+            longitude_residencial
         };
         
         if (id) {
