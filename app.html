@@ -3497,31 +3497,22 @@ async function salvarExposicao(lojaId, tipo, numero, fotoUrl) {
         const data = hoje.toISOString().split('T')[0];
         const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
         const diaSemana = diasSemana[hoje.getDay()];
+        const lojaIdSelecionada = parseInt(lojaId);
 
-        const roteirosResponse = await fetch(`${SUPABASE_URL}/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&dia_semana=eq.${diaSemana}&select=id`, {
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`
-            }
-        });
+        const { semana, mes, ano } = calcularSemanaDoMes(hoje);
+        const roteirosHoje = await obterRoteirosDoDiaCerto(diaSemana, mes, ano, semana);
 
-        if (!roteirosResponse.ok) {
-            const erro = await roteirosResponse.text();
-            throw new Error(`Erro ao buscar roteiro: ${erro}`);
-        }
+        // Encontra, entre os roteiros de hoje, o que corresponde EXATAMENTE à loja escolhida no dropdown
+        const roteiroCorreto = roteirosHoje.find(r => r.lojas && r.lojas.id === lojaIdSelecionada);
 
-        const roteiros = await roteirosResponse.json();
-
-        if (roteiros.length === 0) {
-            showToast('📅 Você não tem roteiro para hoje!', 'error');
+        if (!roteiroCorreto) {
+            showToast('⚠️ Essa loja não está no seu roteiro de hoje!', 'error');
             return;
         }
 
-        const roteiroId = roteiros[0].id;
-
         const dados = {
             promotor_id: promotorLogado.id,
-            roteiro_id: roteiroId,
+            roteiro_id: roteiroCorreto.id,
             foto_url: fotoUrl,
             data: data,
             tipo_exposicao: tipo + '_' + numero
