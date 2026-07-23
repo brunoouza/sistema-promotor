@@ -1678,24 +1678,61 @@
         <!-- ========================================== -->
         <!-- TAB: SUGESTÃO DE LOJAS -->
         <!-- ========================================== -->
-        <div id="tabSugestaoLojas" class="tab-content">
+<div id="tabSugestaoLojas" class="tab-content">
             <div class="card">
                 <h2>🧭 Sugestão de Lojas por Proximidade</h2>
-                <p style="color:#64748b;font-size:14px;margin-bottom:16px;">
-                    Selecione um promotor pra ver todas as lojas ativas ordenadas pela distância até o endereço residencial dele.
-                </p>
-                <div class="form-group" style="max-width:400px;margin-bottom:16px;">
-                    <label>👤 Promotor</label>
-                    <select id="sugestaoLojasPromotor" onchange="carregarSugestaoLojas()">
-                        <option value="">Selecione...</option>
-                    </select>
+
+                <!-- SUB-ABAS -->
+                <div class="lojas-subtabs">
+                    <button class="ativo" onclick="abrirSubTabSugestao('subSugestaoLista')">📋 Lista</button>
+                    <button onclick="abrirSubTabSugestao('subSugestaoMapa')">🗺️ Mapa</button>
                 </div>
-                <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#64748b;margin-bottom:12px;">
-                    <span>🟢 <strong>Com cobertura</strong> (já tem promotor)</span>
-                    <span>⚪ <strong>Sem cobertura</strong></span>
+
+                <!-- SUB-ABA: LISTA -->
+                <div id="subSugestaoLista" class="lojas-sub-content active">
+                    <p style="color:#64748b;font-size:14px;margin-bottom:16px;">
+                        Selecione um promotor pra ver todas as lojas ativas ordenadas pela distância até o endereço residencial dele.
+                    </p>
+                    <div class="form-group" style="max-width:400px;margin-bottom:16px;">
+                        <label>👤 Promotor</label>
+                        <select id="sugestaoLojasPromotor" onchange="carregarSugestaoLojas()">
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#64748b;margin-bottom:12px;">
+                        <span>🟢 <strong>Com cobertura</strong> (já tem promotor)</span>
+                        <span>⚪ <strong>Sem cobertura</strong></span>
+                    </div>
+                    <div id="listaSugestaoLojas">
+                        <p style="color:#94a3b8;text-align:center;padding:20px 0;">Selecione um promotor acima</p>
+                    </div>
                 </div>
-                <div id="listaSugestaoLojas">
-                    <p style="color:#94a3b8;text-align:center;padding:20px 0;">Selecione um promotor acima</p>
+
+                <!-- SUB-ABA: MAPA -->
+                <div id="subSugestaoMapa" class="lojas-sub-content">
+                    <p style="color:#64748b;font-size:14px;margin-bottom:16px;">
+                        Veja no mapa a casa do promotor, as lojas do roteiro dele (interligadas) e, se quiser, as lojas sugeridas por proximidade.
+                    </p>
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:end;margin-bottom:16px;">
+                        <div class="form-group" style="min-width:250px;">
+                            <label>👤 Promotor</label>
+                            <select id="mapaSugestaoPromotor" onchange="carregarMapaSugestao()">
+                                <option value="">Selecione...</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex:0;">
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;white-space:nowrap;">
+                                <input type="checkbox" id="checkLojasSugeridas" onchange="carregarMapaSugestao()" style="width:18px;height:18px;accent-color:#2563eb;">
+                                🧭 Mostrar lojas sugeridas
+                            </label>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#64748b;margin-bottom:12px;">
+                        <span>🏠 <strong>Casa do promotor</strong></span>
+                        <span>🔵 <strong>Loja do roteiro atual</strong></span>
+                        <span>🟠 <strong>Loja sugerida (sem cobertura)</strong></span>
+                    </div>
+                    <div id="mapaSugestaoContainer" class="mapa-container" style="height:500px;"></div>
                 </div>
             </div>
         </div>
@@ -2622,7 +2659,7 @@ function abrirTab(tabId) {
     if (tabId === 'tabPromotores') carregarPromotores();
     if (tabId === 'tabLojas') carregarLojasAdmin();
     if (tabId === 'tabRoteiros') carregarRoteiros();
-    if (tabId === 'tabSugestaoLojas') carregarSelectSugestaoLojas();
+    if (tabId === 'tabSugestaoLojas') { carregarSelectSugestaoLojas(); carregarSelectMapaSugestao(); }
     if (tabId === 'tabCargaHoraria') carregarCargaHoraria();
     if (tabId === 'tabFeriados') carregarFeriados();
     if (tabId === 'tabValidador') { carregarValidadorPromotores(); carregarSolicitacoes(); }
@@ -2632,6 +2669,15 @@ function abrirTab(tabId) {
     if (tabId === 'tabChecklistAdmin') { carregarChecklistsAdmin(); }
     if (tabId === 'tabProdutos') { carregarProdutos(); }
     if (tabId === 'tabAdmMaster') { carregarAdmMaster(); }
+}
+
+function abrirSubTabSugestao(tabId) {
+    document.querySelectorAll('#tabSugestaoLojas .lojas-sub-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.querySelectorAll('#tabSugestaoLojas .lojas-subtabs button').forEach(el => el.classList.remove('ativo'));
+    const btn = document.querySelector(`#tabSugestaoLojas .lojas-subtabs button[onclick="abrirSubTabSugestao('${tabId}')"]`);
+    if (btn) btn.classList.add('ativo');
+    if (tabId === 'subSugestaoMapa') carregarSelectMapaSugestao();
 }
 
 function abrirSubTabLojas(tabId) {
@@ -7724,6 +7770,115 @@ async function carregarSelectSugestaoLojas() {
         if (valorAtual) select.value = valorAtual;
     } catch (erro) {
         console.error('Erro ao carregar promotores para sugestão de lojas:', erro);
+    }
+}
+
+async function carregarSelectMapaSugestao() {
+    try {
+        const promotores = await apiFetch('/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true&order=nome&select=id,nome');
+        const select = document.getElementById('mapaSugestaoPromotor');
+        const valorAtual = select.value;
+        select.innerHTML = '<option value="">Selecione...</option>';
+        promotores.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.nome}</option>`; });
+        if (valorAtual) select.value = valorAtual;
+    } catch (erro) {
+        console.error('Erro ao carregar promotores para mapa de sugestão:', erro);
+    }
+}
+
+let mapaSugestaoGlobal = null;
+
+async function carregarMapaSugestao() {
+    const promotorId = document.getElementById('mapaSugestaoPromotor').value;
+    const mostrarSugeridas = document.getElementById('checkLojasSugeridas').checked;
+    const container = document.getElementById('mapaSugestaoContainer');
+
+    if (!promotorId) {
+        container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;">Selecione um promotor acima</div>';
+        return;
+    }
+
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;">🔄 Carregando mapa...</div>';
+
+    try {
+        const promotorData = await apiFetch(`/rest/v1/promotores?id=eq.${promotorId}&select=nome,latitude_residencial,longitude_residencial`);
+        if (promotorData.length === 0) return;
+        const promotor = promotorData[0];
+
+        if (!promotor.latitude_residencial || !promotor.longitude_residencial) {
+            container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;text-align:center;padding:20px;">📍 Esse promotor ainda não tem endereço/coordenadas cadastradas.<br>Cadastre em Promotores → Editar.</div>';
+            return;
+        }
+
+        const latPromotor = parseFloat(promotor.latitude_residencial);
+        const lonPromotor = parseFloat(promotor.longitude_residencial);
+
+        // Lojas do roteiro atual desse promotor
+        const roteiros = await apiFetch(`/rest/v1/roteiros?promotor_id=eq.${promotorId}&select=dia_semana,lojas(*)`);
+        const diasOrdem = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'];
+        const lojasRoteiroMap = new Map();
+        roteiros
+            .filter(r => r.lojas && r.lojas.latitude && r.lojas.longitude)
+            .sort((a, b) => diasOrdem.indexOf(a.dia_semana) - diasOrdem.indexOf(b.dia_semana))
+            .forEach(r => { if (!lojasRoteiroMap.has(r.lojas.id)) lojasRoteiroMap.set(r.lojas.id, r.lojas); });
+        const lojasRoteiro = Array.from(lojasRoteiroMap.values());
+
+        if (mapaSugestaoGlobal) { mapaSugestaoGlobal.remove(); mapaSugestaoGlobal = null; }
+
+        mapaSugestaoGlobal = L.map(container).setView([latPromotor, lonPromotor], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(mapaSugestaoGlobal);
+
+        const pontosParaAjustarView = [[latPromotor, lonPromotor]];
+
+        // Marcador da casa
+        const iconCasa = L.divIcon({ html: '🏠', className: 'custom-div-icon', iconSize: [30, 30], iconAnchor: [15, 30] });
+        L.marker([latPromotor, lonPromotor], { icon: iconCasa }).addTo(mapaSugestaoGlobal)
+            .bindPopup(`<strong>🏠 Casa de ${promotor.nome}</strong>`);
+
+        // Lojas do roteiro atual (azul), interligadas
+        const linhaRoteiro = [[latPromotor, lonPromotor]];
+        lojasRoteiro.forEach(loja => {
+            const lat = parseFloat(loja.latitude);
+            const lon = parseFloat(loja.longitude);
+            const dist = (calcularDistancia(latPromotor, lonPromotor, lat, lon) / 1000).toFixed(1);
+            const iconLoja = L.divIcon({ html: '🔵', className: 'custom-div-icon', iconSize: [26, 26], iconAnchor: [13, 26] });
+            L.marker([lat, lon], { icon: iconLoja }).addTo(mapaSugestaoGlobal)
+                .bindPopup(`<strong>🏪 ${loja.nome}</strong><br>📏 ${dist} km da casa`);
+            linhaRoteiro.push([lat, lon]);
+            pontosParaAjustarView.push([lat, lon]);
+        });
+        if (linhaRoteiro.length > 1) {
+            L.polyline(linhaRoteiro, { color: '#2563eb', weight: 3, dashArray: '6,6' }).addTo(mapaSugestaoGlobal);
+        }
+
+        // Lojas sugeridas (sem cobertura), se marcado
+        if (mostrarSugeridas) {
+            const todasLojasAtivas = await apiFetch('/rest/v1/lojas?ativo=eq.true&select=id,nome,latitude,longitude');
+            const todosRoteiros = await apiFetch('/rest/v1/roteiros?select=loja_id');
+            const lojasComCobertura = new Set(todosRoteiros.map(r => r.loja_id).filter(id => id));
+
+            todasLojasAtivas
+                .filter(l => l.latitude && l.longitude && !lojasComCobertura.has(l.id))
+                .forEach(loja => {
+                    const lat = parseFloat(loja.latitude);
+                    const lon = parseFloat(loja.longitude);
+                    const dist = (calcularDistancia(latPromotor, lonPromotor, lat, lon) / 1000).toFixed(1);
+                    const iconSugerida = L.divIcon({ html: '🟠', className: 'custom-div-icon', iconSize: [24, 24], iconAnchor: [12, 24] });
+                    L.marker([lat, lon], { icon: iconSugerida }).addTo(mapaSugestaoGlobal)
+                        .bindPopup(`<strong>🏪 ${loja.nome}</strong><br>📏 ${dist} km da casa<br><span style="color:#ea580c;">⚠️ Sem cobertura</span>`);
+                    pontosParaAjustarView.push([lat, lon]);
+                });
+        }
+
+        if (pontosParaAjustarView.length > 1) {
+            mapaSugestaoGlobal.fitBounds(L.latLngBounds(pontosParaAjustarView), { padding: [50, 50] });
+        }
+
+        setTimeout(() => { mapaSugestaoGlobal.invalidateSize(); }, 300);
+
+    } catch (erro) {
+        container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;">❌ ${erro.message}</div>`;
+        console.error(erro);
     }
 }
 
