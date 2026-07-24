@@ -1689,10 +1689,11 @@
             <div class="card">
                 <h2>🧭 Sugestão de Lojas por Proximidade</h2>
 
-                <!-- SUB-ABAS -->
+<!-- SUB-ABAS -->
                 <div class="lojas-subtabs">
                     <button class="ativo" onclick="abrirSubTabSugestao('subSugestaoLista')">📋 Lista</button>
                     <button onclick="abrirSubTabSugestao('subSugestaoMapa')">🗺️ Mapa</button>
+                    <button onclick="abrirSubTabSugestao('subSugestaoGeral')">🧠 Sugestão Geral</button>
                 </div>
 
                 <!-- SUB-ABA: LISTA -->
@@ -1739,7 +1740,18 @@
                         <span>🔵 <strong>Loja do roteiro atual</strong></span>
                         <span>🟠 <strong>Loja sugerida (sem cobertura)</strong></span>
                     </div>
-                    <div id="mapaSugestaoContainer" class="mapa-container" style="height:500px;"></div>
+<div id="mapaSugestaoContainer" class="mapa-container" style="height:500px;"></div>
+                </div>
+
+                <!-- SUB-ABA: SUGESTÃO GERAL -->
+                <div id="subSugestaoGeral" class="lojas-sub-content">
+                    <p style="color:#64748b;font-size:14px;margin-bottom:16px;">
+                        Roda pra todos os promotores de uma vez: aponta lojas sem cobertura (sugerindo o promotor mais próximo) e lojas já cobertas, mas por um promotor bem mais longe do que outro disponível (diferença de 5km ou mais).
+                    </p>
+                    <button class="btn btn-primary" onclick="carregarSugestaoGeral()" style="margin-bottom:16px;">🔄 Calcular Sugestões</button>
+                    <div id="conteudoSugestaoGeral">
+                        <p style="color:#94a3b8;text-align:center;padding:20px 0;">Clique em "Calcular Sugestões" acima</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -8342,6 +8354,127 @@ todasLojasAtivas
 
     } catch (erro) {
         container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;">❌ ${erro.message}</div>`;
+        console.error(erro);
+    }
+}
+
+// ============================================
+// SUGESTÃO GERAL (cobertura + otimização, pra todos os promotores)
+// ============================================
+const LIMITE_OTIMIZACAO_KM = 5;
+
+async function carregarSugestaoGeral() {
+    const div = document.getElementById('conteudoSugestaoGeral');
+    div.innerHTML = '<div class="loading"><div class="spinner"></div>Calculando...</div>';
+
+    try {
+        const promotores = await apiFetch('/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true&select=id,nome,latitude_residencial,longitude_residencial');
+        const promotoresComCoords = promotores.filter(p => p.latitude_residencial && p.longitude_residencial);
+
+        if (promotoresComCoords.length === 0) {
+            div.innerHTML = '<div class="empty-state"><div class="icon">📍</div><p>Nenhum promotor com endereço/coordenadas cadastradas ainda.</p></div>';
+            return;
+        }
+
+        const lojas = await apiFetch('/rest/v1/lojas?ativo=eq.true&select=id,nome,latitude,longitude,faturamento');
+        const lojasComCoords = lojas.filter(l => l.latitude && l.longitude);
+        const classificacao = calcularCurvaABC(lojas.map(l => ({ id: l.id, faturamento: l.faturamento })));
+
+        const roteiros = await apiFetch('/rest/v1/roteiros?select=loja_id,promotor_id,promotores(nome)');
+        const coberturaPorLoja = new Map();
+        roteiros.forEach(r => {
+            if (!r.loja_id) return;
+            if (!coberturaPorLoja.has(r.loja_id)) coberturaPorLoja.set(r.loja_id, new Map());
+            coberturaPorLoja.get(r.loja_id).set(r.promotor_id, r.promotores?.nome || 'N/A');
+        });
+
+        const semCobertura = [];
+        const otimizacoes = [];
+
+        lojasComCoords.forEach(loja => {
+            const lat = parseFloat(loja.latitude);
+            const lon = parseFloat(loja.longitude);
+
+            // Distância de cada promotor até essa loja
+            const distancias = promotoresComCoords.map(p => ({
+                id: p.id,
+                nome: p.nome,
+                distancia: calcularDistancia(parseFloat(p.latitude_residencial), parseFloat(p.longitude_residencial), lat, lon)
+            })).sort((a, b) => a.distancia - b.distancia);
+
+            const maisProximo = distancias[0];
+            const cobertura = coberturaPorLoja.get(loja.id);
+
+            if (!cobertura || cobertura.size === 0) {
+                semCobertura.push({
+                    loja: loja.nome,
+                    classe: classificacao[loja.id] || null,
+                    sugerido: maisProximo.nome,
+                    distancia: maisProximo.distancia
+                });
+            } else {
+                // Menor distância entre os que JÁ cobrem essa loja
+                let melhorAtual = Infinity;
+                cobertura.forEach((nome, promotorId) => {
+                    const d = distancias.find(x => x.id === promotorId);
+                    if (d && d.distancia < melhorAtual) melhorAtual = d.distancia;
+                });
+
+                const jaEhResponsavel = cobertura.has(maisProximo.id);
+                const diferencaKm = (melhorAtual - maisProximo.distancia) / 1000;
+
+                if (!jaEhResponsavel && diferencaKm >= LIMITE_OTIMIZACAO_KM) {
+                    otimizacoes.push({
+                        loja: loja.nome,
+                        classe: classificacao[loja.id] || null,
+                        atualNomes: Array.from(cobertura.values()).join(', '),
+                        atualKm: (melhorAtual / 1000).toFixed(1),
+                        sugerido: maisProximo.nome,
+                        sugeridoKm: (maisProximo.distancia / 1000).toFixed(1),
+                        ganhoKm: diferencaKm.toFixed(1)
+                    });
+                }
+            }
+        });
+
+        const ordemClasse = { A: 0, B: 1, C: 2 };
+        semCobertura.sort((a, b) => (ordemClasse[a.classe] ?? 3) - (ordemClasse[b.classe] ?? 3) || a.distancia - b.distancia);
+        otimizacoes.sort((a, b) => (ordemClasse[a.classe] ?? 3) - (ordemClasse[b.classe] ?? 3) || b.ganhoKm - a.ganhoKm);
+
+        let html = '';
+
+        html += `<h4 style="margin-bottom:8px;color:#1a1a2e;">📭 Lojas sem cobertura (${semCobertura.length})</h4>`;
+        if (semCobertura.length === 0) {
+            html += '<p style="color:#94a3b8;padding:8px 0;margin-bottom:16px;">Nenhuma 🎉</p>';
+        } else {
+            html += '<div class="table-wrapper" style="margin-bottom:24px;"><table><thead><tr><th>Loja</th><th>Classe</th><th>Promotor sugerido</th><th>Distância</th></tr></thead><tbody>';
+            semCobertura.forEach(item => {
+                html += `<tr><td><strong>${item.loja}</strong></td><td>${badgeClasseABC(item.classe)}</td><td>👤 ${item.sugerido}</td><td>${(item.distancia/1000).toFixed(1)} km</td></tr>`;
+            });
+            html += '</tbody></table></div>';
+        }
+
+        html += `<h4 style="margin-bottom:8px;color:#1a1a2e;">🔄 Otimizações sugeridas (${otimizacoes.length})</h4>`;
+        if (otimizacoes.length === 0) {
+            html += '<p style="color:#94a3b8;padding:8px 0;">Nenhuma oportunidade encontrada (diferença mínima de 5km)</p>';
+        } else {
+            html += '<div class="table-wrapper"><table><thead><tr><th>Loja</th><th>Classe</th><th>Atual</th><th>Sugerido</th><th>Economia</th></tr></thead><tbody>';
+            otimizacoes.forEach(item => {
+                html += `<tr>
+                    <td><strong>${item.loja}</strong></td>
+                    <td>${badgeClasseABC(item.classe)}</td>
+                    <td>👤 ${item.atualNomes} (${item.atualKm} km)</td>
+                    <td>👤 ${item.sugerido} (${item.sugeridoKm} km)</td>
+                    <td style="color:#22c55e;font-weight:600;">-${item.ganhoKm} km</td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+        }
+
+        div.innerHTML = html;
+
+    } catch (erro) {
+        div.innerHTML = `<div class="loading">❌ ${erro.message}</div>`;
         console.error(erro);
     }
 }
