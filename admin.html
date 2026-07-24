@@ -2075,6 +2075,7 @@
                                 <th>Descrição</th>
                                 <th style="width:130px;">Preço Venda</th>
                                 <th style="width:130px;">Preço Promocional</th>
+                                <th style="width:130px;">Validade Promoção</th>
                                 <th style="width:90px;">Status</th>
                                 <th style="width:120px;">Ações</th>
                             </tr>
@@ -7147,6 +7148,12 @@ const statusProduto = p.ativo !== false ? '<span class="badge badge-success">Ati
                            style="width:100px;padding:4px 8px;border:2px solid #e2e8f0;border-radius:6px;font-size:13px;transition:0.3s;"
                            onchange="atualizarPrecoProduto(${p.id}, 'preco_promocional', this.value, this)">
                 </td>
+                <td>
+                    <input type="date" class="preco-edit" data-id="${p.id}" data-campo="promocao_validade" 
+                           value="${p.promocao_validade || ''}" 
+                           style="width:130px;padding:4px 6px;border:2px solid #e2e8f0;border-radius:6px;font-size:12px;transition:0.3s;"
+                           onchange="atualizarPrecoProduto(${p.id}, 'promocao_validade', this.value, this)">
+                </td>
                 <td>${statusProduto}</td>
                 <td>
                     <button class="btn btn-primary btn-sm" onclick="editarProduto(${p.id})">✏️</button>
@@ -7164,11 +7171,16 @@ const statusProduto = p.ativo !== false ? '<span class="badge badge-success">Ati
 
 // ATUALIZAR PREÇO (com efeito visual de confirmação)
 async function atualizarPrecoProduto(id, campo, valor, inputEl) {
-    const novoValor = valor === '' ? null : parseFloat(valor);
-    if (isNaN(novoValor) && valor !== '') {
-        showToast('⚠️ Valor inválido!', 'error');
-        carregarProdutos();
-        return;
+    let novoValor;
+    if (campo === 'promocao_validade') {
+        novoValor = valor === '' ? null : valor;
+    } else {
+        novoValor = valor === '' ? null : parseFloat(valor);
+        if (isNaN(novoValor) && valor !== '') {
+            showToast('⚠️ Valor inválido!', 'error');
+            carregarProdutos();
+            return;
+        }
     }
 
     if (inputEl) {
