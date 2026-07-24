@@ -3727,12 +3727,20 @@ async function enviarExposicao() {
             return;
         }
 
-        // 🔥 8. ENVIAR PARA O CLOUDINARY
+// 🔥 8. ENVIAR PARA O CLOUDINARY
         showToast('⏳ Enviando foto...', 'info');
 
         try {
+            let fileParaEnviar;
+            try {
+                fileParaEnviar = await comprimirImagem(file);
+            } catch (erroCompressao) {
+                console.warn('Não foi possível comprimir, usando original:', erroCompressao);
+                fileParaEnviar = file;
+            }
+
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('file', fileParaEnviar);
             formData.append('upload_preset', 'promotor_app');
 
             const response = await fetch(
@@ -4104,7 +4112,6 @@ function visualizarAtestado(url) {
     }
 }
 
-// CÓDIGO CORRIGIDO PARA ATESTADO
 async function enviarAtestado() {
     const data = document.getElementById('atestadoData').value;
     
@@ -4112,54 +4119,85 @@ async function enviarAtestado() {
         showToast('⚠️ Selecione a data de ausência!', 'error');
         return;
     }
-
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.pdf,.jpg,.jpeg,.png'; // ✅ Especificar extensões
+    input.accept = '.pdf,.jpg,.jpeg,.png';
+    input.style.display = 'none';
+    document.body.appendChild(input);
 
     input.onchange = async function(event) {
         const file = event.target.files[0];
         if (!file) {
             showToast('⚠️ Nenhum arquivo selecionado!', 'error');
+            document.body.removeChild(input);
             return;
         }
-
-        // ✅ VALIDAR TAMANHO (Atestados podem ser maiores)
-        if (file.size > 5 * 1024 * 1024) { // 5MB
+        if (file.size > 5 * 1024 * 1024) {
             showToast('⚠️ Arquivo muito grande! Máximo 5MB.', 'error');
+            document.body.removeChild(input);
             return;
         }
-
-        // ✅ VALIDAR TIPO MIME (PDF ou IMAGEM)
-        const tiposPermitidos = [
-            'application/pdf',  // PDF
-            'image/jpeg',       // JPG
-            'image/png',        // PNG
-            'image/gif'         // GIF
-        ];
-        
+        const tiposPermitidos = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'];
         if (!tiposPermitidos.includes(file.type)) {
             showToast('⚠️ Apenas PDF, JPG, PNG ou GIF!', 'error');
+            document.body.removeChild(input);
             return;
         }
-
-        // ✅ VALIDAR EXTENSÃO
         const extensoesPermitidas = ['.pdf', '.jpg', '.jpeg', '.png', '.gif'];
         const nomeArquivo = file.name.toLowerCase();
         const extensao = nomeArquivo.substring(nomeArquivo.lastIndexOf('.'));
-        
         if (!extensoesPermitidas.includes(extensao)) {
             showToast(`⚠️ Extensão "${extensao}" não permitida! Use PDF, JPG, PNG ou GIF.`, 'error');
+            document.body.removeChild(input);
             return;
         }
 
-        // ... RESTO DO CÓDIGO IGUAL (upload para Cloudinary)
         showToast('⏳ Enviando atestado...', 'info');
 
         try {
-            // ... (mesmo código de upload que você já tem)
+            const ehImagem = file.type.startsWith('image/');
+            let fileParaEnviar = file;
+
+            if (ehImagem) {
+                try {
+                    fileParaEnviar = await comprimirImagem(file);
+                } catch (erroCompressao) {
+                    console.warn('Não foi possível comprimir, usando original:', erroCompressao);
+                    fileParaEnviar = file;
+                }
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileParaEnviar);
+            formData.append('upload_preset', 'promotor_app');
+
+            const endpointUpload = ehImagem ? 'image' : 'raw';
+            const response = await fetch(
+                `https://api.cloudinary.com/v1_1/zv2yyqo2/${endpointUpload}/upload`,
+                { method: 'POST', body: formData }
+            );
+
+            const dataResp = await response.json();
+            if (!response.ok) {
+                throw new Error(dataResp.error?.message || 'Erro no upload');
+            }
+
+            await apiFetch('/rest/v1/atestados', 'POST', {
+                promotor_id: promotorLogado.id,
+                data: data,
+                arquivo_url: dataResp.secure_url,
+                descricao: 'Atestado médico'
+            });
+
+            showToast('✅ Atestado enviado com sucesso!', 'success');
+            document.getElementById('atestadoData').value = '';
+            carregarAtestados();
+
         } catch (erro) {
             showToast('❌ Erro: ' + erro.message, 'error');
+            console.error('Erro detalhado:', erro);
+        } finally {
+            document.body.removeChild(input);
         }
     };
 
@@ -5588,13 +5626,21 @@ function enviarFotoChecklist(perguntaId) {
             return;
         }
 
-        // 🔥 6. ENVIAR PARA O CLOUDINARY
+// 🔥 6. ENVIAR PARA O CLOUDINARY
         showToast('⏳ Enviando foto...', 'info');
 
         try {
+            let fileParaEnviar;
+            try {
+                fileParaEnviar = await comprimirImagem(file);
+            } catch (erroCompressao) {
+                console.warn('Não foi possível comprimir, usando original:', erroCompressao);
+                fileParaEnviar = file;
+            }
+
             // Criar FormData para enviar o arquivo
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('file', fileParaEnviar);
             formData.append('upload_preset', 'promotor_app');
             formData.append('folder', 'checklist'); // Pasta opcional no Cloudinary
 
