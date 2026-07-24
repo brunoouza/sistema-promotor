@@ -3663,11 +3663,13 @@ async function enviarExposicao() {
         return;
     }
 
-    // 🔥 1. CRIAR O INPUT DE ARQUIVO
+// 🔥 1. CRIAR O INPUT DE ARQUIVO
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/jpeg,image/png,image/gif,image/webp'; // ✅ MAIS ESPECÍFICO
     input.capture = 'environment'; // ✅ Isso só funciona em mobile
+    input.style.display = 'none';
+    document.body.appendChild(input); // necessário pro iPhone/Safari disparar o evento corretamente
 
     // 🔥 2. QUANDO O USUÁRIO SELECIONAR UM ARQUIVO
     input.onchange = async function(event) {
@@ -3740,9 +3742,11 @@ async function enviarExposicao() {
             const fotoUrl = data.secure_url;
             await salvarExposicao(lojaId, tipo, numero, fotoUrl);
 
-        } catch (erro) {
+} catch (erro) {
             showToast('❌ Erro: ' + erro.message, 'error');
             console.error('Erro detalhado:', erro);
+        } finally {
+            document.body.removeChild(input);
         }
     };
 
@@ -4071,9 +4075,23 @@ async function carregarAtestados() {
     }
 }
 
+// ============================================
+// ABRIR ARQUIVO EXTERNO (compatível com iPhone/Safari em modo instalado)
+// ============================================
+function abrirArquivoExterno(url) {
+    if (!url) return;
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 function visualizarAtestado(url) {
     if (url) {
-        window.open(url, '_blank');
+        abrirArquivoExterno(url);
     } else {
         showToast('📄 Atestado não disponível', 'info');
     }
@@ -4178,7 +4196,7 @@ async function carregarMateriais() {
 
 function visualizarMaterial(url) {
     if (url) {
-        window.open(url, '_blank');
+        abrirArquivoExterno(url);
     } else {
         showToast('📄 Material não disponível', 'info');
     }
