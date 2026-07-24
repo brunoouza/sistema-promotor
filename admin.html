@@ -7188,14 +7188,19 @@ async function atualizarPrecoProduto(id, campo, valor, inputEl) {
         inputEl.style.backgroundColor = '#fefce8';
     }
 
-    try {
+try {
         const produtoAtual = produtosCache.find(p => p.id === id);
         const valorAntigo = produtoAtual ? produtoAtual[campo] : undefined;
         const mudou = valorAntigo !== novoValor;
 
         const dados = {};
         dados[campo] = novoValor;
-        if (mudou) dados.preco_atualizado_em = new Date().toISOString();
+        if (mudou && campo !== 'promocao_validade') {
+            dados.preco_atualizado_em = new Date().toISOString();
+            const antigoNum = parseFloat(valorAntigo) || 0;
+            const novoNum = parseFloat(novoValor) || 0;
+            dados.preco_atualizado_tipo = novoNum > antigoNum ? 'aumento' : 'baixa';
+        }
         await apiFetch(`/rest/v1/produtos?id=eq.${id}`, 'PATCH', dados);
         showToast(`✅ ${campo === 'preco_venda' ? 'Preço de venda' : 'Preço promocional'} atualizado!`, 'success');
 
@@ -7310,10 +7315,18 @@ if (!marca || !codigo || !descricao || preco_venda <= 0) {
     try {
 const dados = { marca, codigo, descricao, preco_venda, preco_promocional, promocao_validade };
         
-        if (id) {
+if (id) {
             const atual = await apiFetch(`/rest/v1/produtos?id=eq.${id}&select=preco_venda,preco_promocional`);
-            const mudouPreco = atual.length > 0 && (atual[0].preco_venda !== preco_venda || atual[0].preco_promocional !== preco_promocional);
-            if (mudouPreco) dados.preco_atualizado_em = new Date().toISOString();
+            if (atual.length > 0) {
+                const antigo = atual[0];
+                const subiu = preco_venda > (antigo.preco_venda || 0) || preco_promocional > (antigo.preco_promocional || 0);
+                const desceu = preco_venda < (antigo.preco_venda || 0) || (preco_promocional || 0) < (antigo.preco_promocional || 0);
+                const mudouPreco = antigo.preco_venda !== preco_venda || antigo.preco_promocional !== preco_promocional;
+                if (mudouPreco) {
+                    dados.preco_atualizado_em = new Date().toISOString();
+                    dados.preco_atualizado_tipo = subiu ? 'aumento' : (desceu ? 'baixa' : null);
+                }
+            }
             await apiFetch(`/rest/v1/produtos?id=eq.${id}`, 'PATCH', dados);
             showToast('✅ Produto atualizado!', 'success');
         } else {
@@ -7506,15 +7519,22 @@ if (produtos.length > 0) {
                 const produtoAtual = produtos[0];
                 const dados = { preco_venda: item.preco_venda };
                 let precoMudou = produtoAtual.preco_venda !== item.preco_venda;
+                let subiu = item.preco_venda > (produtoAtual.preco_venda || 0);
+                let desceu = item.preco_venda < (produtoAtual.preco_venda || 0);
 
                 if (item.preco_promocional !== null && item.preco_promocional !== undefined) {
                     dados.preco_promocional = item.preco_promocional > 0 ? item.preco_promocional : null;
                     if (dados.preco_promocional !== produtoAtual.preco_promocional) precoMudou = true;
+                    if (dados.preco_promocional > (produtoAtual.preco_promocional || 0)) subiu = true;
+                    if ((dados.preco_promocional || 0) < (produtoAtual.preco_promocional || 0)) desceu = true;
                 }
                 if (item.promocao_validade) {
                     dados.promocao_validade = item.promocao_validade;
                 }
-                if (precoMudou) dados.preco_atualizado_em = new Date().toISOString();
+                if (precoMudou) {
+                    dados.preco_atualizado_em = new Date().toISOString();
+                    dados.preco_atualizado_tipo = subiu ? 'aumento' : (desceu ? 'baixa' : null);
+                }
 
                 await apiFetch(`/rest/v1/produtos?id=eq.${produtos[0].id}`, 'PATCH', dados);
                 atualizados++;
