@@ -2439,8 +2439,15 @@ async function verificarPrecosAtualizados() {
         seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
         const limiteStr = seteDiasAtras.toISOString();
 
+        const vinte4hAtras = new Date();
+        vinte4hAtras.setHours(vinte4hAtras.getHours() - 24);
+        const limite24hStr = vinte4hAtras.toISOString();
+
+        // Baixas: aparecem na hora. Aumentos: só depois de 24h da alteração.
+        const filtro = `or=(and(preco_atualizado_tipo.eq.baixa,preco_atualizado_em.gte.${limiteStr}),and(preco_atualizado_tipo.eq.aumento,preco_atualizado_em.gte.${limiteStr},preco_atualizado_em.lte.${limite24hStr}))`;
+
         const produtos = await apiFetch(
-            `/rest/v1/produtos?preco_atualizado_em=gte.${limiteStr}&order=preco_atualizado_em.desc&select=*`
+            `/rest/v1/produtos?${filtro}&order=preco_atualizado_em.desc&select=*`
         );
         precosAtualizadosCache = produtos;
 
