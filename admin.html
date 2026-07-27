@@ -2729,13 +2729,16 @@ function abrirSubTabSugestao(tabId) {
     if (tabId === 'subSugestaoMapa') carregarSelectMapaSugestao();
 }
 
-function abrirSubTabLojas(tabId) {
+async function abrirSubTabLojas(tabId) {
     document.querySelectorAll('.lojas-sub-content').forEach(el => el.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
     document.querySelectorAll('.lojas-subtabs button').forEach(el => el.classList.remove('ativo'));
     const btn = document.querySelector(`.lojas-subtabs button[onclick="abrirSubTabLojas('${tabId}')"]`);
     if (btn) btn.classList.add('ativo');
-    if (tabId === 'subLojasMapa') carregarMapaLojas();
+    if (tabId === 'subLojasMapa') {
+        await carregarConfiguracaoRaio();
+        carregarMapaLojas();
+    }
 }
 
 function fecharModal(id) { document.getElementById(id).classList.remove('active'); }
