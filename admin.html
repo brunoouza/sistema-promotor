@@ -1866,8 +1866,8 @@
         </div>
 
         <!-- MODAL EDITAR ROTEIRO (COM ROTEIRO RECORRENTE) -->
-        <div id="modalEditarRoteiro" class="modal-overlay">
-            <div class="modal-content" style="max-width:1100px;">
+<div id="modalEditarRoteiro" class="modal-overlay">
+            <div class="modal-content" style="max-width:1400px;width:95vw;">
                 <div class="flex-between">
                     <h2>📝 Editar Roteiro</h2>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -8439,19 +8439,21 @@ async function carregarSelectsValeTransporte() {
             if (valorAtual) sel.value = valorAtual;
         });
 
-        const selMes = document.getElementById('vtSimularMes');
+const selMes = document.getElementById('vtSimularMes');
         selMes.innerHTML = '';
         const hoje = new Date();
         const mesAtual = hoje.getMonth() + 1;
         const anoAtual = hoje.getFullYear();
-        for (let i = 0; i < 6; i++) {
-            let mes = mesAtual - i, ano = anoAtual;
-            if (mes <= 0) { mes += 12; ano--; }
-            const label = `${String(mes).padStart(2,'0')}/${ano}`;
+        // Mostra o próximo mês e mais alguns futuros (projeção), e também o mês atual como referência
+        for (let i = -1; i <= 3; i++) {
+            let mes = mesAtual + i, ano = anoAtual;
+            while (mes > 12) { mes -= 12; ano++; }
+            while (mes < 1) { mes += 12; ano--; }
+            const label = `${String(mes).padStart(2,'0')}/${ano}` + (i === 1 ? ' (próximo)' : '');
             const value = `${ano}-${String(mes).padStart(2,'0')}`;
             const option = document.createElement('option');
             option.value = value; option.textContent = label;
-            if (i === 0) option.selected = true;
+            if (i === 1) option.selected = true; // seleciona o próximo mês por padrão
             selMes.appendChild(option);
         }
     } catch (erro) {
