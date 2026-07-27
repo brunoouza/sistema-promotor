@@ -8655,6 +8655,9 @@ function gerarPDFValeTransporte() {
 
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+    const margemEsquerda = 12;
+    const margemDireita = 198;
+    const larguraUtil = margemDireita - margemEsquerda;
 
     pdf.setFontSize(16);
     pdf.text('Simulação de Vale Transporte', 105, 15, { align: 'center' });
@@ -8662,61 +8665,70 @@ function gerarPDFValeTransporte() {
     pdf.setTextColor(100);
     pdf.text(`${simulacaoVTCache.nomePromotor} - Periodo: ${simulacaoVTCache.periodo}`, 105, 22, { align: 'center' });
 
-    let y = 35;
+    let y = 34;
     pdf.setFontSize(9);
     pdf.setTextColor(30);
     pdf.setFont(undefined, 'bold');
-    pdf.text('Loja', 12, y);
+    pdf.text('Loja', margemEsquerda, y);
     pdf.text('Direção', 65, y);
     pdf.text('Cartão', 90, y);
     pdf.text('Meio', 118, y);
     pdf.text('Vlr. Unit.', 145, y);
-    pdf.text('Dias', 168, y);
-    pdf.text('Subtotal', 182, y);
+    pdf.text('Dias', 170, y);
+    pdf.text('Subtotal', margemDireita, y, { align: 'right' });
     pdf.setFont(undefined, 'normal');
-    y += 5;
+
+    y += 3;
     pdf.setLineWidth(0.2);
-    pdf.line(12, y - 2, 200, y - 2);
+    pdf.line(margemEsquerda, y, margemDireita, y);
+    y += 6;
 
     simulacaoVTCache.linhas.forEach(l => {
-        pdf.text(String(l.loja).slice(0, 28), 12, y);
+        pdf.text(String(l.loja).slice(0, 28), margemEsquerda, y);
         pdf.text(l.direcao, 65, y);
         pdf.text(String(l.cartao).slice(0, 14), 90, y);
         pdf.text(String(l.meio).slice(0, 12), 118, y);
         pdf.text(`R$ ${l.valorUnitario.toFixed(2)}`, 145, y);
         pdf.text(String(l.dias), 170, y);
-        pdf.text(`R$ ${l.subtotal.toFixed(2)}`, 182, y);
-        y += 6;
-        if (y > 270) { pdf.addPage(); y = 20; }
+        pdf.text(`R$ ${l.subtotal.toFixed(2)}`, margemDireita, y, { align: 'right' });
+        y += 7;
+        if (y > 265) { pdf.addPage(); y = 20; }
     });
 
     if (simulacaoVTCache.lojasSemTrecho && simulacaoVTCache.lojasSemTrecho.length > 0) {
-        y += 4;
+        y += 5;
         pdf.setTextColor(200, 0, 0);
         pdf.setFontSize(9);
-        pdf.text(`Sem trecho aprovado: ${simulacaoVTCache.lojasSemTrecho.join(', ')}`, 12, y);
+        const textoSemTrecho = `Sem trecho aprovado: ${simulacaoVTCache.lojasSemTrecho.join(', ')}`;
+        const linhasQuebradas = pdf.splitTextToSize(textoSemTrecho, larguraUtil);
+        linhasQuebradas.forEach(linha => {
+            if (y > 270) { pdf.addPage(); y = 20; }
+            pdf.text(linha, margemEsquerda, y);
+            y += 5;
+        });
         pdf.setTextColor(30);
-        y += 6;
     }
 
-    y += 8;
+    y += 10;
+    if (y > 260) { pdf.addPage(); y = 20; }
     pdf.setFont(undefined, 'bold');
     pdf.setFontSize(12);
-    pdf.text('Total por Cartao', 12, y);
+    pdf.text('Total por Cartão', margemEsquerda, y);
     pdf.setFont(undefined, 'normal');
     pdf.setFontSize(10);
-    y += 7;
+    y += 8;
     Object.entries(simulacaoVTCache.totaisPorCartao).forEach(([cartao, valor]) => {
-        pdf.text(cartao, 12, y);
-        pdf.text(`R$ ${valor.toFixed(2)}`, 182, y);
-        y += 6;
         if (y > 270) { pdf.addPage(); y = 20; }
+        pdf.text(cartao, margemEsquerda, y);
+        pdf.text(`R$ ${valor.toFixed(2)}`, margemDireita, y, { align: 'right' });
+        y += 7;
     });
 
     y += 8;
+    if (y > 265) { pdf.addPage(); y = 20; }
     pdf.setFontSize(13);
     pdf.setFont(undefined, 'bold');
-    pdf.text(`Total geral: R$ ${simulacaoVTCache.totalGeral.toFixed(2)}`, 195, y, { align: 'right' });
+    pdf.text(`Total geral: R$ ${simulacaoVTCache.totalGeral.toFixed(2)}`, margemDireita, y, { align: 'right' });
 
     const nomeArquivo = `vale_transporte_${simulacaoVTCache.nomePromotor.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
     const blob = pdf.output('blob');
