@@ -4502,6 +4502,8 @@ async function editarRoteiro(roteiroId, mes, ano) {
         document.getElementById('editRoteiroRecorrente').checked = isRecorrente;
         
 lojasExtrasRoteiroEditando = [];
+        const todasLojasParaABC = await apiFetch('/rest/v1/lojas?select=id,faturamento');
+        classificacaoABCEdicaoRoteiro = calcularCurvaABC(todasLojasParaABC.map(l => ({ id: l.id, faturamento: l.faturamento })));
         renderizarLojasDisponiveisEdit();
         montarCardsSemanas(mes, ano, roteiroEditando.dias);
         document.getElementById('modalEditarRoteiro').classList.add('active');
@@ -4513,6 +4515,7 @@ lojasExtrasRoteiroEditando = [];
 // GERENCIAR LOJAS DO ROTEIRO (adicionar/remover, sem criar roteiro novo)
 // ============================================
 let lojasExtrasRoteiroEditando = [];
+let classificacaoABCEdicaoRoteiro = {};
 
 function abrirModalGerenciarLojasRoteiro() {
     document.getElementById('autocompleteGerenciarInput').value = '';
@@ -4611,13 +4614,14 @@ function renderizarLojasDisponiveisEdit() {
         divLojas.innerHTML = '<span class="empty">Nenhuma loja associada</span>';
         return;
     }
-    lojasUnicas.forEach(l => {
+lojasUnicas.forEach(l => {
         const div = document.createElement('div');
         div.className = 'loja-draggable';
         div.draggable = true;
         div.dataset.lojaId = l.id;
         div.style.cssText = 'background:white;padding:6px 14px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.04);cursor:grab;font-size:13px;border:1px solid #e2e8f0;display:flex;align-items:center;gap:8px;';
-        div.innerHTML = `${l.nome} <span style="font-size:11px;color:#64748b;">${l.cidade}/${l.estado}</span>`;
+        const classeHtml = badgeClasseABC(classificacaoABCEdicaoRoteiro[l.id]);
+        div.innerHTML = `${classeHtml} ${l.nome} <span style="font-size:11px;color:#64748b;">${l.cidade}/${l.estado}</span>`;
         div.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', l.id); });
         divLojas.appendChild(div);
     });
@@ -4700,8 +4704,9 @@ function montarCardsSemanas(mes, ano, dias) {
                                 const loja = reg.loja;
                                 if (!loja) return;
                                 const turno = reg.turno === 'tarde' ? '🌅 Tarde' : '🌄 Manhã';
+                                const classeHtml = badgeClasseABC(classificacaoABCEdicaoRoteiro[loja.id]);
                                 lojasHtml += `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;border-bottom:1px solid #e2e8f0;padding:4px 0;gap:8px;">
-                                    <span><strong>${loja.nome}</strong></span>
+                                    <span>${classeHtml} <strong>${loja.nome}</strong></span>
                                     ${mostrarTurno ? `<span style="font-size:11px;color:#64748b;">${turno}</span>` : ''}
                                     <button onclick="removerLojaDia(${sem.semana}, '${dia}', ${idx})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-weight:700;font-size:14px;">✕</button>
                                 </div>`;
