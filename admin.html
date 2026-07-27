@@ -1123,7 +1123,8 @@
     <button class="menu-item" onclick="abrirTab('tabPromotores')"><span class="icon"><i data-lucide="users"></i></span> Promotores</button>
     <button class="menu-item" onclick="abrirTab('tabLojas')"><span class="icon"><i data-lucide="store"></i></span> Lojas</button>
 <button class="menu-item" onclick="abrirTab('tabRoteiros')"><span class="icon"><i data-lucide="route"></i></span> Roteiros</button>
-    <button class="menu-item" onclick="abrirTab('tabSugestaoLojas')"><span class="icon"><i data-lucide="compass"></i></span> Sugestão de Lojas</button>
+<button class="menu-item" onclick="abrirTab('tabSugestaoLojas')"><span class="icon"><i data-lucide="compass"></i></span> Sugestão de Lojas</button>
+    <button class="menu-item" onclick="abrirTab('tabValeTransporte')"><span class="icon"><i data-lucide="bus"></i></span> Vale Transporte</button>
     <!-- Carga Horária oculta do menu (mantida no código) -->
     <button class="menu-item" onclick="abrirTab('tabFeriados')"><span class="icon"><i data-lucide="calendar"></i></span> Feriados</button>
     <button class="menu-item" onclick="abrirTab('tabValidador')"><span class="icon"><i data-lucide="map-pin"></i></span> Validador</button>
@@ -1679,6 +1680,54 @@
             <div class="card">
                 <div class="flex-between"><h2>📋 Gerenciar Roteiros</h2><button class="btn btn-success" onclick="abrirModalRoteiro()">+ Novo Roteiro</button></div>
                 <div class="table-wrapper"><table><thead><tr><th>ID</th><th>Promotor</th><th>Mês/Ano</th><th>Recorrente</th><th>Ações</th></tr></thead><tbody id="tabelaRoteiros"><tr><td colspan="5" class="loading">Carregando...</td></tr></tbody></table></div>
+            </div>
+        </div>
+
+<!-- ========================================== -->
+        <!-- TAB: VALE TRANSPORTE -->
+        <!-- ========================================== -->
+        <div id="tabValeTransporte" class="tab-content">
+            <div class="card">
+                <h2>🚌 Vale Transporte</h2>
+                <div class="lojas-subtabs">
+                    <button class="ativo" onclick="abrirSubTabVT('subVTRevisar')">✅ Revisar Valores</button>
+                    <button onclick="abrirSubTabVT('subVTSimular')">🧮 Simular</button>
+                </div>
+
+                <!-- SUB-ABA: REVISAR -->
+                <div id="subVTRevisar" class="lojas-sub-content active">
+                    <p style="color:#64748b;font-size:14px;margin-bottom:16px;">Veja o que cada promotor informou, aprove, edite ou adicione valores.</p>
+                    <div class="form-group" style="max-width:400px;margin-bottom:16px;">
+                        <label>👤 Promotor</label>
+                        <select id="vtRevisarPromotor" onchange="carregarRevisaoVT()">
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div id="listaRevisaoVT">
+                        <p style="color:#94a3b8;text-align:center;padding:20px 0;">Selecione um promotor acima</p>
+                    </div>
+                </div>
+
+                <!-- SUB-ABA: SIMULAR -->
+                <div id="subVTSimular" class="lojas-sub-content">
+                    <p style="color:#64748b;font-size:14px;margin-bottom:16px;">Calcula o total estimado, considerando só os trechos <strong>aprovados</strong>.</p>
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:end;margin-bottom:16px;">
+                        <div class="form-group" style="min-width:250px;">
+                            <label>👤 Promotor</label>
+                            <select id="vtSimularPromotor"><option value="">Selecione...</option></select>
+                        </div>
+                        <div class="form-group" style="min-width:150px;">
+                            <label>📅 Período</label>
+                            <select id="vtSimularMes"></select>
+                        </div>
+                        <div class="form-group" style="flex:0;">
+                            <button class="btn btn-primary" onclick="simularValeTransporte()">🧮 Calcular</button>
+                        </div>
+                    </div>
+                    <div id="resultadoSimulacaoVT">
+                        <p style="color:#94a3b8;text-align:center;padding:20px 0;">Selecione o promotor e o período</p>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -2738,6 +2787,7 @@ function abrirTab(tabId) {
     if (tabId === 'tabLojas') carregarLojasAdmin();
     if (tabId === 'tabRoteiros') carregarRoteiros();
     if (tabId === 'tabSugestaoLojas') { carregarSelectSugestaoLojas(); carregarSelectMapaSugestao(); }
+    if (tabId === 'tabValeTransporte') carregarSelectsValeTransporte();
     if (tabId === 'tabCargaHoraria') carregarCargaHoraria();
     if (tabId === 'tabFeriados') carregarFeriados();
     if (tabId === 'tabValidador') { carregarValidadorPromotores(); carregarSolicitacoes(); }
@@ -2747,6 +2797,14 @@ function abrirTab(tabId) {
     if (tabId === 'tabChecklistAdmin') { carregarChecklistsAdmin(); }
     if (tabId === 'tabProdutos') { carregarProdutos(); }
     if (tabId === 'tabAdmMaster') { carregarAdmMaster(); }
+}
+
+function abrirSubTabVT(tabId) {
+    document.querySelectorAll('#tabValeTransporte .lojas-sub-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.querySelectorAll('#tabValeTransporte .lojas-subtabs button').forEach(el => el.classList.remove('ativo'));
+    const btn = document.querySelector(`#tabValeTransporte .lojas-subtabs button[onclick="abrirSubTabVT('${tabId}')"]`);
+    if (btn) btn.classList.add('ativo');
 }
 
 function abrirSubTabSugestao(tabId) {
@@ -8357,6 +8415,241 @@ async function carregarConfiguracaoRaio() {
     } catch (erro) {
         console.error('Erro ao carregar configuração de raio:', erro);
     }
+}
+
+// ============================================
+// VALE TRANSPORTE — REVISAR/APROVAR + SIMULAR
+// ============================================
+const CARTOES_VT = ['Bilhete Único', 'TOP', 'RioCard', 'Jaé', 'BUI', 'Outros'];
+const MEIOS_VT = ['Ônibus', 'Metrô', 'Trem', 'VLT', 'BRT', 'Barcas', 'Outros'];
+
+async function carregarSelectsValeTransporte() {
+    try {
+        const promotores = await apiFetch('/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true&order=nome&select=id,nome');
+        ['vtRevisarPromotor', 'vtSimularPromotor'].forEach(idSel => {
+            const sel = document.getElementById(idSel);
+            const valorAtual = sel.value;
+            sel.innerHTML = '<option value="">Selecione...</option>';
+            promotores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nome}</option>`; });
+            if (valorAtual) sel.value = valorAtual;
+        });
+
+        const selMes = document.getElementById('vtSimularMes');
+        selMes.innerHTML = '';
+        const hoje = new Date();
+        const mesAtual = hoje.getMonth() + 1;
+        const anoAtual = hoje.getFullYear();
+        for (let i = 0; i < 6; i++) {
+            let mes = mesAtual - i, ano = anoAtual;
+            if (mes <= 0) { mes += 12; ano--; }
+            const label = `${String(mes).padStart(2,'0')}/${ano}`;
+            const value = `${ano}-${String(mes).padStart(2,'0')}`;
+            const option = document.createElement('option');
+            option.value = value; option.textContent = label;
+            if (i === 0) option.selected = true;
+            selMes.appendChild(option);
+        }
+    } catch (erro) {
+        console.error('Erro ao carregar selects de vale transporte:', erro);
+    }
+}
+
+async function carregarRevisaoVT() {
+    const promotorId = document.getElementById('vtRevisarPromotor').value;
+    const div = document.getElementById('listaRevisaoVT');
+    if (!promotorId) { div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Selecione um promotor acima</p>'; return; }
+
+    div.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+
+    try {
+        const hoje = new Date();
+        const mes = hoje.getMonth() + 1, ano = hoje.getFullYear();
+        let roteiros = await apiFetch(`/rest/v1/roteiros?promotor_id=eq.${promotorId}&mes=eq.${mes}&ano=eq.${ano}&select=*,lojas(id,nome)`);
+        if (roteiros.length === 0) {
+            roteiros = await apiFetch(`/rest/v1/roteiros?promotor_id=eq.${promotorId}&roteiro_recorrente=eq.true&select=*,lojas(id,nome)`);
+        }
+        const lojas = [...new Map(roteiros.filter(r => r.lojas).map(r => [r.lojas.id, r.lojas])).values()].sort((a,b) => a.nome.localeCompare(b.nome));
+
+        const trechos = await apiFetch(`/rest/v1/vale_transporte?promotor_id=eq.${promotorId}&select=*`);
+
+        if (lojas.length === 0) { div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Esse promotor não tem lojas no roteiro atual</p>'; return; }
+
+        const statusLabel = { pendente: '⏳ Pendente', aprovado: '✅ Aprovado' };
+        let html = '';
+        lojas.forEach(loja => {
+            const doLoja = trechos.filter(t => t.loja_id === loja.id);
+            html += `<div style="background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:12px;">
+                <div style="font-weight:700;color:#1a1a2e;margin-bottom:8px;">🏪 ${loja.nome}</div>`;
+            if (doLoja.length === 0) {
+                html += `<p style="color:#94a3b8;font-size:13px;">Nenhum trecho informado ainda</p>`;
+            } else {
+                html += `<div class="table-wrapper"><table><thead><tr><th>Direção</th><th>Cartão</th><th>Meio</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
+                doLoja.forEach(t => {
+                    html += `<tr>
+                        <td>${t.direcao === 'ida' ? '➡️ Ida' : '⬅️ Volta'}</td>
+                        <td>
+                            <select onchange="editarCampoVT(${t.id}, 'cartao', this.value)">
+                                ${CARTOES_VT.map(c => `<option value="${c}" ${c === t.cartao ? 'selected' : ''}>${c}</option>`).join('')}
+                            </select>
+                        </td>
+                        <td>
+                            <select onchange="editarCampoVT(${t.id}, 'meio_transporte', this.value)">
+                                ${MEIOS_VT.map(m => `<option value="${m}" ${m === t.meio_transporte ? 'selected' : ''}>${m}</option>`).join('')}
+                            </select>
+                        </td>
+                        <td><input type="number" step="0.01" value="${t.valor}" style="width:80px;" onchange="editarCampoVT(${t.id}, 'valor', this.value)"></td>
+                        <td>${statusLabel[t.status]}</td>
+                        <td>
+                            ${t.status === 'pendente' ? `<button class="btn btn-success btn-sm" onclick="aprovarVT(${t.id})">✅ Aprovar</button>` : ''}
+                            <button class="btn btn-danger btn-sm" onclick="excluirVTAdmin(${t.id})">🗑️</button>
+                        </td>
+                    </tr>`;
+                });
+                html += `</tbody></table></div>`;
+            }
+            html += `<button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="adicionarTrechoVTAdmin(${promotorId}, ${loja.id})">➕ Adicionar trecho</button></div>`;
+        });
+        div.innerHTML = html;
+    } catch (erro) {
+        div.innerHTML = `<div class="loading">❌ ${erro.message}</div>`;
+    }
+}
+
+async function editarCampoVT(id, campo, valor) {
+    try {
+        const dados = { [campo]: campo === 'valor' ? parseFloat(valor) || 0 : valor, status: 'aprovado' };
+        await apiFetch(`/rest/v1/vale_transporte?id=eq.${id}`, 'PATCH', dados);
+        showToast('✅ Atualizado e aprovado!', 'success');
+        carregarRevisaoVT();
+    } catch (erro) {
+        showToast('❌ Erro: ' + erro.message, 'error');
+    }
+}
+
+async function aprovarVT(id) {
+    try {
+        await apiFetch(`/rest/v1/vale_transporte?id=eq.${id}`, 'PATCH', { status: 'aprovado' });
+        showToast('✅ Aprovado!', 'success');
+        carregarRevisaoVT();
+    } catch (erro) {
+        showToast('❌ Erro: ' + erro.message, 'error');
+    }
+}
+
+async function excluirVTAdmin(id) {
+    if (!confirm('⚠️ Remover esse trecho?')) return;
+    try {
+        await apiFetch(`/rest/v1/vale_transporte?id=eq.${id}`, 'DELETE');
+        showToast('🗑️ Removido!', 'success');
+        carregarRevisaoVT();
+    } catch (erro) {
+        showToast('❌ Erro: ' + erro.message, 'error');
+    }
+}
+
+async function adicionarTrechoVTAdmin(promotorId, lojaId) {
+    try {
+        await apiFetch('/rest/v1/vale_transporte', 'POST', {
+            promotor_id: promotorId, loja_id: lojaId, direcao: 'ida',
+            cartao: CARTOES_VT[0], meio_transporte: MEIOS_VT[0], valor: 0, status: 'aprovado'
+        });
+        showToast('✅ Trecho adicionado! Edite os valores certos.', 'success');
+        carregarRevisaoVT();
+    } catch (erro) {
+        showToast('❌ Erro: ' + erro.message, 'error');
+    }
+}
+
+let simulacaoVTCache = null;
+
+async function simularValeTransporte() {
+    const promotorId = document.getElementById('vtSimularPromotor').value;
+    const mesAno = document.getElementById('vtSimularMes').value;
+    const div = document.getElementById('resultadoSimulacaoVT');
+    if (!promotorId || !mesAno) { showToast('⚠️ Selecione o promotor e o período!', 'error'); return; }
+
+    div.innerHTML = '<div class="loading"><div class="spinner"></div>Calculando...</div>';
+
+    try {
+        const [anoFim, mesFim] = mesAno.split('-').map(Number);
+        let mesInicio = mesFim - 1, anoInicio = anoFim;
+        if (mesInicio < 1) { mesInicio = 12; anoInicio = anoFim - 1; }
+        const dataInicio = `${anoInicio}-${String(mesInicio).padStart(2,'0')}-21`;
+        const dataFim = `${anoFim}-${String(mesFim).padStart(2,'0')}-20`;
+
+        const { dias } = await calcularCumprimentoRoteiro(promotorId, dataInicio, dataFim);
+        const trechos = await apiFetch(`/rest/v1/vale_transporte?promotor_id=eq.${promotorId}&status=eq.aprovado&select=*`);
+        const promotor = await apiFetch(`/rest/v1/promotores?id=eq.${promotorId}&select=nome`);
+        const nomePromotor = promotor[0]?.nome || 'Promotor';
+
+        const contagemPorLoja = new Map();
+        dias.forEach(d => {
+            if (!contagemPorLoja.has(d.lojaId)) contagemPorLoja.set(d.lojaId, { nome: d.loja, dias: 0 });
+            contagemPorLoja.get(d.lojaId).dias++;
+        });
+
+        let totalGeral = 0;
+        const linhas = [];
+        contagemPorLoja.forEach((info, lojaId) => {
+            const trechosLoja = trechos.filter(t => t.loja_id === lojaId);
+            const valorDia = trechosLoja.reduce((soma, t) => soma + parseFloat(t.valor), 0);
+            const subtotal = valorDia * info.dias;
+            totalGeral += subtotal;
+            linhas.push({ nome: info.nome, dias: info.dias, qtdTrechos: trechosLoja.length, valorDia, subtotal, semValor: trechosLoja.length === 0 });
+        });
+
+        simulacaoVTCache = { nomePromotor, periodo: `${String(mesInicio).padStart(2,'0')}/${anoInicio} a ${String(mesFim).padStart(2,'0')}/${anoFim}`, linhas, totalGeral };
+
+        let html = `<h4 style="margin-bottom:8px;">👤 ${nomePromotor} — ${simulacaoVTCache.periodo}</h4>`;
+        html += '<div class="table-wrapper"><table><thead><tr><th>Loja</th><th>Trechos aprovados</th><th>Dias no período</th><th>Valor/dia</th><th>Subtotal</th></tr></thead><tbody>';
+        linhas.forEach(l => {
+            html += `<tr>
+                <td><strong>${l.nome}</strong>${l.semValor ? ' <span style="color:#ef4444;font-size:11px;">(sem trecho aprovado)</span>' : ''}</td>
+                <td>${l.qtdTrechos}</td><td>${l.dias}</td><td>R$ ${l.valorDia.toFixed(2)}</td><td>R$ ${l.subtotal.toFixed(2)}</td>
+            </tr>`;
+        });
+        html += `</tbody></table></div>
+            <div style="margin-top:16px;padding:16px;background:#dbeafe;border-radius:12px;font-size:18px;font-weight:700;color:#1d4ed8;text-align:right;">Total estimado: R$ ${totalGeral.toFixed(2)}</div>
+            <div style="margin-top:12px;"><button class="btn btn-warning" onclick="gerarPDFValeTransporte()">📄 Baixar PDF</button></div>`;
+        div.innerHTML = html;
+    } catch (erro) {
+        div.innerHTML = `<div class="loading">❌ ${erro.message}</div>`;
+    }
+}
+
+function gerarPDFValeTransporte() {
+    if (!simulacaoVTCache) { showToast('⚠️ Calcule a simulação primeiro.', 'error'); return; }
+    const win = window.open('', '_blank');
+    if (!win) { showToast('❌ Permita pop-ups para gerar o PDF', 'error'); return; }
+
+    let linhasHtml = '';
+    simulacaoVTCache.linhas.forEach(l => {
+        linhasHtml += `<tr>
+            <td style="border:1px solid #000;padding:4px;font-size:11px;">${l.nome}</td>
+            <td style="border:1px solid #000;padding:4px;font-size:11px;text-align:center;">${l.dias}</td>
+            <td style="border:1px solid #000;padding:4px;font-size:11px;text-align:right;">R$ ${l.valorDia.toFixed(2)}</td>
+            <td style="border:1px solid #000;padding:4px;font-size:11px;text-align:right;">R$ ${l.subtotal.toFixed(2)}</td>
+        </tr>`;
+    });
+
+    win.document.write(`
+        <html><head><title>Vale Transporte</title>
+        <style>
+            body { font-family: Arial, sans-serif; padding: 40px; }
+            .header { text-align: center; margin-bottom: 24px; }
+            .header h1 { font-size: 18px; margin: 0; color: #1a1a2e; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            th { background: #2563eb; color: white; padding: 6px; border: 1px solid #000; }
+            .total { margin-top: 16px; text-align: right; font-size: 16px; font-weight: 700; }
+        </style></head>
+        <body>
+            <div class="header"><h1>🚌 Simulação de Vale Transporte</h1><p>${simulacaoVTCache.nomePromotor} — Período: ${simulacaoVTCache.periodo}</p></div>
+            <table><thead><tr><th>Loja</th><th>Dias</th><th>Valor/dia</th><th>Subtotal</th></tr></thead><tbody>${linhasHtml}</tbody></table>
+            <div class="total">Total estimado: R$ ${simulacaoVTCache.totalGeral.toFixed(2)}</div>
+            <script>window.print();<\/script>
+        </body></html>
+    `);
+    win.document.close();
 }
 
 // ============================================
