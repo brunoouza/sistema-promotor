@@ -1788,6 +1788,34 @@
             </div>
         </div>
 
+        <!-- ========================================== -->
+        <!-- MODAL GERENCIAR LOJAS DO ROTEIRO (adicionar/remover) -->
+        <!-- ========================================== -->
+        <div id="modalGerenciarLojasRoteiro" class="modal-overlay">
+            <div class="modal-content" style="max-width:600px;">
+                <div class="flex-between">
+                    <h2>🔍 Gerenciar Lojas do Roteiro</h2>
+                    <button class="btn btn-danger btn-sm" onclick="fecharModalGerenciarLojasRoteiro()">✕ Fechar</button>
+                </div>
+                <p style="color:#64748b;font-size:14px;margin:8px 0 16px;">
+                    Busque e adicione novas lojas ao roteiro, ou remova lojas que não fazem mais parte dele. Depois de fechar, arraste as novas lojas pros dias certos, como de costume.
+                </p>
+
+                <div class="form-group" style="position:relative;">
+                    <label>➕ Adicionar loja</label>
+                    <input type="text" id="autocompleteGerenciarInput" placeholder="Digite o nome da loja..." oninput="buscarLojasParaGerenciar(this.value)" style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:10px;">
+                    <div class="autocomplete-list" id="autocompleteGerenciarList" style="position:absolute;top:100%;left:0;right:0;background:white;border:2px solid #e2e8f0;border-radius:10px;max-height:200px;overflow-y:auto;display:none;z-index:20;"></div>
+                </div>
+
+                <h4 style="margin:20px 0 8px;color:#1a1a2e;">Lojas atualmente no roteiro</h4>
+                <div id="listaGerenciarLojasRoteiro" style="max-height:300px;overflow-y:auto;"></div>
+
+                <div class="btn-group" style="margin-top:16px;">
+                    <button class="btn btn-success" onclick="fecharModalGerenciarLojasRoteiro()">✅ Concluir</button>
+                </div>
+            </div>
+        </div>
+
         <!-- MODAL EDITAR ROTEIRO (COM ROTEIRO RECORRENTE) -->
         <div id="modalEditarRoteiro" class="modal-overlay">
             <div class="modal-content" style="max-width:1100px;">
@@ -1799,6 +1827,7 @@
                             🔄 Recorrente
                         </label>
                         <button class="btn btn-primary" onclick="salvarEdicaoRoteiro()">💾 Salvar Mês</button>
+                        <button class="btn" style="background:#8b5cf6;color:white;" onclick="abrirModalGerenciarLojasRoteiro()">🔍 Gerenciar Lojas do Roteiro</button>
                         <button class="btn btn-warning" onclick="copiarSemana()">📋 Copiar Semana</button>
                         <button class="btn btn-danger" onclick="limparMes()">🔄 Limpar Mês</button>
                         <button class="btn btn-danger" onclick="fecharModal('modalEditarRoteiro')">Cancelar</button>
@@ -4414,28 +4443,126 @@ async function editarRoteiro(roteiroId, mes, ano) {
         document.getElementById('editPromotorInfo').textContent = `👤 ${promotor.nome || 'N/A'} | ${mes}/${ano}`;
         document.getElementById('editRoteiroRecorrente').checked = isRecorrente;
         
-        const lojasDoRoteiro = dados.map(d => d.lojas).filter(l => l);
-        const divLojas = document.getElementById('editLojasDisponiveis');
-        divLojas.innerHTML = '';
-        if (lojasDoRoteiro.length === 0) { divLojas.innerHTML = '<span class="empty">Nenhuma loja associada</span>'; } else {
-            const lojasUnicas = [];
-            const idsVistos = new Set();
-            lojasDoRoteiro.forEach(l => { if (l && !idsVistos.has(l.id)) { idsVistos.add(l.id); lojasUnicas.push(l); } });
-            lojasUnicas.forEach(l => {
-                const div = document.createElement('div');
-                div.className = 'loja-draggable';
-                div.draggable = true;
-                div.dataset.lojaId = l.id;
-                div.style.cssText = 'background:white;padding:6px 14px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.04);cursor:grab;font-size:13px;border:1px solid #e2e8f0;display:flex;align-items:center;gap:8px;';
-                div.innerHTML = `${l.nome} <span style="font-size:11px;color:#64748b;">${l.cidade}/${l.estado}</span>`;
-                div.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', l.id); });
-                divLojas.appendChild(div);
-            });
-        }
+lojasExtrasRoteiroEditando = [];
+        renderizarLojasDisponiveisEdit();
         montarCardsSemanas(mes, ano, roteiroEditando.dias);
         document.getElementById('modalEditarRoteiro').classList.add('active');
         showToast(`✅ Roteiro carregado para ${promotor.nome}!`, 'success');
     } catch (erro) { console.error('❌ Erro ao editar roteiro:', erro); showToast('❌ Erro: ' + erro.message, 'error'); }
+}
+
+// ============================================
+// GERENCIAR LOJAS DO ROTEIRO (adicionar/remover, sem criar roteiro novo)
+// ============================================
+let lojasExtrasRoteiroEditando = [];
+
+function abrirModalGerenciarLojasRoteiro() {
+    document.getElementById('autocompleteGerenciarInput').value = '';
+    document.getElementById('autocompleteGerenciarList').style.display = 'none';
+    renderizarListaGerenciarLojas();
+    document.getElementById('modalGerenciarLojasRoteiro').classList.add('active');
+}
+
+function fecharModalGerenciarLojasRoteiro() {
+    document.getElementById('modalGerenciarLojasRoteiro').classList.remove('active');
+    renderizarLojasDisponiveisEdit();
+}
+
+function buscarLojasParaGerenciar(termo) {
+    const list = document.getElementById('autocompleteGerenciarList');
+    if (termo.length < 2) { list.style.display = 'none'; return; }
+
+    const idsJaNoRoteiro = new Set(obterLojasUnicasDoRoteiro().map(l => l.id));
+    const resultados = todasLojas
+        .filter(l => !idsJaNoRoteiro.has(l.id))
+        .filter(l => l.nome.toLowerCase().includes(termo.toLowerCase()) || (l.cidade || '').toLowerCase().includes(termo.toLowerCase()))
+        .slice(0, 15);
+
+    if (resultados.length === 0) {
+        list.innerHTML = '<div style="padding:10px;color:#94a3b8;">Nenhuma loja encontrada (ou já está no roteiro)</div>';
+        list.style.display = 'block';
+        return;
+    }
+
+    list.innerHTML = '';
+    resultados.forEach(l => {
+        const div = document.createElement('div');
+        div.style.cssText = 'padding:10px 14px;cursor:pointer;border-bottom:1px solid #f1f5f9;';
+        div.innerHTML = `<strong>${l.nome}</strong> <span style="font-size:12px;color:#94a3b8;">${l.cidade}/${l.estado}</span>`;
+        div.onclick = () => adicionarLojaExtraRoteiro(l);
+        list.appendChild(div);
+    });
+    list.style.display = 'block';
+}
+
+function adicionarLojaExtraRoteiro(loja) {
+    lojasExtrasRoteiroEditando.push(loja);
+    document.getElementById('autocompleteGerenciarInput').value = '';
+    document.getElementById('autocompleteGerenciarList').style.display = 'none';
+    renderizarListaGerenciarLojas();
+    showToast(`✅ "${loja.nome}" adicionada! Arraste ela pro dia certo depois de fechar.`, 'success');
+}
+
+function obterLojasUnicasDoRoteiro() {
+    const lojasDoRoteiro = roteiroEditando ? roteiroEditando.dias.map(d => d.loja).filter(l => l) : [];
+    const todas = [...lojasDoRoteiro, ...lojasExtrasRoteiroEditando];
+    const unicas = [];
+    const idsVistos = new Set();
+    todas.forEach(l => { if (l && !idsVistos.has(l.id)) { idsVistos.add(l.id); unicas.push(l); } });
+    return unicas;
+}
+
+function renderizarListaGerenciarLojas() {
+    const div = document.getElementById('listaGerenciarLojasRoteiro');
+    const lojas = obterLojasUnicasDoRoteiro();
+
+    if (lojas.length === 0) {
+        div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:16px 0;">Nenhuma loja no roteiro ainda</p>';
+        return;
+    }
+
+    let html = '';
+    lojas.forEach(l => {
+        html += `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f8fafc;border-radius:8px;margin-bottom:6px;">
+                <span style="font-size:13px;"><strong>${l.nome}</strong> <span style="color:#94a3b8;">(${l.cidade || ''}/${l.estado || ''})</span></span>
+                <button class="btn btn-danger btn-sm" onclick="removerLojaCompletaDoRoteiro(${l.id})">🗑️ Remover</button>
+            </div>
+        `;
+    });
+    div.innerHTML = html;
+}
+
+function removerLojaCompletaDoRoteiro(lojaId) {
+    if (!confirm('⚠️ Remover essa loja de TODOS os dias do roteiro (manhã e tarde, todas as semanas)?')) return;
+
+    if (roteiroEditando) {
+        roteiroEditando.dias = roteiroEditando.dias.filter(d => d.loja_id !== lojaId);
+    }
+    lojasExtrasRoteiroEditando = lojasExtrasRoteiroEditando.filter(l => l.id !== lojaId);
+
+    renderizarListaGerenciarLojas();
+    showToast('🗑️ Loja removida do roteiro!', 'success');
+}
+
+function renderizarLojasDisponiveisEdit() {
+    const divLojas = document.getElementById('editLojasDisponiveis');
+    const lojasUnicas = obterLojasUnicasDoRoteiro();
+    divLojas.innerHTML = '';
+    if (lojasUnicas.length === 0) {
+        divLojas.innerHTML = '<span class="empty">Nenhuma loja associada</span>';
+        return;
+    }
+    lojasUnicas.forEach(l => {
+        const div = document.createElement('div');
+        div.className = 'loja-draggable';
+        div.draggable = true;
+        div.dataset.lojaId = l.id;
+        div.style.cssText = 'background:white;padding:6px 14px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.04);cursor:grab;font-size:13px;border:1px solid #e2e8f0;display:flex;align-items:center;gap:8px;';
+        div.innerHTML = `${l.nome} <span style="font-size:11px;color:#64748b;">${l.cidade}/${l.estado}</span>`;
+        div.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', l.id); });
+        divLojas.appendChild(div);
+    });
 }
 
 function toggleRecorrente(checked) {
