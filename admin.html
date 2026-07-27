@@ -8588,17 +8588,25 @@ async function simularValeTransporte() {
             contagemPorLoja.get(d.lojaId).dias++;
         });
 
-        let totalGeral = 0;
+let totalGeral = 0;
         const linhas = [];
+        const totaisPorCartao = {};
+
         contagemPorLoja.forEach((info, lojaId) => {
             const trechosLoja = trechos.filter(t => t.loja_id === lojaId);
             const valorDia = trechosLoja.reduce((soma, t) => soma + parseFloat(t.valor), 0);
             const subtotal = valorDia * info.dias;
             totalGeral += subtotal;
             linhas.push({ nome: info.nome, dias: info.dias, qtdTrechos: trechosLoja.length, valorDia, subtotal, semValor: trechosLoja.length === 0 });
+
+            trechosLoja.forEach(t => {
+                const cartao = t.cartao || 'Outros';
+                const valorCartaoNoDia = parseFloat(t.valor) * info.dias;
+                totaisPorCartao[cartao] = (totaisPorCartao[cartao] || 0) + valorCartaoNoDia;
+            });
         });
 
-        simulacaoVTCache = { nomePromotor, periodo: `${String(mesInicio).padStart(2,'0')}/${anoInicio} a ${String(mesFim).padStart(2,'0')}/${anoFim}`, linhas, totalGeral };
+        simulacaoVTCache = { nomePromotor, periodo: `${String(mesInicio).padStart(2,'0')}/${anoInicio} a ${String(mesFim).padStart(2,'0')}/${anoFim}`, linhas, totalGeral, totaisPorCartao };
 
         let html = `<h4 style="margin-bottom:8px;">👤 ${nomePromotor} — ${simulacaoVTCache.periodo}</h4>`;
         html += '<div class="table-wrapper"><table><thead><tr><th>Loja</th><th>Trechos aprovados</th><th>Dias no período</th><th>Valor/dia</th><th>Subtotal</th></tr></thead><tbody>';
@@ -8608,8 +8616,14 @@ async function simularValeTransporte() {
                 <td>${l.qtdTrechos}</td><td>${l.dias}</td><td>R$ ${l.valorDia.toFixed(2)}</td><td>R$ ${l.subtotal.toFixed(2)}</td>
             </tr>`;
         });
-        html += `</tbody></table></div>
-            <div style="margin-top:16px;padding:16px;background:#dbeafe;border-radius:12px;font-size:18px;font-weight:700;color:#1d4ed8;text-align:right;">Total estimado: R$ ${totalGeral.toFixed(2)}</div>
+html += `</tbody></table></div>`;
+
+        html += `<h4 style="margin-top:16px;margin-bottom:8px;">💳 Total por Cartão</h4>
+            <div class="table-wrapper"><table><thead><tr><th>Cartão</th><th>Total</th></tr></thead><tbody>
+                ${Object.entries(totaisPorCartao).map(([cartao, valor]) => `<tr><td><strong>${cartao}</strong></td><td>R$ ${valor.toFixed(2)}</td></tr>`).join('')}
+            </tbody></table></div>`;
+
+        html += `<div style="margin-top:16px;padding:16px;background:#dbeafe;border-radius:12px;font-size:18px;font-weight:700;color:#1d4ed8;text-align:right;">Total geral: R$ ${totalGeral.toFixed(2)}</div>
             <div style="margin-top:12px;"><button class="btn btn-warning" onclick="gerarPDFValeTransporte()">📄 Baixar PDF</button></div>`;
         div.innerHTML = html;
     } catch (erro) {
@@ -8619,37 +8633,67 @@ async function simularValeTransporte() {
 
 function gerarPDFValeTransporte() {
     if (!simulacaoVTCache) { showToast('⚠️ Calcule a simulação primeiro.', 'error'); return; }
-    const win = window.open('', '_blank');
-    if (!win) { showToast('❌ Permita pop-ups para gerar o PDF', 'error'); return; }
 
-    let linhasHtml = '';
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+
+    pdf.setFontSize(16);
+    pdf.text('Simulação de Vale Transporte', 105, 15, { align: 'center' });
+    pdf.setFontSize(10);
+    pdf.setTextColor(100);
+    pdf.text(`${simulacaoVTCache.nomePromotor} — Período: ${simulacaoVTCache.periodo}`, 105, 22, { align: 'center' });
+
+    let y = 35;
+    pdf.setFontSize(11);
+    pdf.setTextColor(30);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('Loja', 15, y);
+    pdf.text('Dias', 110, y);
+    pdf.text('Valor/dia', 135, y);
+    pdf.text('Subtotal', 170, y);
+    pdf.setFont(undefined, 'normal');
+    y += 6;
+    pdf.setFontSize(10);
+
     simulacaoVTCache.linhas.forEach(l => {
-        linhasHtml += `<tr>
-            <td style="border:1px solid #000;padding:4px;font-size:11px;">${l.nome}</td>
-            <td style="border:1px solid #000;padding:4px;font-size:11px;text-align:center;">${l.dias}</td>
-            <td style="border:1px solid #000;padding:4px;font-size:11px;text-align:right;">R$ ${l.valorDia.toFixed(2)}</td>
-            <td style="border:1px solid #000;padding:4px;font-size:11px;text-align:right;">R$ ${l.subtotal.toFixed(2)}</td>
-        </tr>`;
+        pdf.text(String(l.nome).slice(0, 45), 15, y);
+        pdf.text(String(l.dias), 110, y);
+        pdf.text(`R$ ${l.valorDia.toFixed(2)}`, 135, y);
+        pdf.text(`R$ ${l.subtotal.toFixed(2)}`, 170, y);
+        y += 6;
+        if (y > 270) { pdf.addPage(); y = 20; }
     });
 
-    win.document.write(`
-        <html><head><title>Vale Transporte</title>
-        <style>
-            body { font-family: Arial, sans-serif; padding: 40px; }
-            .header { text-align: center; margin-bottom: 24px; }
-            .header h1 { font-size: 18px; margin: 0; color: #1a1a2e; }
-            table { width: 100%; border-collapse: collapse; font-size: 11px; }
-            th { background: #2563eb; color: white; padding: 6px; border: 1px solid #000; }
-            .total { margin-top: 16px; text-align: right; font-size: 16px; font-weight: 700; }
-        </style></head>
-        <body>
-            <div class="header"><h1>🚌 Simulação de Vale Transporte</h1><p>${simulacaoVTCache.nomePromotor} — Período: ${simulacaoVTCache.periodo}</p></div>
-            <table><thead><tr><th>Loja</th><th>Dias</th><th>Valor/dia</th><th>Subtotal</th></tr></thead><tbody>${linhasHtml}</tbody></table>
-            <div class="total">Total estimado: R$ ${simulacaoVTCache.totalGeral.toFixed(2)}</div>
-            <script>window.print();<\/script>
-        </body></html>
-    `);
-    win.document.close();
+    y += 8;
+    pdf.setFont(undefined, 'bold');
+    pdf.setFontSize(12);
+    pdf.text('💳 Total por Cartão', 15, y);
+    pdf.setFont(undefined, 'normal');
+    pdf.setFontSize(10);
+    y += 7;
+    Object.entries(simulacaoVTCache.totaisPorCartao).forEach(([cartao, valor]) => {
+        pdf.text(cartao, 15, y);
+        pdf.text(`R$ ${valor.toFixed(2)}`, 170, y);
+        y += 6;
+        if (y > 270) { pdf.addPage(); y = 20; }
+    });
+
+    y += 8;
+    pdf.setFontSize(13);
+    pdf.setFont(undefined, 'bold');
+    pdf.text(`Total geral: R$ ${simulacaoVTCache.totalGeral.toFixed(2)}`, 195, y, { align: 'right' });
+
+    const nomeArquivo = `vale_transporte_${simulacaoVTCache.nomePromotor.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+    const blob = pdf.output('blob');
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nomeArquivo;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    showToast('✅ PDF baixado!', 'success');
 }
 
 // ============================================
