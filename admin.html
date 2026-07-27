@@ -8591,32 +8591,51 @@ async function simularValeTransporte() {
 let totalGeral = 0;
         const linhas = [];
         const totaisPorCartao = {};
+        const lojasSemTrecho = [];
 
         contagemPorLoja.forEach((info, lojaId) => {
             const trechosLoja = trechos.filter(t => t.loja_id === lojaId);
-            const valorDia = trechosLoja.reduce((soma, t) => soma + parseFloat(t.valor), 0);
-            const subtotal = valorDia * info.dias;
-            totalGeral += subtotal;
-            linhas.push({ nome: info.nome, dias: info.dias, qtdTrechos: trechosLoja.length, valorDia, subtotal, semValor: trechosLoja.length === 0 });
-
+            if (trechosLoja.length === 0) {
+                lojasSemTrecho.push(info.nome);
+                return;
+            }
             trechosLoja.forEach(t => {
+                const valorUnitario = parseFloat(t.valor) || 0;
+                const subtotal = valorUnitario * info.dias;
+                totalGeral += subtotal;
+                linhas.push({
+                    loja: info.nome,
+                    direcao: t.direcao === 'ida' ? 'Ida' : 'Volta',
+                    cartao: t.cartao || 'Outros',
+                    meio: t.meio_transporte || '-',
+                    valorUnitario,
+                    dias: info.dias,
+                    subtotal
+                });
                 const cartao = t.cartao || 'Outros';
-                const valorCartaoNoDia = parseFloat(t.valor) * info.dias;
-                totaisPorCartao[cartao] = (totaisPorCartao[cartao] || 0) + valorCartaoNoDia;
+                totaisPorCartao[cartao] = (totaisPorCartao[cartao] || 0) + subtotal;
             });
         });
 
-        simulacaoVTCache = { nomePromotor, periodo: `${String(mesInicio).padStart(2,'0')}/${anoInicio} a ${String(mesFim).padStart(2,'0')}/${anoFim}`, linhas, totalGeral, totaisPorCartao };
+        simulacaoVTCache = { nomePromotor, periodo: `${String(mesInicio).padStart(2,'0')}/${anoInicio} a ${String(mesFim).padStart(2,'0')}/${anoFim}`, linhas, totalGeral, totaisPorCartao, lojasSemTrecho };
 
-        let html = `<h4 style="margin-bottom:8px;">👤 ${nomePromotor} — ${simulacaoVTCache.periodo}</h4>`;
-        html += '<div class="table-wrapper"><table><thead><tr><th>Loja</th><th>Trechos aprovados</th><th>Dias no período</th><th>Valor/dia</th><th>Subtotal</th></tr></thead><tbody>';
+let html = `<h4 style="margin-bottom:8px;">👤 ${nomePromotor} — ${simulacaoVTCache.periodo}</h4>`;
+        html += '<div class="table-wrapper"><table><thead><tr><th>Loja</th><th>Direção</th><th>Cartão</th><th>Meio</th><th>Valor Unitário</th><th>Dias</th><th>Subtotal</th></tr></thead><tbody>';
         linhas.forEach(l => {
             html += `<tr>
-                <td><strong>${l.nome}</strong>${l.semValor ? ' <span style="color:#ef4444;font-size:11px;">(sem trecho aprovado)</span>' : ''}</td>
-                <td>${l.qtdTrechos}</td><td>${l.dias}</td><td>R$ ${l.valorDia.toFixed(2)}</td><td>R$ ${l.subtotal.toFixed(2)}</td>
+                <td><strong>${l.loja}</strong></td>
+                <td>${l.direcao}</td>
+                <td>${l.cartao}</td>
+                <td>${l.meio}</td>
+                <td>R$ ${l.valorUnitario.toFixed(2)}</td>
+                <td>${l.dias}</td>
+                <td>R$ ${l.subtotal.toFixed(2)}</td>
             </tr>`;
         });
-html += `</tbody></table></div>`;
+        html += `</tbody></table></div>`;
+        if (lojasSemTrecho.length > 0) {
+            html += `<p style="color:#ef4444;font-size:13px;margin-top:8px;">⚠️ Sem trecho aprovado: ${lojasSemTrecho.join(', ')}</p>`;
+        }
 
         html += `<h4 style="margin-top:16px;margin-bottom:8px;">💳 Total por Cartão</h4>
             <div class="table-wrapper"><table><thead><tr><th>Cartão</th><th>Total</th></tr></thead><tbody>
@@ -8641,39 +8660,55 @@ function gerarPDFValeTransporte() {
     pdf.text('Simulação de Vale Transporte', 105, 15, { align: 'center' });
     pdf.setFontSize(10);
     pdf.setTextColor(100);
-    pdf.text(`${simulacaoVTCache.nomePromotor} — Período: ${simulacaoVTCache.periodo}`, 105, 22, { align: 'center' });
+    pdf.text(`${simulacaoVTCache.nomePromotor} - Periodo: ${simulacaoVTCache.periodo}`, 105, 22, { align: 'center' });
 
     let y = 35;
-    pdf.setFontSize(11);
+    pdf.setFontSize(9);
     pdf.setTextColor(30);
     pdf.setFont(undefined, 'bold');
-    pdf.text('Loja', 15, y);
-    pdf.text('Dias', 110, y);
-    pdf.text('Valor/dia', 135, y);
-    pdf.text('Subtotal', 170, y);
+    pdf.text('Loja', 12, y);
+    pdf.text('Direção', 65, y);
+    pdf.text('Cartão', 90, y);
+    pdf.text('Meio', 118, y);
+    pdf.text('Vlr. Unit.', 145, y);
+    pdf.text('Dias', 168, y);
+    pdf.text('Subtotal', 182, y);
     pdf.setFont(undefined, 'normal');
-    y += 6;
-    pdf.setFontSize(10);
+    y += 5;
+    pdf.setLineWidth(0.2);
+    pdf.line(12, y - 2, 200, y - 2);
 
     simulacaoVTCache.linhas.forEach(l => {
-        pdf.text(String(l.nome).slice(0, 45), 15, y);
-        pdf.text(String(l.dias), 110, y);
-        pdf.text(`R$ ${l.valorDia.toFixed(2)}`, 135, y);
-        pdf.text(`R$ ${l.subtotal.toFixed(2)}`, 170, y);
+        pdf.text(String(l.loja).slice(0, 28), 12, y);
+        pdf.text(l.direcao, 65, y);
+        pdf.text(String(l.cartao).slice(0, 14), 90, y);
+        pdf.text(String(l.meio).slice(0, 12), 118, y);
+        pdf.text(`R$ ${l.valorUnitario.toFixed(2)}`, 145, y);
+        pdf.text(String(l.dias), 170, y);
+        pdf.text(`R$ ${l.subtotal.toFixed(2)}`, 182, y);
         y += 6;
         if (y > 270) { pdf.addPage(); y = 20; }
     });
 
+    if (simulacaoVTCache.lojasSemTrecho && simulacaoVTCache.lojasSemTrecho.length > 0) {
+        y += 4;
+        pdf.setTextColor(200, 0, 0);
+        pdf.setFontSize(9);
+        pdf.text(`Sem trecho aprovado: ${simulacaoVTCache.lojasSemTrecho.join(', ')}`, 12, y);
+        pdf.setTextColor(30);
+        y += 6;
+    }
+
     y += 8;
     pdf.setFont(undefined, 'bold');
     pdf.setFontSize(12);
-    pdf.text('💳 Total por Cartão', 15, y);
+    pdf.text('Total por Cartao', 12, y);
     pdf.setFont(undefined, 'normal');
     pdf.setFontSize(10);
     y += 7;
     Object.entries(simulacaoVTCache.totaisPorCartao).forEach(([cartao, valor]) => {
-        pdf.text(cartao, 15, y);
-        pdf.text(`R$ ${valor.toFixed(2)}`, 170, y);
+        pdf.text(cartao, 12, y);
+        pdf.text(`R$ ${valor.toFixed(2)}`, 182, y);
         y += 6;
         if (y > 270) { pdf.addPage(); y = 20; }
     });
