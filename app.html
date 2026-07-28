@@ -4119,9 +4119,15 @@ async function carregarValidador() {
         const mes = hoje.getMonth() + 1;
         const ano = hoje.getFullYear();
 
-        const roteiros = await apiFetch(
+        let roteiros = await apiFetch(
             `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&mes=eq.${mes}&ano=eq.${ano}&select=*,lojas(*)`
         );
+
+        if (roteiros.length === 0) {
+            roteiros = await apiFetch(
+                `/rest/v1/roteiros?promotor_id=eq.${promotorLogado.id}&roteiro_recorrente=eq.true&select=*,lojas(*)`
+            );
+        }
 
         const sugestoes = await apiFetch(
             `/rest/v1/sugestoes_coordenadas?promotor_id=eq.${promotorLogado.id}&select=*`
