@@ -1138,6 +1138,22 @@
 </div>
 
 <!-- ========================================== -->
+<!-- MODAL PRODUTOS NOVOS -->
+<!-- ========================================== -->
+<div id="modalProdutosNovos" class="modal-mes">
+    <div class="modal-content" style="max-width:600px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3><i data-lucide="sparkles" style="width:18px;height:18px;vertical-align:-3px;"></i> Produtos Novos (últimos 2 dias)</h3>
+            <button class="btn btn-danger btn-sm" onclick="fecharModalProdutosNovos()" style="padding:6px 14px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;"><i data-lucide="x" style="width:14px;height:14px;vertical-align:-2px;"></i> Fechar</button>
+        </div>
+        <div id="listaProdutosNovos" style="max-height:50vh;overflow-y:auto;"></div>
+        <div style="margin-top:16px;">
+            <button class="btn-enviar" onclick="baixarPDFProdutosNovos()" style="background:#a855f7;"><i data-lucide="file-text" style="width:16px;height:16px;vertical-align:-3px;"></i> Baixar PDF</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
 <!-- MODAL PREÇOS ATUALIZADOS -->
 <!-- ========================================== -->
 <div id="modalPrecosAtualizados" class="modal-mes">
@@ -1477,7 +1493,29 @@
         <!-- ========================================== -->
         <div id="tabPonto" class="tab-content active">
 
-<!-- ALERTA DE ATUALIZAÇÃO DE PREÇOS -->
+<!-- ALERTA DE CHECKLIST DIÁRIO -->
+            <div id="alertaChecklistDiario" onclick="abrirAba('tabChecklistApp')" style="display:none;cursor:pointer;background:#dcfce7;border:2px solid #22c55e;border-radius:12px;padding:12px 16px;margin-bottom:16px;align-items:center;gap:10px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <i data-lucide="clipboard-check" style="width:24px;height:24px;color:#16a34a;flex-shrink:0;"></i>
+                    <div style="flex:1;">
+                        <div style="font-weight:700;color:#166534;font-size:14px;">Check-list ativo</div>
+                        <div style="font-size:12px;color:#166534;">Lembrete: o check-list é <strong>diário</strong> e deve ser feito em <strong>todas as lojas</strong> visitadas. Toque para responder.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ALERTA DE PRODUTOS NOVOS -->
+            <div id="alertaProdutosNovos" onclick="abrirModalProdutosNovos()" style="display:none;cursor:pointer;background:#f3e8ff;border:2px solid #a855f7;border-radius:12px;padding:12px 16px;margin-bottom:16px;align-items:center;gap:10px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <i data-lucide="sparkles" style="width:24px;height:24px;color:#7e22ce;flex-shrink:0;"></i>
+                    <div style="flex:1;">
+                        <div style="font-weight:700;color:#7e22ce;font-size:14px;"><span id="qtdProdutosNovos">0</span> produto(s) novo(s) cadastrado(s)</div>
+                        <div style="font-size:12px;color:#7e22ce;">Toque para ver os detalhes</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ALERTA DE ATUALIZAÇÃO DE PREÇOS -->
             <div id="alertaPrecosAtualizados" onclick="abrirModalPrecosAtualizados()" style="display:none;cursor:pointer;background:#dbeafe;border:2px solid #2563eb;border-radius:12px;padding:12px 16px;margin-bottom:16px;align-items:center;gap:10px;">
                 <div style="display:flex;align-items:center;gap:10px;">
                     <i data-lucide="trending-up" style="width:24px;height:24px;color:#1d4ed8;flex-shrink:0;"></i>
@@ -2079,6 +2117,8 @@ async function carregarDadosIniciais() {
         verificarPromocoesVencendo();
         verificarPrecosAtualizados();
         verificarReuniaoHojeBanner();
+        verificarChecklistDiarioBanner();
+        verificarProdutosNovos();
         await Promise.all([
             carregarLojaDoDia(),
             carregarRoteiroSemana(),
@@ -2772,6 +2812,118 @@ async function excluirTrechoVT(trechoId) {
     } catch (erro) {
         showToast('❌ Erro: ' + erro.message, 'error');
     }
+}
+
+// ============================================
+// ALERTA DE CHECKLIST DIÁRIO
+// ============================================
+async function verificarChecklistDiarioBanner() {
+    try {
+        const hoje = new Date().toISOString().split('T')[0];
+        const checklists = await apiFetch(`/rest/v1/checklists?ativo=eq.true&periodo_inicio=lte.${hoje}&periodo_fim=gte.${hoje}&select=id`);
+        const banner = document.getElementById('alertaChecklistDiario');
+        banner.style.display = checklists.length > 0 ? 'flex' : 'none';
+    } catch (erro) {
+        console.error('Erro ao verificar checklist diário:', erro);
+    }
+}
+
+// ============================================
+// PRODUTOS NOVOS (últimos 2 dias)
+// ============================================
+let produtosNovosCache = [];
+
+async function verificarProdutosNovos() {
+    try {
+        const doisDiasAtras = new Date();
+        doisDiasAtras.setDate(doisDiasAtras.getDate() - 2);
+        const limiteStr = doisDiasAtras.toISOString();
+
+        const produtos = await apiFetch(
+            `/rest/v1/produtos?criado_em=gte.${limiteStr}&order=criado_em.desc&select=*`
+        );
+        produtosNovosCache = produtos;
+
+        const banner = document.getElementById('alertaProdutosNovos');
+        if (produtos.length > 0) {
+            document.getElementById('qtdProdutosNovos').textContent = produtos.length;
+            banner.style.display = 'flex';
+        } else {
+            banner.style.display = 'none';
+        }
+    } catch (erro) {
+        console.error('Erro ao verificar produtos novos:', erro);
+    }
+}
+
+function abrirModalProdutosNovos() {
+    const div = document.getElementById('listaProdutosNovos');
+    if (produtosNovosCache.length === 0) {
+        div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum produto novo</p>';
+    } else {
+        let html = '<div class="table-wrapper"><table><thead><tr><th>Código</th><th>Marca</th><th>Descrição</th><th>Preço</th></tr></thead><tbody>';
+        produtosNovosCache.forEach(p => {
+            html += `<tr>
+                <td>${p.codigo}</td>
+                <td>${p.marca}</td>
+                <td>${p.descricao}</td>
+                <td>R$ ${parseFloat(p.preco_venda).toFixed(2)}</td>
+            </tr>`;
+        });
+        html += '</tbody></table></div>';
+        div.innerHTML = html;
+    }
+    document.getElementById('modalProdutosNovos').classList.add('active');
+}
+
+function fecharModalProdutosNovos() {
+    document.getElementById('modalProdutosNovos').classList.remove('active');
+}
+
+function baixarPDFProdutosNovos() {
+    if (produtosNovosCache.length === 0) {
+        showToast('⚠️ Nenhum produto novo pra gerar PDF.', 'error');
+        return;
+    }
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+
+    pdf.setFontSize(14);
+    pdf.text('Produtos Novos', 105, 15, { align: 'center' });
+    pdf.setFontSize(9);
+    pdf.setTextColor(100);
+    pdf.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`, 105, 21, { align: 'center' });
+
+    let y = 32;
+    pdf.setTextColor(30);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('Código', 15, y);
+    pdf.text('Marca', 45, y);
+    pdf.text('Descrição', 80, y);
+    pdf.text('Preço', 175, y);
+    pdf.setFont(undefined, 'normal');
+    y += 6;
+
+    produtosNovosCache.forEach(p => {
+        pdf.text(String(p.codigo), 15, y);
+        pdf.text(String(p.marca).slice(0, 18), 45, y);
+        pdf.text(String(p.descricao).slice(0, 45), 80, y);
+        pdf.text(`R$ ${parseFloat(p.preco_venda).toFixed(2)}`, 175, y);
+        y += 6;
+        if (y > 280) { pdf.addPage(); y = 20; }
+    });
+
+    const nomeArquivo = `produtos_novos_${new Date().toISOString().split('T')[0]}.pdf`;
+    const blob = pdf.output('blob');
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nomeArquivo;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    showToast('✅ PDF baixado!', 'success');
 }
 
 // ============================================
