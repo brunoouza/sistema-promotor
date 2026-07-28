@@ -5789,6 +5789,9 @@ function enviarFotoChecklist(perguntaId) {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/jpeg,image/png,image/gif,image/webp'; // ✅ ESPECÍFICO
+    input.capture = 'environment'; // 📸 força a câmera traseira
+    input.style.display = 'none';
+    document.body.appendChild(input);
     
     input.onchange = async function(event) {
         const file = event.target.files[0];
@@ -5891,9 +5894,11 @@ function enviarFotoChecklist(perguntaId) {
 
             showToast('✅ Foto enviada com sucesso!', 'success');
 
-        } catch (erro) {
+} catch (erro) {
             showToast('❌ Erro ao enviar foto: ' + erro.message, 'error');
             console.error('Erro detalhado:', erro);
+        } finally {
+            document.body.removeChild(input);
         }
     };
     
