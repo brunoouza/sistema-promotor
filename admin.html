@@ -6412,12 +6412,21 @@ function abrirLojasExpoAdmin(promotorId, mesAnoChave, nomePromotor, labelMes) {
     });
 
     let html = `<button class="btn btn-sm" style="background:#64748b;color:white;margin-bottom:12px;" onclick="abrirMesesExpoAdmin(${promotorId}, '${nomePromotor.replace(/'/g, "\\'")}')">← Voltar</button>
-        <h3 style="margin-bottom:12px;">📅 ${labelMes} — Selecione uma Loja</h3>`;
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+            <h3>📅 ${labelMes} — Selecione uma ou mais Lojas</h3>
+            <button class="btn btn-warning btn-sm" onclick="baixarPDFsLojasSelecionadas(${promotorId}, '${mesAnoChave}', '${nomePromotor.replace(/'/g, "\\'")}', '${labelMes}')">📄 Baixar PDF das selecionadas</button>
+        </div>`;
     Array.from(lojasMap.entries()).sort((a, b) => a[1].nome.localeCompare(b[1].nome)).forEach(([lojaId, info]) => {
         html += `
-            <div class="lista-item" onclick="abrirPontasExpoAdmin(${promotorId}, '${mesAnoChave}', ${lojaId}, '${nomePromotor.replace(/'/g, "\\'")}', '${labelMes}', '${info.nome.replace(/'/g, "\\'")}')">
-                <div><span class="nome">🏪 ${info.nome}</span></div>
-                <div style="display:flex;align-items:center;gap:12px;"><span class="qtd">${info.count} pontas</span><span class="seta">›</span></div>
+            <div class="lista-item" style="cursor:default;">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;flex:1;">
+                    <input type="checkbox" class="checkbox-loja-expo" value="${lojaId}" data-nome="${info.nome.replace(/"/g, '&quot;')}" style="width:18px;height:18px;accent-color:#2563eb;">
+                    <span class="nome">🏪 ${info.nome}</span>
+                </label>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="qtd">${info.count} pontas</span>
+                    <span class="seta" style="cursor:pointer;" onclick="abrirPontasExpoAdmin(${promotorId}, '${mesAnoChave}', ${lojaId}, '${nomePromotor.replace(/'/g, "\\'")}', '${labelMes}', '${info.nome.replace(/'/g, "\\'")}')">›</span>
+                </div>
             </div>
         `;
     });
@@ -6575,7 +6584,9 @@ function imagemParaBase64(url) {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0);
             try {
-                resolve(canvas.toDataURL('image/jpeg', 0.85));
+                const base64 = canvas.toDataURL('image/jpeg', 0.85);
+                const bytes = Math.round((base64.length - 'data:image/jpeg;base64,'.length) * 0.75);
+                resolve({ base64, bytes });
             } catch (e) {
                 resolve(null);
             }
@@ -6583,6 +6594,116 @@ function imagemParaBase64(url) {
         img.onerror = () => resolve(null);
         img.src = url;
     });
+}
+
+function formatarTamanhoArquivo(bytes) {
+    if (!bytes) return '-';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// ============================================
+// PDF POR LOJA (3 fotos por linha, com data/hora/peso)
+// ============================================
+async function gerarPDFPorLoja(promotorId, mesAnoChave, lojaId, nomeLoja) {
+    const doLoja = expoAdminCache.filter(e =>
+        e.promotores && e.promotores.id === promotorId &&
+        e.data && e.data.startsWith(mesAnoChave) &&
+        (e.lojas?.id || 0) === lojaId
+    ).sort((a, b) => {
+        const numA = parseInt((a.tipo_exposicao || '').split('_')[1]) || 0;
+        const numB = parseInt((b.tipo_exposicao || '').split('_')[1]) || 0;
+        return numA - numB;
+    });
+
+    if (doLoja.length === 0) return;
+
+    const tipoLabels = await construirTipoLabelsExposicao();
+    const datasUnicas = [...new Set(doLoja.map(e => e.data))].sort();
+    const datasFormatadas = datasUnicas.map(d => new Date(d + 'T00:00:00').toLocaleDateString('pt-BR')).join(', ');
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+    const margem = 10;
+    const larguraPagina = 210;
+    const larguraFoto = (larguraPagina - margem * 2 - 10) / 3; // 3 colunas, 5mm de espaço entre elas
+    const alturaFoto = larguraFoto * 0.75;
+
+    pdf.setFontSize(15);
+    pdf.text('Relatório de Exposições', larguraPagina / 2, 15, { align: 'center' });
+    pdf.setFontSize(12);
+    pdf.text(nomeLoja, larguraPagina / 2, 22, { align: 'center' });
+    pdf.setFontSize(9);
+    pdf.setTextColor(100);
+    pdf.text(`Datas das visitas: ${datasFormatadas}`, larguraPagina / 2, 28, { align: 'center' });
+    pdf.setTextColor(30);
+
+    let x = margem, y = 36, coluna = 0;
+
+    for (const exp of doLoja) {
+        const resultado = await imagemParaBase64(exp.foto_url);
+        const tipoLabel = tipoLabels[exp.tipo_exposicao] || exp.tipo_exposicao;
+        const dataFormat = new Date(exp.data + 'T00:00:00').toLocaleDateString('pt-BR');
+        const horaFormat = exp.created_at ? new Date(exp.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-';
+        const tamanhoFormat = resultado ? formatarTamanhoArquivo(resultado.bytes) : '-';
+
+        if (y + alturaFoto + 16 > 285) {
+            pdf.addPage();
+            y = 20;
+        }
+
+        if (resultado && resultado.base64) {
+            try {
+                pdf.addImage(resultado.base64, 'JPEG', x, y, larguraFoto, alturaFoto);
+            } catch (e) { /* segue sem a imagem se der erro */ }
+        }
+
+        pdf.setFontSize(7);
+        pdf.setTextColor(60);
+        pdf.text(tipoLabel.slice(0, 30), x, y + alturaFoto + 4);
+        pdf.text(`${dataFormat} ${horaFormat} - ${tamanhoFormat}`, x, y + alturaFoto + 8);
+        pdf.setTextColor(30);
+
+        coluna++;
+        if (coluna >= 3) {
+            coluna = 0;
+            x = margem;
+            y += alturaFoto + 14;
+        } else {
+            x += larguraFoto + 5;
+        }
+    }
+
+    const nomeArquivo = `exposicoes_${nomeLoja.replace(/[^a-zA-Z0-9]/g, '_')}_${mesAnoChave}.pdf`;
+    const blob = pdf.output('blob');
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nomeArquivo;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+
+async function baixarPDFsLojasSelecionadas(promotorId, mesAnoChave, nomePromotor, labelMes) {
+    const checkboxes = document.querySelectorAll('.checkbox-loja-expo:checked');
+    if (checkboxes.length === 0) {
+        showToast('⚠️ Selecione pelo menos uma loja!', 'error');
+        return;
+    }
+
+    showToast(`⏳ Gerando ${checkboxes.length} PDF(s), aguarde...`, 'info');
+
+    for (const cb of checkboxes) {
+        const lojaId = parseInt(cb.value);
+        const nomeLoja = cb.dataset.nome;
+        await gerarPDFPorLoja(promotorId, mesAnoChave, lojaId, nomeLoja);
+        await new Promise(resolve => setTimeout(resolve, 400)); // pequena pausa entre downloads
+    }
+
+    showToast('✅ PDFs gerados!', 'success');
 }
 
 async function gerarPDFExposicoes() {
