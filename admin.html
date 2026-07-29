@@ -9291,7 +9291,7 @@ async function carregarMapaLojas() {
         const lojas = await apiFetch('/rest/v1/lojas?order=id');
         
 // Buscar promotores ativos (já com a última localização conhecida)
-        const promotores = await apiFetch('/rest/v1/promotores?ativo=eq.true&tipo=eq.promotor&select=id,nome,ultima_latitude,ultima_longitude,ultima_localizacao_em');
+    const promotores = await apiFetch('/rest/v1/promotores?ativo=eq.true&tipo=eq.promotor&select=id,nome,ultima_latitude,ultima_longitude,ultima_localizacao_em,ultima_precisao_metros');
         
         // ===== 2. PROCESSAR DADOS =====
         // Considera "online" quem atualizou a localização nas últimas 4 horas
@@ -9420,13 +9420,15 @@ const icon = L.divIcon({
             
 // Marcador do promotor
             const tempoDecorrido = formatarTempoDecorrido(promotor.ultima_localizacao_em);
+const precisaoTexto = promotor.ultima_precisao_metros ? `~${Math.round(promotor.ultima_precisao_metros)}m` : 'desconhecida';
             const marker = L.marker([lat, lon], { icon: icon })
                 .addTo(mapaGlobal)
                 .bindPopup(`
                     <strong>👤 ${promotor.nome}</strong><br>
                     Status: ${status}<br>
                     ${lojaMaisProxima ? `📍 Próximo a: ${lojaMaisProxima}` : '📍 Não está próximo a nenhuma loja'}<br>
-                    <span style="font-size:11px;color:#94a3b8;">🕐 Atualizado ${tempoDecorrido}</span>
+                    <span style="font-size:11px;color:#94a3b8;">🕐 Atualizado ${tempoDecorrido}</span><br>
+                    <span style="font-size:11px;color:#94a3b8;">📡 Precisão do GPS: ${precisaoTexto}</span>
                 `);
             
 // Tooltip com nome (hover)
