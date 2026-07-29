@@ -8584,7 +8584,8 @@ async function simularValeTransporte() {
         const dataInicio = `${anoInicio}-${String(mesInicio).padStart(2,'0')}-21`;
         const dataFim = `${anoFim}-${String(mesFim).padStart(2,'0')}-20`;
 
-        const { dias } = await calcularCumprimentoRoteiro(promotorId, dataInicio, dataFim);
+const { dias } = await calcularCumprimentoRoteiro(promotorId, dataInicio, dataFim);
+        console.log('🔍 DIAGNÓSTICO - dias contados para Av. Industrial:', dias.filter(d => d.loja === 'Av. Industrial (0020)'));
         const trechos = await apiFetch(`/rest/v1/vale_transporte?promotor_id=eq.${promotorId}&status=eq.aprovado&select=*`);
         const promotor = await apiFetch(`/rest/v1/promotores?id=eq.${promotorId}&select=nome`);
         const nomePromotor = promotor[0]?.nome || 'Promotor';
