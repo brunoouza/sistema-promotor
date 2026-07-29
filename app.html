@@ -1170,6 +1170,19 @@
 </div>
 
 <!-- ========================================== -->
+<!-- MODAL REUNIÃO PRÓXIMA -->
+<!-- ========================================== -->
+<div id="modalReuniaoProxima" class="modal-mes">
+    <div class="modal-content" style="max-width:500px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3><i data-lucide="alarm-clock" style="width:18px;height:18px;vertical-align:-3px;"></i> Reunião se Aproximando</h3>
+            <button class="btn btn-danger btn-sm" onclick="fecharModalReuniaoProxima()" style="padding:6px 14px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;"><i data-lucide="x" style="width:14px;height:14px;vertical-align:-2px;"></i> Fechar</button>
+        </div>
+        <div id="detalhesReuniaoProxima"></div>
+    </div>
+</div>
+
+<!-- ========================================== -->
 <!-- MODAL REUNIÃO HOJE -->
 <!-- ========================================== -->
 <div id="modalReuniaoHoje" class="modal-mes">
@@ -1522,6 +1535,17 @@
                     <div style="flex:1;">
                         <div style="font-weight:700;color:#1d4ed8;font-size:14px;"><span id="qtdPrecosAtualizados">0</span> preço(s) atualizado(s) esta semana</div>
                         <div style="font-size:12px;color:#1d4ed8;">Toque para ver os detalhes</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ALERTA DE REUNIÃO PRÓXIMA (contagem regressiva) -->
+            <div id="alertaReuniaoProxima" onclick="abrirModalReuniaoProxima()" style="display:none;cursor:pointer;background:#ffedd5;border:2px solid #f97316;border-radius:12px;padding:12px 16px;margin-bottom:16px;align-items:center;gap:10px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <i data-lucide="alarm-clock" style="width:24px;height:24px;color:#c2410c;flex-shrink:0;"></i>
+                    <div style="flex:1;">
+                        <div id="textoReuniaoProxima" style="font-weight:700;color:#c2410c;font-size:14px;">Faltam X dias para sua reunião</div>
+                        <div style="font-size:12px;color:#c2410c;">Toque para ver os detalhes</div>
                     </div>
                 </div>
             </div>
@@ -2117,6 +2141,7 @@ async function carregarDadosIniciais() {
         verificarPromocoesVencendo();
         verificarPrecosAtualizados();
         verificarReuniaoHojeBanner();
+        verificarReuniaoProximaBanner();
         verificarChecklistDiarioBanner();
         verificarProdutosNovos();
         await Promise.all([
@@ -2632,6 +2657,85 @@ function baixarPDFPrecosAtualizados() {
 
     pdf.save(`precos_atualizados_${new Date().toISOString().split('T')[0]}.pdf`);
     showToast('✅ PDF baixado!', 'success');
+}
+
+// ============================================
+// REUNIÃO PRÓXIMA (contagem regressiva, 1 a 7 dias antes)
+// ============================================
+let reuniaoProximaCacheApp = null;
+
+function extrairDetalhesDescricaoReuniao(descricaoCompleta) {
+    const match = (descricaoCompleta || '').match(/REUNIÃO:\s*(.+?)\s*\|\s*🕐/);
+    if (!match) return { titulo: 'Reunião', descricaoExtra: '' };
+    const partes = match[1].split(' - ');
+    const titulo = partes[0].trim();
+    const descricaoExtra = partes.slice(1).join(' - ').trim();
+    return { titulo, descricaoExtra };
+}
+
+async function verificarReuniaoProximaBanner() {
+    try {
+        const hoje = new Date();
+        const hojeStr = hoje.toISOString().split('T')[0];
+        const seteDias = new Date(hoje);
+        seteDias.setDate(seteDias.getDate() + 7);
+        const seteDiasStr = seteDias.toISOString().split('T')[0];
+        const amanhaStr = new Date(hoje.getTime() + 24*60*60*1000).toISOString().split('T')[0];
+
+        // Só considera de amanhã até 7 dias à frente (hoje já tem o outro banner)
+        const reunioes = await apiFetch(`/rest/v1/feriados?tipo=eq.reuniao&data=gte.${amanhaStr}&data=lte.${seteDiasStr}&loja_id=not.is.null&order=data.asc`);
+
+        let encontrada = null;
+        for (const reuniao of reunioes) {
+            const participacoes = await apiFetch(`/rest/v1/reuniao_participantes?feriado_id=eq.${reuniao.id}&promotor_id=eq.${promotorLogado.id}`);
+            if (participacoes.length > 0) {
+                const lojas = await apiFetch(`/rest/v1/lojas?id=eq.${reuniao.loja_id}`);
+                encontrada = { reuniao, loja: lojas[0], participacao: participacoes[0].participacao };
+                break;
+            }
+        }
+
+        const banner = document.getElementById('alertaReuniaoProxima');
+        if (encontrada) {
+            reuniaoProximaCacheApp = encontrada;
+            const dataReuniao = new Date(encontrada.reuniao.data + 'T00:00:00');
+            const diffDias = Math.round((dataReuniao - new Date(hojeStr + 'T00:00:00')) / (1000*60*60*24));
+            document.getElementById('textoReuniaoProxima').textContent = diffDias === 1 ? 'Falta 1 dia para sua reunião' : `Faltam ${diffDias} dias para sua reunião`;
+            banner.style.display = 'flex';
+        } else {
+            reuniaoProximaCacheApp = null;
+            banner.style.display = 'none';
+        }
+    } catch (erro) {
+        console.error('Erro ao verificar reunião próxima:', erro);
+    }
+}
+
+function abrirModalReuniaoProxima() {
+    const div = document.getElementById('detalhesReuniaoProxima');
+    if (!reuniaoProximaCacheApp) {
+        div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhuma reunião próxima</p>';
+    } else {
+        const { titulo, descricaoExtra } = extrairDetalhesDescricaoReuniao(reuniaoProximaCacheApp.reuniao.descricao);
+        const dataFormat = new Date(reuniaoProximaCacheApp.reuniao.data + 'T00:00:00').toLocaleDateString('pt-BR');
+        const participacaoLabel = reuniaoProximaCacheApp.participacao === 'online' ? '💻 Online' : '🏢 Presencial';
+
+        div.innerHTML = `
+            <div style="background:#f8fafc;border-radius:12px;padding:16px;">
+                <div style="font-weight:700;font-size:16px;color:#1a1a2e;margin-bottom:8px;">${titulo}</div>
+                <div style="font-size:14px;color:#64748b;margin-bottom:4px;"><strong>📅 Data:</strong> ${dataFormat}</div>
+                <div style="font-size:14px;color:#64748b;margin-bottom:4px;"><strong>🕐 Horário:</strong> ${reuniaoProximaCacheApp.reuniao.horario_inicio || '-'} às ${reuniaoProximaCacheApp.reuniao.horario_fim || '-'}</div>
+                <div style="font-size:14px;color:#64748b;margin-bottom:4px;"><strong>📍 Local:</strong> ${reuniaoProximaCacheApp.loja?.nome || '-'}</div>
+                <div style="font-size:14px;color:#64748b;margin-bottom:4px;"><strong>👤 Sua participação:</strong> ${participacaoLabel}</div>
+                ${descricaoExtra ? `<div style="font-size:14px;color:#64748b;margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0;">${descricaoExtra}</div>` : ''}
+            </div>
+        `;
+    }
+    document.getElementById('modalReuniaoProxima').classList.add('active');
+}
+
+function fecharModalReuniaoProxima() {
+    document.getElementById('modalReuniaoProxima').classList.remove('active');
 }
 
 // ============================================
