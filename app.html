@@ -2074,8 +2074,8 @@ function verificarGPS() {
     // Se a permissão já foi concedida antes, o navegador responde na hora, sem pedir de novo.
     alerta.style.display = 'none';
     navigator.geolocation.getCurrentPosition(
-        function(posicao) {
-            localizacaoAtual = { lat: posicao.coords.latitude, lon: posicao.coords.longitude };
+function(posicao) {
+            localizacaoAtual = { lat: posicao.coords.latitude, lon: posicao.coords.longitude, precisao: Math.round(posicao.coords.accuracy) };
             gpsAtivo = true;
             document.getElementById('gpsCoords').textContent = `Lat: ${localizacaoAtual.lat.toFixed(6)} | Lon: ${localizacaoAtual.lon.toFixed(6)}`;
 document.getElementById('gpsStatus').innerHTML = '<i data-lucide="map-pin" style="width:14px;height:14px;vertical-align:-2px;color:#22c55e;"></i> Localização capturada';
@@ -2102,10 +2102,11 @@ function ativarGPS() {
     alerta.querySelector('.subtexto').textContent = 'Aguarde...';
     
     navigator.geolocation.getCurrentPosition(
-        function(posicao) {
+function(posicao) {
             localizacaoAtual = {
                 lat: posicao.coords.latitude,
-                lon: posicao.coords.longitude
+                lon: posicao.coords.longitude,
+                precisao: Math.round(posicao.coords.accuracy)
             };
             gpsAtivo = true;
             alerta.style.display = 'none';
@@ -2216,10 +2217,11 @@ function pegarGPS() {
     raioDiv.textContent = '';
 
     navigator.geolocation.getCurrentPosition(
-        function(posicao) {
+function(posicao) {
             localizacaoAtual = {
                 lat: posicao.coords.latitude,
-                lon: posicao.coords.longitude
+                lon: posicao.coords.longitude,
+                precisao: Math.round(posicao.coords.accuracy)
             };
             gpsAtivo = true;
             coordsDiv.textContent = `Lat: ${localizacaoAtual.lat.toFixed(6)} | Lon: ${localizacaoAtual.lon.toFixed(6)}`;
@@ -2245,8 +2247,8 @@ statusDiv.innerHTML = '<i data-lucide="map-pin" style="width:14px;height:14px;ve
 function atualizarGPSFresco() {
     if (!navigator.geolocation || !gpsAtivo) return;
     navigator.geolocation.getCurrentPosition(
-        function(posicao) {
-            localizacaoAtual = { lat: posicao.coords.latitude, lon: posicao.coords.longitude };
+function(posicao) {
+            localizacaoAtual = { lat: posicao.coords.latitude, lon: posicao.coords.longitude, precisao: Math.round(posicao.coords.accuracy) };
             document.getElementById('gpsCoords').textContent = `Lat: ${localizacaoAtual.lat.toFixed(6)} | Lon: ${localizacaoAtual.lon.toFixed(6)}`;
             verificarRaio();
             atualizarLocalizacaoServidor();
@@ -2266,8 +2268,8 @@ let watchId = null;
 function iniciarWatchPosition() {
     if (!navigator.geolocation || watchId !== null) return;
     watchId = navigator.geolocation.watchPosition(
-        function(posicao) {
-            localizacaoAtual = { lat: posicao.coords.latitude, lon: posicao.coords.longitude };
+function(posicao) {
+            localizacaoAtual = { lat: posicao.coords.latitude, lon: posicao.coords.longitude, precisao: Math.round(posicao.coords.accuracy) };
             gpsAtivo = true;
             const coordsEl = document.getElementById('gpsCoords');
             if (coordsEl) coordsEl.textContent = `Lat: ${localizacaoAtual.lat.toFixed(6)} | Lon: ${localizacaoAtual.lon.toFixed(6)}`;
@@ -2290,7 +2292,8 @@ async function atualizarLocalizacaoServidor() {
         await apiFetch(`/rest/v1/promotores?id=eq.${promotorLogado.id}`, 'PATCH', {
             ultima_latitude: localizacaoAtual.lat,
             ultima_longitude: localizacaoAtual.lon,
-            ultima_localizacao_em: new Date().toISOString()
+            ultima_localizacao_em: new Date().toISOString(),
+            ultima_precisao_metros: localizacaoAtual.precisao || null
         });
     } catch (erro) {
         console.warn('Não foi possível atualizar localização no servidor:', erro);
