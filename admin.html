@@ -6417,15 +6417,15 @@ function abrirLojasExpoAdmin(promotorId, mesAnoChave, nomePromotor, labelMes) {
             <button class="btn btn-warning btn-sm" onclick="baixarPDFsLojasSelecionadas(${promotorId}, '${mesAnoChave}', '${nomePromotor.replace(/'/g, "\\'")}', '${labelMes}')">📄 Baixar PDF das selecionadas</button>
         </div>`;
     Array.from(lojasMap.entries()).sort((a, b) => a[1].nome.localeCompare(b[1].nome)).forEach(([lojaId, info]) => {
-        html += `
-            <div class="lista-item" style="cursor:default;">
-                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;flex:1;">
-                    <input type="checkbox" class="checkbox-loja-expo" value="${lojaId}" data-nome="${info.nome.replace(/"/g, '&quot;')}" style="width:18px;height:18px;accent-color:#2563eb;">
+html += `
+            <div class="lista-item" onclick="abrirPontasExpoAdmin(${promotorId}, '${mesAnoChave}', ${lojaId}, '${nomePromotor.replace(/'/g, "\\'")}', '${labelMes}', '${info.nome.replace(/'/g, "\\'")}')">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <input type="checkbox" class="checkbox-loja-expo" value="${lojaId}" data-nome="${info.nome.replace(/"/g, '&quot;')}" onclick="event.stopPropagation()" style="width:18px;height:18px;accent-color:#2563eb;">
                     <span class="nome">🏪 ${info.nome}</span>
-                </label>
+                </div>
                 <div style="display:flex;align-items:center;gap:12px;">
                     <span class="qtd">${info.count} pontas</span>
-                    <span class="seta" style="cursor:pointer;" onclick="abrirPontasExpoAdmin(${promotorId}, '${mesAnoChave}', ${lojaId}, '${nomePromotor.replace(/'/g, "\\'")}', '${labelMes}', '${info.nome.replace(/'/g, "\\'")}')">›</span>
+                    <span class="seta">›</span>
                 </div>
             </div>
         `;
@@ -6586,7 +6586,7 @@ function imagemParaBase64(url) {
             try {
                 const base64 = canvas.toDataURL('image/jpeg', 0.85);
                 const bytes = Math.round((base64.length - 'data:image/jpeg;base64,'.length) * 0.75);
-                resolve({ base64, bytes });
+                resolve({ base64, bytes, largura: img.width, altura: img.height });
             } catch (e) {
                 resolve(null);
             }
@@ -6619,9 +6619,18 @@ async function gerarPDFPorLoja(promotorId, mesAnoChave, lojaId, nomeLoja) {
 
     if (doLoja.length === 0) return;
 
-    const tipoLabels = await construirTipoLabelsExposicao();
-    const datasUnicas = [...new Set(doLoja.map(e => e.data))].sort();
-    const datasFormatadas = datasUnicas.map(d => new Date(d + 'T00:00:00').toLocaleDateString('pt-BR')).join(', ');
+const tipoLabels = await construirTipoLabelsExposicao();
+
+    // Datas de VISITA ESPERADA (do roteiro), não das fotos
+    const [anoNum, mesNum] = mesAnoChave.split('-').map(Number);
+    const dataInicioMes = `${anoNum}-${String(mesNum).padStart(2,'0')}-01`;
+    const ultimoDiaMes = new Date(anoNum, mesNum, 0).getDate();
+    const dataFimMes = `${anoNum}-${String(mesNum).padStart(2,'0')}-${String(ultimoDiaMes).padStart(2,'0')}`;
+    const { dias: diasRoteiro } = await calcularCumprimentoRoteiro(promotorId, dataInicioMes, dataFimMes);
+    const datasUnicas = [...new Set(diasRoteiro.filter(d => d.lojaId === lojaId).map(d => d.data))].sort();
+    const datasFormatadas = datasUnicas.length > 0
+        ? datasUnicas.map(d => new Date(d + 'T00:00:00').toLocaleDateString('pt-BR')).join(', ')
+        : 'Não identificadas no roteiro';
 
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -6653,9 +6662,17 @@ async function gerarPDFPorLoja(promotorId, mesAnoChave, lojaId, nomeLoja) {
             y = 20;
         }
 
-        if (resultado && resultado.base64) {
+if (resultado && resultado.base64) {
             try {
-                pdf.addImage(resultado.base64, 'JPEG', x, y, larguraFoto, alturaFoto);
+                const proporcao = resultado.largura / resultado.altura;
+                let wFinal = larguraFoto, hFinal = larguraFoto / proporcao;
+                if (hFinal > alturaFoto) {
+                    hFinal = alturaFoto;
+                    wFinal = alturaFoto * proporcao;
+                }
+                const offsetX = x + (larguraFoto - wFinal) / 2;
+                const offsetY = y + (alturaFoto - hFinal) / 2;
+                pdf.addImage(resultado.base64, 'JPEG', offsetX, offsetY, wFinal, hFinal);
             } catch (e) { /* segue sem a imagem se der erro */ }
         }
 
