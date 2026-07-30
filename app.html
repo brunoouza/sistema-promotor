@@ -6551,6 +6551,8 @@ function anexarArquivoJustificativa() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.pdf,.jpg,.jpeg,.png';
+    input.style.display = 'none';
+    document.body.appendChild(input);
     
     input.onchange = async function(event) {
         const file = event.target.files[0];
@@ -6584,14 +6586,15 @@ function anexarArquivoJustificativa() {
             nomeDiv.style.display = 'block';
             
             showToast('✅ Arquivo anexado!', 'success');
-        } catch (erro) {
+} catch (erro) {
             showToast('❌ Erro: ' + erro.message, 'error');
+        } finally {
+            document.body.removeChild(input);
         }
     };
     
     input.click();
 }
-
 // ===== ENVIAR JUSTIFICATIVA =====
 async function enviarJustificativa() {
     const data = document.getElementById('justificativaDataInput').value;
