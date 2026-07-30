@@ -5488,6 +5488,8 @@ async function enviarMaterial() {
 const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png';
+    input.style.display = 'none';
+    document.body.appendChild(input);
     input.onchange = async function(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -5502,8 +5504,9 @@ const input = document.createElement('input');
             const response = await fetch(`https://api.cloudinary.com/v1_1/zv2yyqo2/${endpointUpload}/upload`, { method: 'POST', body: formData });
             const data = await response.json();
             if (!response.ok) throw new Error(data.error?.message || 'Erro no upload');
-            await salvarMaterialAdmin(nome, descricao, data.secure_url, file.name);
+await salvarMaterialAdmin(nome, descricao, data.secure_url, file.name);
         } catch (erro) { showToast('❌ Erro: ' + erro.message, 'error'); console.error(erro); }
+        finally { document.body.removeChild(input); }
     };
     input.click();
 }
@@ -9894,6 +9897,8 @@ function anexarArquivoAcao() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.pdf,.jpg,.jpeg,.png';
+    input.style.display = 'none';
+    document.body.appendChild(input);
     
     input.onchange = async function(event) {
         const file = event.target.files[0];
