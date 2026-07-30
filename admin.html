@@ -1615,7 +1615,19 @@
                     <div style="margin-bottom:12px;text-align:right;">
                         <button class="btn btn-success" onclick="abrirModalLoja()">+ Nova Loja</button>
                     </div>
-                    <div class="table-wrapper"><table><thead><tr><th>ID</th><th>Nome</th><th>Endereço</th><th>Cidade</th><th>UF</th><th>Tipo</th><th>Coordenadas</th><th>Status</th><th>Cobertura</th><th>Classe</th><th>Ações</th></tr></thead><tbody id="tabelaLojas"><tr><td colspan="11" class="loading">Carregando...</td></tr></tbody></table></div>
+                    <div class="table-wrapper"><table><thead><tr>
+                        <th style="cursor:pointer;" onclick="ordenarLojas('id')">ID ⇅</th>
+                        <th style="cursor:pointer;" onclick="ordenarLojas('nome')">Nome ⇅</th>
+                        <th style="cursor:pointer;" onclick="ordenarLojas('endereco')">Endereço ⇅</th>
+                        <th style="cursor:pointer;" onclick="ordenarLojas('cidade')">Cidade ⇅</th>
+                        <th style="cursor:pointer;" onclick="ordenarLojas('estado')">UF ⇅</th>
+                        <th style="cursor:pointer;" onclick="ordenarLojas('tipo')">Tipo ⇅</th>
+                        <th>Coordenadas</th>
+                        <th style="cursor:pointer;" onclick="ordenarLojas('ativo')">Status ⇅</th>
+                        <th style="cursor:pointer;" onclick="ordenarLojas('cobertura')">Cobertura ⇅</th>
+                        <th style="cursor:pointer;" onclick="ordenarLojas('classe')">Classe ⇅</th>
+                        <th>Ações</th>
+                    </tr></thead><tbody id="tabelaLojas"><tr><td colspan="11" class="loading">Carregando...</td></tr></tbody></table></div>
                 </div>
 
                 <!-- SUB-ABA: MAPA DE LOJAS E PROMOTORES -->
@@ -4124,29 +4136,65 @@ async function excluirPromotor(id) {
 // ============================================
 // LOJAS (CRUD)
 // ============================================
+let lojasAdminCache = [];
+let lojasOrdenacaoAtual = { campo: 'id', direcao: 'asc' };
+
 async function carregarLojasAdmin() {
     const tbody = document.getElementById('tabelaLojas');
     try {
         const dados = await apiFetch('/rest/v1/lojas?order=id');
-        if (dados.length === 0) { tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Nenhuma loja cadastrada</td></tr>`; return; }
+        lojasAdminCache = dados;
+if (dados.length === 0) { tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Nenhuma loja cadastrada</td></tr>`; return; }
 
         const roteiros = await apiFetch('/rest/v1/roteiros?select=loja_id');
-        const lojasComRoteiro = new Set(roteiros.map(r => r.loja_id).filter(id => id));
-        const classificacaoABC = calcularCurvaABC(dados.map(l => ({ id: l.id, faturamento: l.faturamento })));
+        window._roteirosParaCoberturaCache = roteiros;
 
-        let html = '';
-        dados.forEach(l => {
+        renderizarTabelaLojas();
+    } catch (erro) { tbody.innerHTML = `<tr><td colspan="11" class="loading">❌ ${erro.message}</td></tr>`; }
+}
+
+function ordenarLojas(campo) {
+    if (lojasOrdenacaoAtual.campo === campo) {
+        lojasOrdenacaoAtual.direcao = lojasOrdenacaoAtual.direcao === 'asc' ? 'desc' : 'asc';
+    } else {
+        lojasOrdenacaoAtual = { campo, direcao: 'asc' };
+    }
+    renderizarTabelaLojas();
+}
+
+function renderizarTabelaLojas() {
+    const tbody = document.getElementById('tabelaLojas');
+    const { campo, direcao } = lojasOrdenacaoAtual;
+
+    const roteirosCache = window._roteirosParaCoberturaCache || [];
+    const lojasComRoteiro = new Set(roteirosCache.map(r => r.loja_id).filter(id => id));
+    const classificacaoABC = calcularCurvaABC(lojasAdminCache.map(l => ({ id: l.id, faturamento: l.faturamento })));
+
+    const dadosOrdenados = [...lojasAdminCache].sort((a, b) => {
+        let valA = a[campo], valB = b[campo];
+        if (campo === 'classe') { valA = classificacaoABC[a.id] || 'zzz'; valB = classificacaoABC[b.id] || 'zzz'; }
+        if (campo === 'cobertura') { valA = lojasComRoteiro.has(a.id) ? 1 : 0; valB = lojasComRoteiro.has(b.id) ? 1 : 0; }
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+        if (valA == null) valA = '';
+        if (valB == null) valB = '';
+        if (valA < valB) return direcao === 'asc' ? -1 : 1;
+        if (valA > valB) return direcao === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    let html = '';
+    dadosOrdenados.forEach(l => {
             const tipoClass = l.tipo === 'rua' ? 'rua' : 'shopping';
             const coords = l.latitude && l.longitude ? `${l.latitude}, ${l.longitude}` : 'Não definido';
             const status = l.ativo !== false ? '<span class="badge badge-success">Ativo</span>' : '<span class="badge badge-danger">Inativo</span>';
             const cobertura = lojasComRoteiro.has(l.id) ? '<span class="badge badge-success">✅ Sim</span>' : '<span class="badge badge-danger">⚠️ Sem promotor</span>';
             const classe = badgeClasseABC(classificacaoABC[l.id]);
             const btnToggleLoja = souMaster ? `<button class="btn btn-warning btn-sm" onclick="toggleLoja(${l.id}, ${l.ativo === false})">${l.ativo !== false ? '🔴' : '🟢'}</button>` : '';
-            html += `<tr><td>${l.id}</td><td><strong>${l.nome}</strong></td><td>${l.endereco || '-'}</td><td>${l.cidade || '-'}</td><td><span class="badge badge-info">${l.estado || '-'}</span></td><td><span class="loja-tipo ${tipoClass}">${l.tipo === 'rua' ? '🏪 Rua' : '🛍️ Shopping'}</span></td><td style="font-size:12px;">${coords}</td><td>${status}</td><td>${cobertura}</td><td>${classe}</td><td><button class="btn btn-primary btn-sm" onclick="editarLoja(${l.id})">Editar</button>${btnToggleLoja}</td></tr>`;
-        });
-tbody.innerHTML = html;
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-    } catch (erro) { tbody.innerHTML = `<tr><td colspan="11" class="loading">❌ ${erro.message}</td></tr>`; }
+html += `<tr><td>${l.id}</td><td><strong>${l.nome}</strong></td><td>${l.endereco || '-'}</td><td>${l.cidade || '-'}</td><td><span class="badge badge-info">${l.estado || '-'}</span></td><td><span class="loja-tipo ${tipoClass}">${l.tipo === 'rua' ? '🏪 Rua' : '🛍️ Shopping'}</span></td><td style="font-size:12px;">${coords}</td><td>${status}</td><td>${cobertura}</td><td>${classe}</td><td style="white-space:nowrap;"><div style="display:flex;gap:4px;"><button class="btn btn-primary btn-sm" onclick="editarLoja(${l.id})">Editar</button>${btnToggleLoja}</div></td></tr>`;
+    });
+    tbody.innerHTML = html;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 async function toggleLoja(id, ativo) {
