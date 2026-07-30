@@ -4574,6 +4574,9 @@ function abrirModalGerenciarLojasRoteiro() {
 function fecharModalGerenciarLojasRoteiro() {
     document.getElementById('modalGerenciarLojasRoteiro').classList.remove('active');
     renderizarLojasDisponiveisEdit();
+    const mes = parseInt(document.getElementById('editMes').value);
+    const ano = parseInt(document.getElementById('editAno').value);
+    montarCardsSemanas(mes, ano, roteiroEditando.dias);
 }
 
 function buscarLojasParaGerenciar(termo) {
@@ -4889,7 +4892,7 @@ async function salvarEdicaoRoteiro() {
         let salvos = 0;
         for (const dia of roteiroEditando.dias) {
             if (!dia.loja_id) continue;
-            await apiFetch('/rest/v1/roteiros', 'POST', { 
+await apiFetch('/rest/v1/roteiros', 'POST', { 
                 promotor_id: promotorId, 
                 loja_id: dia.loja_id, 
                 mes, 
@@ -4898,7 +4901,8 @@ async function salvarEdicaoRoteiro() {
                 dia_semana: dia.dia_semana, 
                 horario_visita: dia.horario_visita || null, 
                 roteiro_id: roteiroId,
-                roteiro_recorrente: recorrente
+                roteiro_recorrente: recorrente,
+                turno: dia.turno || 'manha'
             });
             salvos++;
         }
