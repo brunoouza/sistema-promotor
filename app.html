@@ -2322,15 +2322,18 @@ async function verificarRaio() {
             return;
         }
 
-        const distancia = calcularDistancia(
+const distancia = calcularDistancia(
             localizacaoAtual.lat,
             localizacaoAtual.lon,
             parseFloat(loja.latitude),
             parseFloat(loja.longitude)
         );
 
-if (distancia <= 50) {
-            raioDiv.innerHTML = '<i data-lucide="check-circle-2" style="width:14px;height:14px;vertical-align:-2px;"></i> Dentro do raio (50m)';
+        await obterRaioConfig();
+        const raioPermitido = raioParaLoja(loja);
+
+if (distancia <= raioPermitido) {
+            raioDiv.innerHTML = `<i data-lucide="check-circle-2" style="width:14px;height:14px;vertical-align:-2px;"></i> Dentro do raio (${raioPermitido}m)`;
             raioDiv.style.color = '#22c55e';
         } else {
             raioDiv.innerHTML = `<i data-lucide="x-circle" style="width:14px;height:14px;vertical-align:-2px;"></i> Fora do raio (${Math.round(distancia)}m)`;
@@ -2548,6 +2551,28 @@ async function buscarReuniaoHoje() {
         console.error('Erro ao buscar reunião de hoje:', erro);
         return null;
     }
+}
+
+// ============================================
+// CONFIGURAÇÃO DE RAIO (lida de verdade do banco, por tipo de loja)
+// ============================================
+let raioConfigCache = null;
+
+async function obterRaioConfig() {
+    if (raioConfigCache) return raioConfigCache;
+    try {
+        const config = await apiFetch('/rest/v1/configuracoes_sistema?id=eq.1&select=raio_rua,raio_shopping');
+        raioConfigCache = config[0] || { raio_rua: 75, raio_shopping: 50 };
+    } catch (erro) {
+        console.warn('Não foi possível ler configuração de raio, usando padrão:', erro);
+        raioConfigCache = { raio_rua: 75, raio_shopping: 50 };
+    }
+    return raioConfigCache;
+}
+
+function raioParaLoja(loja) {
+    if (!raioConfigCache) return 50; // fallback antes da config carregar
+    return loja && loja.tipo === 'shopping' ? raioConfigCache.raio_shopping : raioConfigCache.raio_rua;
 }
 
 function calcularDistancia(lat1, lon1, lat2, lon2) {
@@ -3465,7 +3490,8 @@ if (raioFlexivel) {
                 parseFloat(loja.latitude),
                 parseFloat(loja.longitude)
             );
-            dentroRaio = distanciaMetros <= 50;
+            await obterRaioConfig();
+            dentroRaio = distanciaMetros <= raioParaLoja(loja);
             distanciaTexto = `${Math.round(distanciaMetros)}m`;
         } else {
             dentroRaio = true;
@@ -6244,11 +6270,12 @@ async function enviarRespostasChecklist() {
             }
         }
         
-        const loja = await getLojaDoDia();
+const loja = await getLojaDoDia();
         let dentroRaio = false;
         if (loja && loja.latitude && loja.longitude && lat && lon) {
             const distancia = calcularDistancia(lat, lon, loja.latitude, loja.longitude);
-            dentroRaio = distancia <= 50;
+            await obterRaioConfig();
+            dentroRaio = distancia <= raioParaLoja(loja);
         }
         
         const respostasArray = checklistPerguntasAtuais.map(p => {
