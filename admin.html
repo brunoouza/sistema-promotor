@@ -8484,18 +8484,28 @@ document.addEventListener('click', () => { document.getElementById('autocomplete
 // ============================================
 function calcularCurvaABC(lojasComFaturamento) {
     const validas = lojasComFaturamento.filter(l => l.faturamento && l.faturamento > 0);
-    const total = validas.reduce((soma, l) => soma + l.faturamento, 0);
     const classificacao = {};
-    if (total === 0) return classificacao;
+    if (validas.length === 0) return classificacao;
 
     const ordenadas = [...validas].sort((a, b) => b.faturamento - a.faturamento);
-    let acumulado = 0;
-    ordenadas.forEach(l => {
-        acumulado += l.faturamento;
-        const pct = acumulado / total;
-        if (pct <= 0.80) classificacao[l.id] = 'A';
-        else if (pct <= 0.95) classificacao[l.id] = 'B';
-        else classificacao[l.id] = 'C';
+    const total = ordenadas.length;
+
+    // Cortes acumulados (por quantidade de lojas): AAA 5% | AA 10% | A 10% | B+ 10% | B 15% | C+ 10% | C 15% | D 25%
+    const cortes = [
+        { ate: 0.05, classe: 'AAA' },
+        { ate: 0.15, classe: 'AA' },
+        { ate: 0.25, classe: 'A' },
+        { ate: 0.35, classe: 'B+' },
+        { ate: 0.50, classe: 'B' },
+        { ate: 0.60, classe: 'C+' },
+        { ate: 0.75, classe: 'C' },
+        { ate: 1.00, classe: 'D' }
+    ];
+
+    ordenadas.forEach((l, index) => {
+        const posicao = (index + 1) / total;
+        const corte = cortes.find(c => posicao <= c.ate);
+        classificacao[l.id] = corte ? corte.classe : 'D';
     });
     return classificacao;
 }
