@@ -3190,14 +3190,16 @@ const reuniaoHoje = await buscarReuniaoHoje();
 const { semana, mes, ano } = calcularSemanaDoMes(hoje);
         const roteiros = await obterRoteirosDoDiaCerto(diaSemana, mes, ano, semana);
 
-        if (roteiros.length === 0 || !roteiros[0].lojas) {
+if (roteiros.length === 0 || !roteiros[0].lojas) {
             nomeEl.textContent = '📭 Nenhuma loja agendada';
             enderecoEl.textContent = 'Hoje você não tem visita';
             horarioEl.textContent = '';
             return;
         }
 
-        const loja = roteiros[0].lojas;
+        // Prioriza a loja da MANHÃ (é a primeira visita do dia); se não achar, usa a primeira disponível
+        const roteiroManha = roteiros.find(r => (r.turno || 'manha') === 'manha' && r.lojas);
+        const loja = (roteiroManha || roteiros[0]).lojas;
         nomeEl.textContent = loja.nome || 'Loja não identificada';
         enderecoEl.textContent = loja.endereco || 'Endereço não informado';
         horarioEl.textContent = '';
