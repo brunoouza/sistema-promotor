@@ -3185,7 +3185,7 @@ async function carregarCardLojasClasseA() {
             return;
         }
 
-        let html = '';
+let html = '';
         semCobertura.forEach(l => {
             html += `<div class="item">
                 <span class="nome" onclick="abrirTab('tabLojas')" style="cursor:pointer;">🟢 ${l.nome}</span>
@@ -3193,6 +3193,7 @@ async function carregarCardLojasClasseA() {
             </div>`;
         });
         div.innerHTML = html;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     } catch (erro) {
         div.innerHTML = `<div class="card-vazio">❌ ${erro.message}</div>`;
         console.error(erro);
@@ -4143,7 +4144,8 @@ async function carregarLojasAdmin() {
             const btnToggleLoja = souMaster ? `<button class="btn btn-warning btn-sm" onclick="toggleLoja(${l.id}, ${l.ativo === false})">${l.ativo !== false ? '🔴' : '🟢'}</button>` : '';
             html += `<tr><td>${l.id}</td><td><strong>${l.nome}</strong></td><td>${l.endereco || '-'}</td><td>${l.cidade || '-'}</td><td><span class="badge badge-info">${l.estado || '-'}</span></td><td><span class="loja-tipo ${tipoClass}">${l.tipo === 'rua' ? '🏪 Rua' : '🛍️ Shopping'}</span></td><td style="font-size:12px;">${coords}</td><td>${status}</td><td>${cobertura}</td><td>${classe}</td><td><button class="btn btn-primary btn-sm" onclick="editarLoja(${l.id})">Editar</button>${btnToggleLoja}</td></tr>`;
         });
-        tbody.innerHTML = html;
+tbody.innerHTML = html;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     } catch (erro) { tbody.innerHTML = `<tr><td colspan="11" class="loading">❌ ${erro.message}</td></tr>`; }
 }
 
@@ -4622,8 +4624,8 @@ lojasUnicas.forEach(l => {
         div.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', l.id); });
         divLojas.appendChild(div);
     });
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
-
 function toggleRecorrente(checked) {
     if (roteiroEditando) {
         roteiroEditando.recorrente = checked;
@@ -4717,11 +4719,12 @@ function montarCardsSemanas(mes, ano, dias) {
                     <button onclick="adicionarLojaDia(${sem.semana}, '${dia}')" style="background:none;border:none;color:#22c55e;font-weight:700;cursor:pointer;">+ adicionar</button>
                 </div>`;
             }
-            row.innerHTML = diaInfo + conteudo;
+row.innerHTML = diaInfo + conteudo;
             card.appendChild(row);
         });
         grid.appendChild(card);
     });
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 // ============================================
@@ -8498,10 +8501,19 @@ function calcularCurvaABC(lojasComFaturamento) {
 }
 
 function badgeClasseABC(classe) {
-    if (classe === 'A') return '<span class="badge badge-success" title="Classe A — maior faturamento">🟢 A</span>';
-    if (classe === 'B') return '<span class="badge badge-info" title="Classe B — faturamento intermediário">🔵 B</span>';
-    if (classe === 'C') return '<span class="badge badge-gray" title="Classe C — menor faturamento">⚪ C</span>';
-    return '<span class="badge badge-gray" title="Sem faturamento cadastrado">–</span>';
+    const estilos = {
+        'AAA': { cor: '#a16207', fundo: '#fef3c7', icone: 'trophy' },
+        'AA':  { cor: '#166534', fundo: '#dcfce7', icone: 'star' },
+        'A':   { cor: '#15803d', fundo: '#f0fdf4', icone: 'circle-check' },
+        'B+':  { cor: '#1d4ed8', fundo: '#dbeafe', icone: 'arrow-up-circle' },
+        'B':   { cor: '#2563eb', fundo: '#eff6ff', icone: 'circle' },
+        'C+':  { cor: '#a16207', fundo: '#fef9c3', icone: 'alert-circle' },
+        'C':   { cor: '#c2410c', fundo: '#ffedd5', icone: 'arrow-down-circle' },
+        'D':   { cor: '#64748b', fundo: '#f1f5f9', icone: 'circle-minus' }
+    };
+    const est = estilos[classe];
+    if (!est) return '<span class="badge badge-gray" title="Sem faturamento cadastrado">–</span>';
+    return `<span class="badge" style="background:${est.fundo};color:${est.cor};font-weight:700;display:inline-flex;align-items:center;gap:4px;" title="Classe ${classe}"><i data-lucide="${est.icone}" style="width:13px;height:13px;"></i> ${classe}</span>`;
 }
 
 // ============================================
@@ -9206,9 +9218,9 @@ let html = `<div class="table-wrapper"><table><thead><tr><th>Loja</th><th>Cidade
                 <td>${bolinha} ${coberturaTexto}</td>
             </tr>`;
         });
-        html += '</tbody></table></div>';
+html += '</tbody></table></div>';
         div.innerHTML = html;
-
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     } catch (erro) {
         div.innerHTML = `<div class="loading">❌ ${erro.message}</div>`;
         console.error(erro);
