@@ -2856,9 +2856,6 @@ async function hashSenha(senha) {
 
 async function verificarSenha(senhaDigitada, hashArmazenado) {
     const hashDigitado = await hashSenha(senhaDigitada);
-    console.log('🔍 Hash digitado:', hashDigitado);
-    console.log('🔍 Hash no banco:', hashArmazenado);
-    console.log('🔍 Iguais?', hashDigitado === hashArmazenado);
     return hashDigitado === hashArmazenado;
 }
 
