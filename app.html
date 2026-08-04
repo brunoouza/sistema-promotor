@@ -2464,8 +2464,8 @@ function calcularSemanaDoMes(data) {
     const mes = data.getMonth() + 1;
     const primeiroDia = new Date(ano, mes - 1, 1);
     const offset = (primeiroDia.getDay() === 0) ? 6 : primeiroDia.getDay() - 1;
-    let semana = Math.floor((data.getDate() + offset - 1) / 7) + 1;
-    if (semana >= 5) semana = 2; // meses com 5ª semana repetem a semana 2
+let semana = Math.floor((data.getDate() + offset - 1) / 7) + 1;
+    if (semana >= 5) semana = ((semana - 1) % 4) + 1; // continua o ciclo de 4 semanas, sem travar sempre na mesma
     return { semana, mes, ano };
 }
 
@@ -3692,7 +3692,7 @@ async function carregarRoteiroSemana() {
         const primeiroDia = new Date(ano, mes - 1, 1);
         const offset = (primeiroDia.getDay() === 0) ? 6 : primeiroDia.getDay() - 1;
         let semanaHoje = Math.floor((hoje.getDate() + offset - 1) / 7) + 1;
-        if (semanaHoje >= 5) semanaHoje = 2;
+        if (semanaHoje >= 5) semanaHoje = ((semanaHoje - 1) % 4) + 1;
 
         const diasSemanaAtual = roteiros.filter(r => r.semana === semanaHoje);
 
