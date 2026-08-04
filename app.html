@@ -3844,9 +3844,13 @@ async function abrirModalMes() {
         if (semanasAtivas.length > 1) {
             html += `<div style="display:flex;gap:4px;margin-bottom:16px;background:#f1f5f9;border-radius:10px;padding:4px;flex-wrap:wrap;">`;
 
+const { semana: semanaAtualReal } = calcularSemanaDoMes(hoje);
             semanasAtivas.forEach((s, index) => {
-                const isActive = index === 0 ? 'active' : '';
-                const dataInicio = new Date(ano, mes - 1, 1 + (s - 1) * 7);
+                const isActive = s === semanaAtualReal ? 'active' : (semanasAtivas.includes(semanaAtualReal) ? '' : (index === 0 ? 'active' : ''));
+                const primeiroDiaMes = new Date(ano, mes - 1, 1);
+                const primeiroDiaSemanaNum = primeiroDiaMes.getDay();
+                const offsetSemana = (primeiroDiaSemanaNum === 0) ? 6 : primeiroDiaSemanaNum - 1;
+                const dataInicio = new Date(ano, mes - 1, 1 + (s - 1) * 7 - offsetSemana);
                 const dataFim = new Date(dataInicio);
                 dataFim.setDate(dataFim.getDate() + 6);
                 const label = `${String(dataInicio.getDate()).padStart(2,'0')}/${String(dataInicio.getMonth()+1).padStart(2,'0')} - ${String(dataFim.getDate()).padStart(2,'0')}/${String(dataFim.getMonth()+1).padStart(2,'0')}`;
