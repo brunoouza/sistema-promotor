@@ -3726,7 +3726,7 @@ async function calcularCumprimentoRoteiro(promotorId, inicio, fim) {
             const primeiroDia = new Date(ano, mes - 1, 1);
             const offset = (primeiroDia.getDay() === 0) ? 6 : primeiroDia.getDay() - 1;
             let semanaDoMes = Math.floor((dataAtual.getDate() + offset - 1) / 7) + 1;
-            if (semanaDoMes >= 5) semanaDoMes = 2;
+            if (semanaDoMes >= 5) semanaDoMes = ((semanaDoMes - 1) % 4) + 1;
 
 // Roteiro específico daquela semana/mês; senão, cai no recorrente (também filtrando pela semana certa)
             let roteirosDoDia = todosRoteiros.filter(r => r.dia_semana === diaSemana && r.mes === mes && r.ano === ano && r.semana === semanaDoMes);
