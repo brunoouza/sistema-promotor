@@ -6855,10 +6855,21 @@ async function carregarChecklistsAdmin() {
             return;
         }
         
-        let html = '';
+let html = '';
+        const hojeStr = new Date().toISOString().split('T')[0];
         dados.forEach(c => {
-            const statusBadge = c.ativo ? 'badge-success' : 'badge-gray';
-            const statusText = c.ativo ? 'Ativo' : 'Inativo';
+            const expirado = c.ativo && c.periodo_fim && c.periodo_fim < hojeStr;
+            let statusBadge, statusText;
+            if (expirado) {
+                statusBadge = 'badge-warning';
+                statusText = 'Expirado';
+            } else if (c.ativo) {
+                statusBadge = 'badge-success';
+                statusText = 'Ativo';
+            } else {
+                statusBadge = 'badge-gray';
+                statusText = 'Inativo';
+            }
             
             // Buscar tipo da primeira pergunta
             let tipoLabel = '📋 Checklist';
@@ -6874,7 +6885,7 @@ async function carregarChecklistsAdmin() {
             const qtdPerguntas = c.perguntas ? c.perguntas.length : 0;
             
             html += `
-                <div style="background:#f8fafc;border-radius:12px;padding:16px;margin-bottom:12px;border-left:4px solid ${c.ativo ? '#22c55e' : '#94a3b8'};">
+<div style="background:#f8fafc;border-radius:12px;padding:16px;margin-bottom:12px;border-left:4px solid ${expirado ? '#eab308' : (c.ativo ? '#22c55e' : '#94a3b8')};">
                     <div class="flex-between" style="flex-wrap:wrap;gap:8px;">
                         <div>
                             <div style="font-weight:700;font-size:16px;color:#1a1a2e;">${c.titulo}</div>
