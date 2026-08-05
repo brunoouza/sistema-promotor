@@ -3872,7 +3872,7 @@ const { semana: semanaAtualReal } = calcularSemanaDoMes(hoje);
         html += `<div id="conteudoAbasSemanas">`;
 
         semanasAtivas.forEach((s, index) => {
-            const isActive = index === 0 ? 'block' : 'none';
+            const isActive = s === semanaAtualReal ? 'block' : (semanasAtivas.includes(semanaAtualReal) ? 'none' : (index === 0 ? 'block' : 'none'));
             const turnoLabel = { manha: '🌄 Manhã', tarde: '🌅 Tarde' };
 
             html += `<div id="abaSemana${s}" style="display:${isActive};max-height:450px;overflow-y:auto;padding-right:4px;">`;
