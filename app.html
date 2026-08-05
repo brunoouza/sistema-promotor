@@ -3751,6 +3751,7 @@ async function abrirModalMes() {
         const mes = hoje.getMonth() + 1;
         const ano = hoje.getFullYear();
         const nomeMes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][mes - 1];
+        const { semana: semanaAtualReal } = calcularSemanaDoMes(hoje);
 
         // ===== BUSCAR ROTEIROS =====
         let roteiros = await apiFetch(
@@ -3844,8 +3845,7 @@ async function abrirModalMes() {
         if (semanasAtivas.length > 1) {
             html += `<div style="display:flex;gap:4px;margin-bottom:16px;background:#f1f5f9;border-radius:10px;padding:4px;flex-wrap:wrap;">`;
 
-const { semana: semanaAtualReal } = calcularSemanaDoMes(hoje);
-            semanasAtivas.forEach((s, index) => {
+semanasAtivas.forEach((s, index) => {
                 const isActive = s === semanaAtualReal ? 'active' : (semanasAtivas.includes(semanaAtualReal) ? '' : (index === 0 ? 'active' : ''));
                 const primeiroDiaMes = new Date(ano, mes - 1, 1);
                 const primeiroDiaSemanaNum = primeiroDiaMes.getDay();
