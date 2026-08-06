@@ -3169,8 +3169,8 @@ async function carregarLojaDoDia() {
         const diaSemana = diasSemana[hoje.getDay()];
         const dataHoje = hoje.toISOString().split('T')[0];
 
-        const feriados = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=eq.${promotorLogado.estado}&ativo=eq.true`);
-        const feriadoNacional = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=is.null&ativo=eq.true`);
+        const feriados = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=eq.${promotorLogado.estado}&ativo=eq.true&tipo=neq.reuniao`);
+        const feriadoNacional = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=is.null&ativo=eq.true&tipo=neq.reuniao`);
 
         if (feriados.length > 0 || feriadoNacional.length > 0) {
             nomeEl.textContent = '🎉 Hoje é feriado!';
@@ -3181,6 +3181,22 @@ async function carregarLojaDoDia() {
 
 const reuniaoHoje = await buscarReuniaoHoje();
         if (reuniaoHoje) {
+            const agora = hoje.toTimeString().slice(0, 5); // "HH:MM"
+            const horarioFimReuniao = reuniaoHoje.reuniao.horario_fim;
+            const reuniaoJaTerminou = horarioFimReuniao && agora > horarioFimReuniao;
+
+            if (reuniaoJaTerminou) {
+                const dataHojeStr = hoje.toISOString().split('T')[0];
+                const excecoes = await apiFetch(`/rest/v1/roteiro_excecoes?promotor_id=eq.${promotorLogado.id}&data=eq.${dataHojeStr}&turno=eq.tarde&select=*,lojas(*)`);
+                if (excecoes.length > 0 && excecoes[0].lojas) {
+                    const lojaTarde = excecoes[0].lojas;
+                    nomeEl.textContent = `📅 ${lojaTarde.nome} (Tarde)`;
+                    enderecoEl.textContent = lojaTarde.endereco || 'Endereço não informado';
+                    horarioEl.textContent = '🕐 Após a reunião';
+                    return;
+                }
+            }
+
             nomeEl.textContent = `📅 ${reuniaoHoje.loja.nome} (Reunião)`;
             enderecoEl.textContent = reuniaoHoje.loja.endereco || 'Endereço não informado';
             horarioEl.textContent = reuniaoHoje.reuniao.horario_inicio ? `🕐 ${reuniaoHoje.reuniao.horario_inicio} às ${reuniaoHoje.reuniao.horario_fim}` : '';
@@ -3399,8 +3415,8 @@ async function executarRegistroPonto(tipo, fotoUrl) {
 
     // ===== 2. VERIFICAR FERIADO =====
     const dataHoje = hoje.toISOString().split('T')[0];
-        const feriados = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=eq.${promotorLogado.estado}&ativo=eq.true`);
-        const feriadoNacional = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=is.null&ativo=eq.true`);
+        const feriados = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=eq.${promotorLogado.estado}&ativo=eq.true&tipo=neq.reuniao`);
+        const feriadoNacional = await apiFetch(`/rest/v1/feriados?data=eq.${dataHoje}&estado=is.null&ativo=eq.true&tipo=neq.reuniao`);
 
     if (feriados.length > 0 || feriadoNacional.length > 0) {
         msgDiv.style.display = 'block';
