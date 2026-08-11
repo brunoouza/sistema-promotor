@@ -3162,7 +3162,7 @@ async function carregarAniversariantes() {
         const dados = await apiFetch(`/rest/v1/promotores?ativo=eq.true&select=id,nome,data_nascimento`);
         const aniversariantes = dados.filter(p => {
             if (!p.data_nascimento) return false;
-            const data = new Date(p.data_nascimento);
+            const data = new Date(p.data_nascimento + 'T00:00:00');
             return data.getMonth() + 1 === mes && data.getDate() === dia;
         });
         if (aniversariantes.length === 0) {
