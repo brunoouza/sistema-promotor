@@ -1475,6 +1475,10 @@
         <div id="conteudoTermoDinamico" style="background:#f8fafc;border-radius:12px;padding:16px;font-size:14px;color:#334155;line-height:1.6;max-height:45vh;overflow-y:auto;margin-bottom:16px;white-space:pre-wrap;">
             Carregando...
         </div>
+        <div id="campoCpfFaltante" style="display:none;margin-bottom:16px;">
+            <label style="font-size:13px;font-weight:600;color:#334155;display:block;margin-bottom:6px;">Seu CPF não está cadastrado — informe abaixo:</label>
+            <input type="text" id="cpfPreenchidoAgora" placeholder="000.000.000-00" style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;">
+        </div>
         <label style="display:flex;align-items:center;gap:10px;margin-bottom:16px;cursor:pointer;">
             <input type="checkbox" id="checkConsentimento" style="width:20px;height:20px;accent-color:#2563eb;">
             <span style="font-size:14px;color:#334155;">Li e concordo com os termos acima</span>
@@ -6549,18 +6553,45 @@ async function mostrarTelaTermo(termo) {
     document.getElementById('checkConsentimento').checked = false;
     document.getElementById('btnConsentimento').disabled = true;
     document.getElementById('btnConsentimento').style.opacity = '0.5';
+
+    const precisaCpf = !promotorLogado.cpf;
+    document.getElementById('campoCpfFaltante').style.display = precisaCpf ? 'block' : 'none';
+    document.getElementById('cpfPreenchidoAgora').value = '';
+
     document.getElementById('telaConsentimento').classList.remove('hidden');
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
-async function aceitarConsentimento() {
+function obterCpfParaRegistro() {
+    if (promotorLogado.cpf) return promotorLogado.cpf;
+    const digitado = document.getElementById('cpfPreenchidoAgora').value.trim();
+    return digitado || null;
+}
+
+async function salvarCpfSeNecessario(cpf) {
+    if (promotorLogado.cpf || !cpf) return;
     try {
+        await apiFetch(`/rest/v1/promotores?id=eq.${promotorLogado.id}`, 'PATCH', { cpf });
+        promotorLogado.cpf = cpf;
+    } catch (erro) {
+        console.error('Erro ao salvar CPF:', erro);
+    }
+}
+
+async function aceitarConsentimento() {
+    const cpf = obterCpfParaRegistro();
+    if (!promotorLogado.cpf && !cpf) {
+        showToast('⚠️ Informe seu CPF pra continuar.', 'error');
+        return;
+    }
+    try {
+        await salvarCpfSeNecessario(cpf);
         await apiFetch('/rest/v1/termos_aceites', 'POST', {
             termo_id: termoAtivoCache.id,
             termo_versao: termoAtivoCache.versao,
             promotor_id: promotorLogado.id,
             nome_completo_snapshot: promotorLogado.nome,
-            cpf_snapshot: promotorLogado.cpf || null,
+            cpf_snapshot: cpf,
             conteudo_final: conteudoTermoResolvido,
             status: 'aceito',
             dispositivo_id: obterDispositivoId()
@@ -6584,27 +6615,20 @@ async function confirmarRecusaTermo() {
         showToast('⚠️ Explique o motivo da recusa.', 'error');
         return;
     }
+    const cpf = obterCpfParaRegistro();
     try {
+        await salvarCpfSeNecessario(cpf);
         await apiFetch('/rest/v1/termos_aceites', 'POST', {
             termo_id: termoAtivoCache.id,
             termo_versao: termoAtivoCache.versao,
             promotor_id: promotorLogado.id,
             nome_completo_snapshot: promotorLogado.nome,
-            cpf_snapshot: promotorLogado.cpf || null,
+            cpf_snapshot: cpf,
             conteudo_final: conteudoTermoResolvido,
             status: 'recusado',
             motivo_recusa: motivo,
             dispositivo_id: obterDispositivoId()
         });
-        document.getElementById('modalRecusaTermo').classList.remove('active');
-        document.getElementById('telaConsentimento').classList.add('hidden');
-        document.getElementById('painelPrincipal').classList.remove('hidden');
-        carregarDadosIniciais();
-        showToast('Sua recusa foi registrada. Seu gestor será informado.', 'info');
-    } catch (erro) {
-        showToast('❌ Erro ao registrar recusa: ' + erro.message, 'error');
-    }
-}
 
 // ============================================
 // EVENTOS DE ENTER NO LOGIN
