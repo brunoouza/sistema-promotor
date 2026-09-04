@@ -2219,6 +2219,7 @@
             <div class="form-group"><label>Email</label><input type="email" id="formPromotorEmail" placeholder="email@exemplo.com"></div>
             <div class="form-group"><label>Senha</label><input type="text" id="formPromotorSenha" placeholder="senha" value="123456"></div>
             <div class="form-group"><label>Estado</label><select id="formPromotorEstado"><option value="SP">SP</option><option value="RJ">RJ</option></select></div>
+            <div class="form-group"><label>CPF</label><input type="text" id="formPromotorCpf" placeholder="000.000.000-00"></div>
             <div class="form-group"><label>CTPS</label><input type="text" id="formPromotorCtps" placeholder="Número da CTPS"></div>
             <div class="form-group"><label>PIS/PASEP</label><input type="text" id="formPromotorPis" placeholder="Número do PIS"></div>
             <div class="form-group"><label>Matrícula</label><input type="text" id="formPromotorMatricula" placeholder="Matrícula"></div>
@@ -3983,6 +3984,7 @@ function abrirModalPromotor() {
     document.getElementById('formPromotorEmail').value = '';
     document.getElementById('formPromotorSenha').value = '123456';
     document.getElementById('formPromotorEstado').value = 'SP';
+    document.getElementById('formPromotorCpf').value = '';
     document.getElementById('formPromotorCtps').value = '';
     document.getElementById('formPromotorPis').value = '';
     document.getElementById('formPromotorMatricula').value = '';
@@ -4003,7 +4005,7 @@ function abrirModalPromotor() {
 
 async function editarPromotor(id) {
     try {
-        const dados = await apiFetch(`/rest/v1/promotores?id=eq.${id}&select=id,nome,email,senha,estado,ativo,ctps,pis,matricula,admissao,data_nascimento,funcao,departamento,ferias_inicio,ferias_fim,logo_url,banco_horas,endereco_residencial,latitude_residencial,longitude_residencial`);
+        const dados = await apiFetch(`/rest/v1/promotores?id=eq.${id}&select=id,nome,email,senha,estado,ativo,ctps,pis,matricula,admissao,data_nascimento,funcao,departamento,ferias_inicio,ferias_fim,logo_url,banco_horas,endereco_residencial,latitude_residencial,longitude_residencial,cpf`);
         if (dados.length === 0) return;
         const p = dados[0];
         document.getElementById('formPromotorId').value = p.id;
@@ -4012,6 +4014,7 @@ async function editarPromotor(id) {
         document.getElementById('formPromotorEmail').value = p.email || '';
         document.getElementById('formPromotorSenha').value = p.senha || '123456';
         document.getElementById('formPromotorEstado').value = p.estado || 'SP';
+        document.getElementById('formPromotorCpf').value = p.cpf || '';
         document.getElementById('formPromotorCtps').value = p.ctps || '';
         document.getElementById('formPromotorPis').value = p.pis || '';
         document.getElementById('formPromotorMatricula').value = p.matricula || '';
@@ -4042,6 +4045,7 @@ async function salvarPromotor() {
     const email = document.getElementById('formPromotorEmail').value.trim();
     const senha = document.getElementById('formPromotorSenha').value.trim();
     const estado = document.getElementById('formPromotorEstado').value;
+    const cpf = document.getElementById('formPromotorCpf').value.trim() || null;
     const ctps = document.getElementById('formPromotorCtps').value.trim();
     const pis = document.getElementById('formPromotorPis').value.trim();
     const matricula = document.getElementById('formPromotorMatricula').value.trim();
@@ -4070,7 +4074,8 @@ async function salvarPromotor() {
             email, 
             senha: senhaHash,
             estado, 
-            ctps, 
+            cpf,
+            ctps,
             pis, 
             matricula, 
             admissao, 
