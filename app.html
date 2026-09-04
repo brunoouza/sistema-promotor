@@ -1811,9 +1811,24 @@
         <!-- ========================================== -->
         <div id="tabMateriais" class="tab-content">
             <h3 style="color:#1a1a2e;margin-bottom:12px;"><i data-lucide="folder" style="width:20px;height:20px;vertical-align:-4px;"></i> Materiais</h3>
-            <p style="color:#64748b;font-size:14px;margin-bottom:16px;">Materiais de referência para as exposições</p>
-            <div id="listaMateriais">
-                <p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum material disponível</p>
+
+            <div class="lojas-subtabs" style="margin-bottom:16px;">
+                <button class="ativo" onclick="abrirSubTabMateriais('subMateriaisArquivos')">📁 Materiais</button>
+                <button onclick="abrirSubTabMateriais('subMateriaisTermos')">📝 Termos e Políticas</button>
+            </div>
+
+            <div id="subMateriaisArquivos" class="lojas-sub-content active">
+                <p style="color:#64748b;font-size:14px;margin-bottom:16px;">Materiais de referência para as exposições</p>
+                <div id="listaMateriais">
+                    <p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum material disponível</p>
+                </div>
+            </div>
+
+            <div id="subMateriaisTermos" class="lojas-sub-content">
+                <p style="color:#64748b;font-size:14px;margin-bottom:16px;">Seu histórico de termos aceitos ou recusados.</p>
+                <div id="listaMeusTermos">
+                    <div class="loading"><div class="spinner"></div>Carregando...</div>
+                </div>
             </div>
         </div>
 
@@ -4773,6 +4788,71 @@ async function enviarAtestado() {
     };
 
     input.click();
+}
+
+// ============================================
+// SUB-ABAS DE MATERIAIS
+// ============================================
+function abrirSubTabMateriais(tabId) {
+    document.querySelectorAll('#tabMateriais .lojas-sub-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.querySelectorAll('#tabMateriais .lojas-subtabs button').forEach(el => el.classList.remove('ativo'));
+    const btn = document.querySelector(`#tabMateriais .lojas-subtabs button[onclick="abrirSubTabMateriais('${tabId}')"]`);
+    if (btn) btn.classList.add('ativo');
+    if (tabId === 'subMateriaisTermos') carregarMeusTermos();
+}
+
+// ============================================
+// MEUS TERMOS (histórico do próprio promotor)
+// ============================================
+let meusTermosCache = [];
+
+async function carregarMeusTermos() {
+    const div = document.getElementById('listaMeusTermos');
+    div.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+    try {
+        const dados = await apiFetch(`/rest/v1/termos_aceites?promotor_id=eq.${promotorLogado.id}&order=data_hora.desc`);
+        meusTermosCache = dados;
+
+        if (dados.length === 0) {
+            div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum termo respondido ainda</p>';
+            return;
+        }
+
+        let html = '';
+        dados.forEach((r, index) => {
+            const statusTexto = r.status === 'aceito' ? '✅ Aceito' : '❌ Recusado';
+            const statusCor = r.status === 'aceito' ? '#16a34a' : '#dc2626';
+            const dataFormat = new Date(r.data_hora).toLocaleString('pt-BR');
+            html += `
+                <div style="background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;" onclick="verMeuTermo(${index})">
+                    <div style="font-weight:700;color:#1a1a2e;font-size:14px;">Versão ${r.termo_versao}</div>
+                    <div style="font-size:13px;color:${statusCor};font-weight:600;margin-top:2px;">${statusTexto}</div>
+                    <div style="font-size:12px;color:#94a3b8;margin-top:2px;">${dataFormat}</div>
+                </div>
+            `;
+        });
+        div.innerHTML = html;
+    } catch (erro) {
+        div.innerHTML = `<p style="color:#ef4444;text-align:center;">❌ ${erro.message}</p>`;
+    }
+}
+
+function verMeuTermo(index) {
+    const r = meusTermosCache[index];
+    const win = window.open('', '_blank');
+    if (!win) { showToast('❌ Permita pop-ups para visualizar', 'error'); return; }
+    win.document.write(`
+        <html><head><title>Meu Termo</title>
+        <style>body{font-family:Arial,sans-serif;padding:24px;white-space:pre-wrap;line-height:1.6;max-width:650px;margin:0 auto;}</style>
+        </head><body>
+        <p><strong>Status:</strong> ${r.status === 'aceito' ? 'Aceito' : 'Recusado'}</p>
+        <p><strong>Data/Hora:</strong> ${new Date(r.data_hora).toLocaleString('pt-BR')}</p>
+        <hr>
+        <div>${r.conteudo_final}</div>
+        </body></html>
+    `);
+    win.document.close();
 }
 
 // ============================================
