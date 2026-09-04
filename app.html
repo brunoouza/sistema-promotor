@@ -1605,8 +1605,8 @@
             <!-- ALERTA GPS OBRIGATÓRIO -->
 <div id="gpsAlerta" class="gps-obrigatorio" style="display:none;">
                 <div class="icon"><i data-lucide="map-pin" style="width:32px;height:32px;"></i></div>
-                <div class="texto">GPS Obrigatório!</div>
-                <div class="subtexto">Ative o GPS para registrar seu ponto de trabalho</div>
+<div class="texto">GPS Obrigatório!</div>
+                <div class="subtexto">A localização é coletada das 07h às 19h (seg-sáb), e some quando o app é fechado.</div>
                 <button class="btn-ativar-gps" onclick="ativarGPS()"><i data-lucide="unlock" style="width:16px;height:16px;vertical-align:-3px;"></i> Ativar GPS</button>
             </div>
 
@@ -2100,6 +2100,16 @@ promotorLogado = promotor;
 }
 
 // ============================================
+// JANELA DE TRABALHO FIXA (07h-19h, seg-sáb — domingo bloqueado o dia todo)
+// ============================================
+function estaDentroHorarioTrabalho() {
+    const agora = new Date();
+    if (agora.getDay() === 0) return false; // domingo
+    const minutosAgora = agora.getHours() * 60 + agora.getMinutes();
+    return minutosAgora >= (7 * 60) && minutosAgora < (19 * 60);
+}
+
+// ============================================
 // VERIFICAR GPS OBRIGATÓRIO
 // ============================================
 function verificarGPS() {
@@ -2109,7 +2119,17 @@ function verificarGPS() {
         alerta.querySelector('.texto').textContent = '❌ Navegador não suporta GPS';
         return;
     }
-    
+
+    if (!estaDentroHorarioTrabalho()) {
+        alerta.style.display = 'block';
+        alerta.querySelector('.texto').innerHTML = '<i data-lucide="clock" style="width:18px;height:18px;vertical-align:-3px;"></i> Fora do horário de trabalho';
+        alerta.querySelector('.subtexto').textContent = 'A localização só é coletada das 07h às 19h, de segunda a sábado.';
+        alerta.querySelector('.btn-ativar-gps').style.display = 'none';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        return;
+    }
+    alerta.querySelector('.btn-ativar-gps').style.display = 'block';
+
     if (gpsAtivo && localizacaoAtual) {
         alerta.style.display = 'none';
         return;
@@ -2143,6 +2163,12 @@ document.getElementById('gpsStatus').innerHTML = '<i data-lucide="map-pin" style
 
 function ativarGPS() {
     const alerta = document.getElementById('gpsAlerta');
+
+    if (!estaDentroHorarioTrabalho()) {
+        showToast('⏰ A localização só é coletada das 07h às 19h, de segunda a sábado.', 'error');
+        return;
+    }
+
     alerta.querySelector('.texto').textContent = '⏳ Buscando localização...';
     alerta.querySelector('.subtexto').textContent = 'Aguarde...';
     
@@ -6946,13 +6972,19 @@ setInterval(() => {
 // Atualiza a localização na hora, sempre que o promotor volta pro app (reabre, desbloqueia a tela nele)
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && gpsAtivo) {
+        if (!estaDentroHorarioTrabalho()) {
+            if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+            gpsAtivo = false;
+            verificarGPS();
+            return;
+        }
         atualizarGPSFresco();
     }
 });
 
 // Reserva: se por algum motivo o watchPosition parar de disparar (ex: promotor parado no mesmo lugar por muito tempo), garante uma atualização a cada 10 minutos
 setInterval(() => {
-    if (navigator.onLine && gpsAtivo) atualizarGPSFresco();
+    if (navigator.onLine && gpsAtivo && estaDentroHorarioTrabalho()) atualizarGPSFresco();
 }, 10 * 60 * 1000);
 
 // ============================================
