@@ -1469,21 +1469,36 @@
         <div id="loginMsg"></div>
     </div>
 
-<!-- ===== TELA DE CONSENTIMENTO (LGPD) ===== -->
+    <!-- ===== TELA DE CONSENTIMENTO (dinâmica, vem do banco) ===== -->
     <div id="telaConsentimento" class="hidden" style="padding:8px;">
-        <h1 style="font-size:22px;color:#1a1a2e;text-align:center;margin-bottom:16px;"><i data-lucide="shield-check" style="width:26px;height:26px;vertical-align:-4px;"></i> Termo de Uso e Privacidade</h1>
-        <div style="background:#f8fafc;border-radius:12px;padding:16px;font-size:14px;color:#334155;line-height:1.6;max-height:50vh;overflow-y:auto;margin-bottom:16px;">
-            <p style="margin-bottom:12px;">Ao usar este aplicativo, você concorda com a coleta dos seguintes dados, para fins de acompanhamento e organização do trabalho de campo:</p>
-            <p style="margin-bottom:8px;"><i data-lucide="map-pin" style="width:14px;height:14px;vertical-align:-2px;"></i> <strong>Localização (GPS):</strong> sua localização é coletada de forma contínua enquanto o app estiver aberto, para identificar a loja do seu roteiro do dia e apoiar a organização das visitas.</p>
-            <p style="margin-bottom:8px;"><i data-lucide="camera" style="width:14px;height:14px;vertical-align:-2px;"></i> <strong>Fotos:</strong> fotos enviadas por você nas tarefas de Exposições, Check-list e Atestados ficam armazenadas para fins de conferência e histórico.</p>
-            <p style="margin-bottom:12px;">Esses dados são usados exclusivamente para fins de trabalho e não são compartilhados com terceiros fora da empresa.</p>
-            <p>Ao marcar a caixa abaixo e continuar, você declara estar ciente e de acordo com o exposto.</p>
+        <h1 id="tituloTermoDinamico" style="font-size:22px;color:#1a1a2e;text-align:center;margin-bottom:16px;"><i data-lucide="shield-check" style="width:26px;height:26px;vertical-align:-4px;"></i> Termo de Uso</h1>
+        <div id="conteudoTermoDinamico" style="background:#f8fafc;border-radius:12px;padding:16px;font-size:14px;color:#334155;line-height:1.6;max-height:45vh;overflow-y:auto;margin-bottom:16px;white-space:pre-wrap;">
+            Carregando...
         </div>
         <label style="display:flex;align-items:center;gap:10px;margin-bottom:16px;cursor:pointer;">
             <input type="checkbox" id="checkConsentimento" style="width:20px;height:20px;accent-color:#2563eb;">
             <span style="font-size:14px;color:#334155;">Li e concordo com os termos acima</span>
         </label>
         <button class="btn-login" onclick="aceitarConsentimento()" id="btnConsentimento" disabled style="opacity:0.5;">Continuar</button>
+        <button onclick="abrirRecusaTermo()" style="width:100%;margin-top:10px;padding:12px;background:none;border:2px solid #ef4444;color:#ef4444;border-radius:12px;font-weight:700;cursor:pointer;">❌ Não Concordo</button>
+    </div>
+
+    <!-- ===== MODAL DE RECUSA (pede justificativa) ===== -->
+    <div id="modalRecusaTermo" class="modal-mes">
+        <div class="modal-content" style="max-width:420px;">
+            <h3 style="margin-bottom:12px;color:#1a1a2e;">Justifique sua recusa</h3>
+            <p style="font-size:13px;color:#64748b;margin-bottom:12px;">Isso é obrigatório e fica registrado. Fale com seu gestor em seguida.</p>
+            <textarea id="motivoRecusaTexto" rows="4" placeholder="Explique o motivo da sua recusa..." style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;margin-bottom:12px;"></textarea>
+            <button class="btn-login" style="background:#ef4444;" onclick="confirmarRecusaTermo()">Confirmar Recusa</button>
+            <button onclick="document.getElementById('modalRecusaTermo').classList.remove('active')" style="width:100%;margin-top:8px;padding:10px;background:none;border:none;color:#64748b;cursor:pointer;">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- ===== TELA DE ACESSO BLOQUEADO (após recusa) ===== -->
+    <div id="telaAcessoBloqueado" class="hidden" style="padding:20px;text-align:center;">
+        <i data-lucide="lock" style="width:48px;height:48px;color:#ef4444;"></i>
+        <h2 style="color:#1a1a2e;margin:16px 0 8px;">Acesso Bloqueado</h2>
+        <p style="color:#64748b;font-size:14px;">Você recusou o termo de uso. Entre em contato com seu gestor para regularizar seu acesso.</p>
     </div>
 
     <!-- ===== PAINEL PRINCIPAL (APÓS LOGIN) ===== -->
@@ -2031,9 +2046,9 @@ promotorLogado = promotor;
                 localStorage.setItem('sessaoPromotor', JSON.stringify({ id: promotor.id, email: promotor.email }));
         document.getElementById('telaLogin').classList.add('hidden');
 
-        if (!promotor.consentimento_lgpd_aceito) {
-            document.getElementById('telaConsentimento').classList.remove('hidden');
-            if (typeof lucide !== 'undefined') lucide.createIcons();
+        const checagemTermo = await precisaResponderTermo(promotor.id);
+        if (checagemTermo.precisa) {
+            await mostrarTelaTermo(checagemTermo.termo);
             return;
         }
         document.getElementById('painelPrincipal').classList.remove('hidden');
@@ -6456,7 +6471,7 @@ async function tentarLoginAutomatico() {
 
     try {
         const sessao = JSON.parse(sessaoSalva);
-        const dados = await apiFetch(`/rest/v1/promotores?id=eq.${sessao.id}&tipo=eq.promotor&select=id,nome,email,senha,ativo,estado,ctps,pis,matricula,admissao,funcao,departamento,data_nascimento,logo_url,validador_habilitado,ferias_inicio,ferias_fim,banco_horas,consentimento_lgpd_aceito`);
+        const dados = await apiFetch(`/rest/v1/promotores?id=eq.${sessao.id}&tipo=eq.promotor&select=id,nome,email,senha,ativo,estado,ctps,pis,matricula,admissao,funcao,departamento,data_nascimento,logo_url,validador_habilitado,ferias_inicio,ferias_fim,banco_horas,cpf`);
 
         if (dados.length === 0 || !dados[0].ativo || dados[0].email !== sessao.email) {
             localStorage.removeItem('sessaoPromotor');
@@ -6466,9 +6481,9 @@ async function tentarLoginAutomatico() {
 promotorLogado = dados[0];
         document.getElementById('telaLogin').classList.add('hidden');
 
-        if (!promotorLogado.consentimento_lgpd_aceito) {
-            document.getElementById('telaConsentimento').classList.remove('hidden');
-            if (typeof lucide !== 'undefined') lucide.createIcons();
+        const checagemTermo = await precisaResponderTermo(promotorLogado.id);
+        if (checagemTermo.precisa) {
+            await mostrarTelaTermo(checagemTermo.termo);
             return;
         }
 
@@ -6492,18 +6507,102 @@ document.getElementById('checkConsentimento').addEventListener('change', functio
     btn.style.opacity = this.checked ? '1' : '0.5';
 });
 
+// ============================================
+// SISTEMA DE TERMOS DINÂMICOS
+// ============================================
+let termoAtivoCache = null;
+let conteudoTermoResolvido = '';
+
+function obterDispositivoId() {
+    let id = localStorage.getItem('dispositivo_id');
+    if (!id) {
+        id = 'dev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+        localStorage.setItem('dispositivo_id', id);
+    }
+    return id;
+}
+
+async function precisaResponderTermo(promotorId) {
+    try {
+        const termos = await apiFetch('/rest/v1/termos?ativo=eq.true&order=versao.desc&limit=1');
+        if (termos.length === 0) return { precisa: false, termo: null };
+        const termo = termos[0];
+        const respostas = await apiFetch(`/rest/v1/termos_aceites?promotor_id=eq.${promotorId}&termo_id=eq.${termo.id}&status=eq.aceito&select=id`);
+        return { precisa: respostas.length === 0, termo };
+    } catch (erro) {
+        console.error('Erro ao verificar termo:', erro);
+        return { precisa: false, termo: null };
+    }
+}
+
+function preencherPlaceholders(texto, promotor) {
+    return texto
+        .replaceAll('{{nome_completo}}', promotor.nome || '')
+        .replaceAll('{{cpf}}', promotor.cpf || 'não informado');
+}
+
+async function mostrarTelaTermo(termo) {
+    termoAtivoCache = termo;
+    conteudoTermoResolvido = preencherPlaceholders(termo.conteudo, promotorLogado);
+    document.getElementById('tituloTermoDinamico').innerHTML = `<i data-lucide="shield-check" style="width:26px;height:26px;vertical-align:-4px;"></i> ${termo.titulo}`;
+    document.getElementById('conteudoTermoDinamico').textContent = conteudoTermoResolvido;
+    document.getElementById('checkConsentimento').checked = false;
+    document.getElementById('btnConsentimento').disabled = true;
+    document.getElementById('btnConsentimento').style.opacity = '0.5';
+    document.getElementById('telaConsentimento').classList.remove('hidden');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
 async function aceitarConsentimento() {
     try {
-        await apiFetch(`/rest/v1/promotores?id=eq.${promotorLogado.id}`, 'PATCH', {
-            consentimento_lgpd_aceito: true,
-            consentimento_lgpd_em: new Date().toISOString()
+        await apiFetch('/rest/v1/termos_aceites', 'POST', {
+            termo_id: termoAtivoCache.id,
+            termo_versao: termoAtivoCache.versao,
+            promotor_id: promotorLogado.id,
+            nome_completo_snapshot: promotorLogado.nome,
+            cpf_snapshot: promotorLogado.cpf || null,
+            conteudo_final: conteudoTermoResolvido,
+            status: 'aceito',
+            dispositivo_id: obterDispositivoId()
         });
-        promotorLogado.consentimento_lgpd_aceito = true;
         document.getElementById('telaConsentimento').classList.add('hidden');
         document.getElementById('painelPrincipal').classList.remove('hidden');
         carregarDadosIniciais();
     } catch (erro) {
         showToast('❌ Erro ao salvar aceite: ' + erro.message, 'error');
+    }
+}
+
+function abrirRecusaTermo() {
+    document.getElementById('motivoRecusaTexto').value = '';
+    document.getElementById('modalRecusaTermo').classList.add('active');
+}
+
+async function confirmarRecusaTermo() {
+    const motivo = document.getElementById('motivoRecusaTexto').value.trim();
+    if (!motivo) {
+        showToast('⚠️ Explique o motivo da recusa.', 'error');
+        return;
+    }
+    try {
+        await apiFetch('/rest/v1/termos_aceites', 'POST', {
+            termo_id: termoAtivoCache.id,
+            termo_versao: termoAtivoCache.versao,
+            promotor_id: promotorLogado.id,
+            nome_completo_snapshot: promotorLogado.nome,
+            cpf_snapshot: promotorLogado.cpf || null,
+            conteudo_final: conteudoTermoResolvido,
+            status: 'recusado',
+            motivo_recusa: motivo,
+            dispositivo_id: obterDispositivoId()
+        });
+        document.getElementById('modalRecusaTermo').classList.remove('active');
+        document.getElementById('telaConsentimento').classList.add('hidden');
+        document.getElementById('painelPrincipal').classList.remove('hidden');
+        carregarDadosIniciais();
+        showToast('Sua recusa foi registrada. Seu gestor será informado.', 'info');
+    } catch (erro) {
+        showToast('❌ Erro ao registrar recusa: ' + erro.message, 'error');
     }
 }
 
