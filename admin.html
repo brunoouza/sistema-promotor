@@ -1431,30 +1431,75 @@
         <!-- TAB: ADM MASTER (NOVA) -->
         <!-- ========================================== -->
         <div id="tabAdmMaster" class="tab-content">
-            <div class="card master-only">
-                <div class="flex-between">
-                    <h2>👑 Administradores <span class="master-badge">MASTER</span></h2>
-                    <button class="btn btn-success" onclick="abrirModalAdmMaster()">➕ Novo Administrador</button>
+            <div class="lojas-subtabs" style="margin-bottom:16px;">
+                <button class="ativo" onclick="abrirSubTabAdmMaster('subAdmMasterAdmins')">👑 Administradores</button>
+                <button onclick="abrirSubTabAdmMaster('subAdmMasterTermos')">📝 Termos e Assinaturas</button>
+            </div>
+
+            <div id="subAdmMasterAdmins" class="lojas-sub-content active">
+                <div class="card master-only">
+                    <div class="flex-between">
+                        <h2>👑 Administradores <span class="master-badge">MASTER</span></h2>
+                        <button class="btn btn-success" onclick="abrirModalAdmMaster()">➕ Novo Administrador</button>
+                    </div>
+                    <p style="color:#64748b;font-size:14px;margin-bottom:16px;">
+                        Gerencie todos os administradores do sistema. Apenas o Master pode criar, editar ou desativar admins.
+                    </p>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nome</th>
+                                    <th>Email</th>
+                                    <th>Tipo</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaAdmMaster">
+                                <tr><td colspan="6" class="loading">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <p style="color:#64748b;font-size:14px;margin-bottom:16px;">
-                    Gerencie todos os administradores do sistema. Apenas o Master pode criar, editar ou desativar admins.
-                </p>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Nome</th>
-                                <th>Email</th>
-                                <th>Tipo</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabelaAdmMaster">
-                            <tr><td colspan="6" class="loading">Carregando...</td></tr>
-                        </tbody>
-                    </table>
+            </div>
+
+            <div id="subAdmMasterTermos" class="lojas-sub-content">
+                <div class="card master-only">
+                    <div class="lojas-subtabs" style="margin-bottom:16px;">
+                        <button class="ativo" onclick="abrirSubTabTermos('subTermosHistorico')">📋 Histórico</button>
+                        <button onclick="abrirSubTabTermos('subTermosGerenciar')">✏️ Gerenciar Termo</button>
+                    </div>
+
+                    <div id="subTermosHistorico" class="lojas-sub-content active">
+                        <div class="form-group" style="max-width:220px;margin-bottom:16px;">
+                            <label>Status</label>
+                            <select id="filtroTermoStatus" onchange="carregarHistoricoTermos()">
+                                <option value="">Todos</option>
+                                <option value="aceito">Aceitos</option>
+                                <option value="recusado">Recusados</option>
+                            </select>
+                        </div>
+                        <div id="listaHistoricoTermos"><div class="loading"><div class="spinner"></div>Carregando...</div></div>
+                    </div>
+
+                    <div id="subTermosGerenciar" class="lojas-sub-content">
+                        <p style="color:#64748b;font-size:14px;margin-bottom:16px;">
+                            Edite o termo atual e salve como nova versão. Promotores que já aceitaram uma versão anterior vão ver a tela de novo.
+                            Placeholders disponíveis: <code>{{nome_completo}}</code> e <code>{{cpf}}</code>.
+                        </p>
+                        <div class="form-group">
+                            <label>Título</label>
+                            <input type="text" id="formTermoTitulo" placeholder="Ex: Termo de Uso e Privacidade">
+                        </div>
+                        <div class="form-group">
+                            <label>Conteúdo</label>
+                            <textarea id="formTermoConteudo" rows="14" style="width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:monospace;" placeholder="Cole o texto do termo aqui..."></textarea>
+                        </div>
+                        <div id="infoTermoAtualVersao" style="font-size:13px;color:#64748b;margin-bottom:12px;"></div>
+                        <button class="btn btn-success" onclick="salvarNovaVersaoTermo()">💾 Salvar Nova Versão</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1593,7 +1638,7 @@
         <div id="tabPromotores" class="tab-content">
             <div class="card">
                 <div class="flex-between"><h2>👤 Gerenciar Promotores</h2><button class="btn btn-success" onclick="abrirModalPromotor()">+ Novo Promotor</button></div>
-                <div class="table-wrapper"><table><thead><tr><th>ID</th><th>Nome</th><th>Email</th><th>Estado</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaPromotores"><tr><td colspan="6" class="loading">Carregando...</td></tr></tbody></table></div>
+                <div class="table-wrapper"><table><thead><tr><th>ID</th><th>Nome</th><th>Email</th><th>Estado</th><th>Status</th><th>Termo</th><th>Ações</th></tr></thead><tbody id="tabelaPromotores"><tr><td colspan="7" class="loading">Carregando...</td></tr></tbody></table></div>
             </div>
         </div>
 
@@ -2810,6 +2855,7 @@ function abrirTab(tabId) {
     if (tabId === 'tabChecklistAdmin') { carregarChecklistsAdmin(); }
     if (tabId === 'tabProdutos') { carregarProdutos(); }
     if (tabId === 'tabAdmMaster') { carregarAdmMaster(); }
+    if (tabId === 'tabAdmMaster') { carregarHistoricoTermos(); carregarTermoParaEdicao(); }
 }
 
 function abrirSubTabVT(tabId) {
@@ -3959,22 +4005,218 @@ async function uploadLogo() {
 }
 
 // ============================================
+// SUB-ABAS DO ADM MASTER
+// ============================================
+function abrirSubTabAdmMaster(tabId) {
+    document.querySelectorAll('#tabAdmMaster > .lojas-sub-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.querySelectorAll('#tabAdmMaster > .lojas-subtabs button').forEach(el => el.classList.remove('ativo'));
+    const btn = document.querySelector(`#tabAdmMaster > .lojas-subtabs button[onclick="abrirSubTabAdmMaster('${tabId}')"]`);
+    if (btn) btn.classList.add('ativo');
+}
+
+function abrirSubTabTermos(tabId) {
+    document.querySelectorAll('#subAdmMasterTermos .lojas-sub-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.querySelectorAll('#subAdmMasterTermos .lojas-subtabs button').forEach(el => el.classList.remove('ativo'));
+    const btn = document.querySelector(`#subAdmMasterTermos .lojas-subtabs button[onclick="abrirSubTabTermos('${tabId}')"]`);
+    if (btn) btn.classList.add('ativo');
+}
+
+// ============================================
+// TERMOS E ASSINATURAS
+// ============================================
+let historicoTermosCache = [];
+
+async function carregarHistoricoTermos() {
+    const div = document.getElementById('listaHistoricoTermos');
+    if (!div) return;
+    div.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+    try {
+        const filtroStatus = document.getElementById('filtroTermoStatus').value;
+        let endpoint = '/rest/v1/termos_aceites?order=data_hora.desc&select=*,promotores(nome)';
+        if (filtroStatus) endpoint += `&status=eq.${filtroStatus}`;
+        const dados = await apiFetch(endpoint);
+        historicoTermosCache = dados;
+
+        if (dados.length === 0) {
+            div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhum registro ainda</p>';
+            return;
+        }
+
+        let html = '<div class="table-wrapper"><table><thead><tr><th>Promotor</th><th>Status</th><th>Data/Hora</th><th>Motivo (se recusado)</th><th>Ações</th></tr></thead><tbody>';
+        dados.forEach((r, index) => {
+            const nomeP = r.promotores?.nome || r.nome_completo_snapshot || 'Promotor';
+            const statusBadge = r.status === 'aceito' ? '<span class="badge badge-success">🟢 Aceito</span>' : '<span class="badge badge-danger">🔴 Recusado</span>';
+            const dataFormat = new Date(r.data_hora).toLocaleString('pt-BR');
+            html += `<tr>
+                <td><strong>${nomeP}</strong></td>
+                <td>${statusBadge}</td>
+                <td>${dataFormat}</td>
+                <td>${r.motivo_recusa || '-'}</td>
+                <td>
+                    <button class="btn btn-primary btn-sm" onclick="visualizarTermoAceite(${index})">👁️ Ver</button>
+                    <button class="btn btn-warning btn-sm" onclick="baixarPDFTermoAceite(${index})">📄 PDF</button>
+                </td>
+            </tr>`;
+        });
+        html += '</tbody></table></div>';
+        div.innerHTML = html;
+    } catch (erro) {
+        div.innerHTML = `<div class="loading">❌ ${erro.message}</div>`;
+    }
+}
+
+function visualizarTermoAceite(index) {
+    const r = historicoTermosCache[index];
+    const win = window.open('', '_blank');
+    if (!win) { showToast('❌ Permita pop-ups para visualizar', 'error'); return; }
+    win.document.write(`
+        <html><head><title>${r.nome_completo_snapshot} - Termo</title>
+        <style>body{font-family:Arial,sans-serif;padding:30px;white-space:pre-wrap;line-height:1.6;max-width:700px;margin:0 auto;}</style>
+        </head><body>
+        <h2>${r.nome_completo_snapshot}</h2>
+        <p><strong>CPF:</strong> ${r.cpf_snapshot || 'não informado'}</p>
+        <p><strong>Status:</strong> ${r.status === 'aceito' ? 'Aceito' : 'Recusado'}</p>
+        <p><strong>Data/Hora:</strong> ${new Date(r.data_hora).toLocaleString('pt-BR')}</p>
+        ${r.motivo_recusa ? `<p><strong>Motivo da recusa:</strong> ${r.motivo_recusa}</p>` : ''}
+        <hr>
+        <div>${r.conteudo_final}</div>
+        </body></html>
+    `);
+    win.document.close();
+}
+
+function baixarPDFTermoAceite(index) {
+    const r = historicoTermosCache[index];
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+    const margem = 15, largura = 180;
+
+    pdf.setFontSize(14);
+    pdf.text('Termo de Uso - Registro', 105, 15, { align: 'center' });
+    pdf.setFontSize(10);
+    let y = 25;
+    pdf.text(`Nome: ${r.nome_completo_snapshot}`, margem, y); y += 6;
+    pdf.text(`CPF: ${r.cpf_snapshot || 'não informado'}`, margem, y); y += 6;
+    pdf.text(`Status: ${r.status === 'aceito' ? 'Aceito' : 'Recusado'}`, margem, y); y += 6;
+    pdf.text(`Data/Hora: ${new Date(r.data_hora).toLocaleString('pt-BR')}`, margem, y); y += 6;
+    if (r.motivo_recusa) {
+        const linhasMotivo = pdf.splitTextToSize(`Motivo da recusa: ${r.motivo_recusa}`, largura);
+        linhasMotivo.forEach(l => { pdf.text(l, margem, y); y += 5; });
+    }
+    y += 4;
+    pdf.line(margem, y, margem + largura, y);
+    y += 8;
+
+    pdf.setFontSize(9);
+    const linhasTexto = pdf.splitTextToSize(r.conteudo_final, largura);
+    linhasTexto.forEach(linha => {
+        if (y > 280) { pdf.addPage(); y = 20; }
+        pdf.text(linha, margem, y);
+        y += 5;
+    });
+
+    const nomeArquivo = `termo_${r.nome_completo_snapshot.replace(/\s+/g,'_')}_${new Date(r.data_hora).toISOString().split('T')[0]}.pdf`;
+    const blob = pdf.output('blob');
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url; link.download = nomeArquivo;
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+let termoAtualParaEdicao = null;
+
+async function carregarTermoParaEdicao() {
+    try {
+        const termos = await apiFetch('/rest/v1/termos?ativo=eq.true&order=versao.desc&limit=1');
+        if (termos.length > 0) {
+            termoAtualParaEdicao = termos[0];
+            document.getElementById('formTermoTitulo').value = termos[0].titulo;
+            document.getElementById('formTermoConteudo').value = termos[0].conteudo;
+            document.getElementById('infoTermoAtualVersao').textContent = `Versão atual: ${termos[0].versao} — publicada em ${new Date(termos[0].criado_em).toLocaleString('pt-BR')}`;
+        } else {
+            termoAtualParaEdicao = null;
+            document.getElementById('formTermoTitulo').value = '';
+            document.getElementById('formTermoConteudo').value = '';
+            document.getElementById('infoTermoAtualVersao').textContent = 'Nenhum termo cadastrado ainda — essa será a versão 1.';
+        }
+    } catch (erro) {
+        console.error('Erro ao carregar termo:', erro);
+    }
+}
+
+async function salvarNovaVersaoTermo() {
+    const titulo = document.getElementById('formTermoTitulo').value.trim();
+    const conteudo = document.getElementById('formTermoConteudo').value.trim();
+    if (!titulo || !conteudo) { showToast('⚠️ Preencha título e conteúdo!', 'error'); return; }
+
+    if (!confirm('⚠️ Isso cria uma NOVA versão do termo. Todo promotor (mesmo quem já aceitou a versão anterior) vai precisar responder de novo. Confirma?')) return;
+
+    try {
+        const novaVersao = termoAtualParaEdicao ? termoAtualParaEdicao.versao + 1 : 1;
+
+        if (termoAtualParaEdicao) {
+            await apiFetch(`/rest/v1/termos?id=eq.${termoAtualParaEdicao.id}`, 'PATCH', { ativo: false });
+        }
+
+        await apiFetch('/rest/v1/termos', 'POST', { titulo, conteudo, versao: novaVersao, ativo: true });
+        showToast(`✅ Termo salvo como versão ${novaVersao}!`, 'success');
+        carregarTermoParaEdicao();
+        carregarPromotores();
+    } catch (erro) {
+        showToast('❌ Erro: ' + erro.message, 'error');
+    }
+}
+
+// ============================================
 // PROMOTORES (CRUD)
 // ============================================
+let statusTermoPorPromotorCache = {};
+
 async function carregarPromotores() {
     const tbody = document.getElementById('tabelaPromotores');
     try {
         const dados = await apiFetch('/rest/v1/promotores?tipo=eq.promotor&order=id&select=id,nome,email,estado,ativo,ctps,pis,matricula,admissao,data_nascimento,funcao,departamento,ferias_inicio,ferias_fim,logo_url,banco_horas');
-        if (dados.length === 0) { tbody.innerHTML = `<tr><td colspan="6" class="empty-state">Nenhum promotor cadastrado</td></tr>`; return; }
+        if (dados.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Nenhum promotor cadastrado</td></tr>`; return; }
+
+        statusTermoPorPromotorCache = {};
+        const termosAtivos = await apiFetch('/rest/v1/termos?ativo=eq.true&order=versao.desc&limit=1');
+        if (termosAtivos.length > 0) {
+            const respostas = await apiFetch(`/rest/v1/termos_aceites?termo_id=eq.${termosAtivos[0].id}&order=data_hora.desc&select=*`);
+            respostas.forEach(r => {
+                if (!statusTermoPorPromotorCache[r.promotor_id]) statusTermoPorPromotorCache[r.promotor_id] = r;
+            });
+        }
+
         let html = '';
         dados.forEach(p => {
             const status = p.ativo ? '<span class="badge badge-success">Ativo</span>' : '<span class="badge badge-danger">Inativo</span>';
-html += `<tr><td>${p.id}</td><td><strong>${p.nome}</strong></td><td>${p.email}</td><td><span class="badge badge-info">${p.estado}</span></td><td>${status}</td>
+            const resp = statusTermoPorPromotorCache[p.id];
+            let badgeTermo;
+            if (!resp) {
+                badgeTermo = '<span class="badge badge-gray">⚪ Pendente</span>';
+            } else if (resp.status === 'aceito') {
+                badgeTermo = `<span class="badge badge-success" style="cursor:pointer;" onclick="verDetalheTermoPromotor(${p.id})">🟢 Aceito</span>`;
+            } else {
+                badgeTermo = `<span class="badge badge-danger" style="cursor:pointer;" onclick="verDetalheTermoPromotor(${p.id})">🔴 Recusado</span>`;
+            }
+html += `<tr><td>${p.id}</td><td><strong>${p.nome}</strong></td><td>${p.email}</td><td><span class="badge badge-info">${p.estado}</span></td><td>${status}</td><td>${badgeTermo}</td>
                 <td><button class="btn btn-primary btn-sm" onclick="editarPromotor(${p.id})">Editar</button>
                 <button class="btn btn-warning btn-sm" onclick="togglePromotor(${p.id}, ${!p.ativo})">${p.ativo ? '🔴' : '🟢'}</button></td></tr>`;
         });
         tbody.innerHTML = html;
-    } catch (erro) { tbody.innerHTML = `<tr><td colspan="6" class="loading">❌ ${erro.message}</td></tr>`; }
+    } catch (erro) { tbody.innerHTML = `<tr><td colspan="7" class="loading">❌ ${erro.message}</td></tr>`; }
+}
+
+function verDetalheTermoPromotor(promotorId) {
+    const r = statusTermoPorPromotorCache[promotorId];
+    if (!r) return;
+    const dataFormat = new Date(r.data_hora).toLocaleString('pt-BR');
+    let msg = `Status: ${r.status === 'aceito' ? 'Aceito' : 'Recusado'}\nData/Hora: ${dataFormat}`;
+    if (r.motivo_recusa) msg += `\nMotivo: ${r.motivo_recusa}`;
+    alert(msg);
 }
 
 function abrirModalPromotor() {
