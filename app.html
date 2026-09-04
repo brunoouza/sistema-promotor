@@ -2039,7 +2039,7 @@ async function fazerLogin() {
     msgDiv.style.display = 'none';
 
     try {
-        const dados = await apiFetch(`/rest/v1/promotores?email=eq.${email}&tipo=eq.promotor&select=id,nome,email,senha,ativo,estado,ctps,pis,matricula,admissao,funcao,departamento,data_nascimento,logo_url,validador_habilitado,ferias_inicio,ferias_fim,banco_horas,consentimento_lgpd_aceito`);
+        const dados = await apiFetch(`/rest/v1/promotores?email=eq.${email}&tipo=eq.promotor&select=id,nome,email,senha,ativo,estado,ctps,pis,matricula,admissao,funcao,departamento,data_nascimento,logo_url,validador_habilitado,ferias_inicio,ferias_fim,banco_horas,cpf`);
         if (dados.length === 0) {
             msgDiv.textContent = '❌ Usuário não encontrado!';
             msgDiv.style.display = 'block';
@@ -6709,6 +6709,15 @@ async function confirmarRecusaTermo() {
             motivo_recusa: motivo,
             dispositivo_id: obterDispositivoId()
         });
+        document.getElementById('modalRecusaTermo').classList.remove('active');
+        document.getElementById('telaConsentimento').classList.add('hidden');
+        document.getElementById('painelPrincipal').classList.remove('hidden');
+        carregarDadosIniciais();
+        showToast('Sua recusa foi registrada. Seu gestor será informado.', 'info');
+    } catch (erro) {
+        showToast('❌ Erro ao registrar recusa: ' + erro.message, 'error');
+    }
+}
 
 // ============================================
 // EVENTOS DE ENTER NO LOGIN
