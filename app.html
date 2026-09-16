@@ -3944,6 +3944,26 @@ async function abrirModalMes() {
             }
         }
 
+        // Data real de início de cada semana (1-4) dentro deste mês, calculada a partir
+        // de uma única segunda-feira de referência — mesma lógica usada no resto do sistema.
+        const primeiroDiaMesCalc = new Date(ano, mes - 1, 1);
+        const diaSemanaPrimeiroCalc = primeiroDiaMesCalc.getDay();
+        const offsetAteSegundaCalc = (diaSemanaPrimeiroCalc === 0) ? -6 : 1 - diaSemanaPrimeiroCalc;
+        const primeiraSegundaCalc = new Date(ano, mes - 1, 1 + offsetAteSegundaCalc);
+        const semanaDaPrimeiraSegundaCalc = calcularSemanaCiclica(primeiraSegundaCalc);
+
+        const datasPorSemana = {};
+        for (let s = 1; s <= 4; s++) {
+            const deltaSemanasCalc = ((s - semanaDaPrimeiraSegundaCalc) % 4 + 4) % 4;
+            const inicioCalc = new Date(primeiraSegundaCalc);
+            inicioCalc.setDate(inicioCalc.getDate() + deltaSemanasCalc * 7);
+            const fimCalc = new Date(inicioCalc);
+            fimCalc.setDate(inicioCalc.getDate() + 6);
+            datasPorSemana[s] = { inicio: inicioCalc, fim: fimCalc };
+        }
+
+        semanasAtivas.sort((a, b) => datasPorSemana[a].inicio - datasPorSemana[b].inicio);
+
         // ===== CONSTRUIR HTML =====
         let html = '';
 
@@ -3967,12 +3987,8 @@ async function abrirModalMes() {
 
 semanasAtivas.forEach((s, index) => {
                 const isActive = s === semanaAtualReal ? 'active' : (semanasAtivas.includes(semanaAtualReal) ? '' : (index === 0 ? 'active' : ''));
-                const primeiroDiaMes = new Date(ano, mes - 1, 1);
-                const primeiroDiaSemanaNum = primeiroDiaMes.getDay();
-                const offsetSemana = (primeiroDiaSemanaNum === 0) ? 6 : primeiroDiaSemanaNum - 1;
-                const dataInicio = new Date(ano, mes - 1, 1 + (s - 1) * 7 - offsetSemana);
-                const dataFim = new Date(dataInicio);
-                dataFim.setDate(dataFim.getDate() + 6);
+                const dataInicio = datasPorSemana[s].inicio;
+                const dataFim = datasPorSemana[s].fim;
                 const label = `${String(dataInicio.getDate()).padStart(2,'0')}/${String(dataInicio.getMonth()+1).padStart(2,'0')} - ${String(dataFim.getDate()).padStart(2,'0')}/${String(dataFim.getMonth()+1).padStart(2,'0')}`;
 
                 html += `
