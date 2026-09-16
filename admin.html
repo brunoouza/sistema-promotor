@@ -4950,23 +4950,20 @@ function montarCardsSemanas(mes, ano, dias) {
     grid.innerHTML = '';
     const diasSemana = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
     const diasNomes = { segunda: 'Segunda', terca: 'Terça', quarta: 'Quarta', quinta: 'Quinta', sexta: 'Sexta', sabado: 'Sábado' };
-    // Para cada uma das 4 semanas "verdadeiras" (globais), descobre a data real de início dela
-    // dentro deste mês específico — usando a mesma fórmula cíclica do resto do sistema.
+    // Acha a segunda-feira que abre a primeira semana visível deste mês (pode cair no mês anterior),
+    // descobre em qual posição do ciclo de 4 ela está, e calcula as outras 3 a partir dela por soma de dias —
+    // sem depender de "procurar por tentativa", que podia deixar alguma semana sem data nenhuma.
+    const primeiroDiaMes = new Date(ano, mes - 1, 1);
+    const diaSemanaPrimeiro = primeiroDiaMes.getDay();
+    const offsetAteSegunda = (diaSemanaPrimeiro === 0) ? -6 : 1 - diaSemanaPrimeiro;
+    const primeiraSegunda = new Date(ano, mes - 1, 1 + offsetAteSegunda);
+    const semanaDaPrimeiraSegunda = calcularSemanaCiclica(primeiraSegunda);
+
     const semanas = [];
     for (let semanaAlvo = 1; semanaAlvo <= 4; semanaAlvo++) {
-        let inicio = null;
-        for (let d = 1; d <= 7; d++) {
-            const candidato = new Date(ano, mes - 1, d);
-            if (candidato.getDay() !== 1) continue; // só segundas-feiras
-            if (calcularSemanaCiclica(candidato) === semanaAlvo) { inicio = candidato; break; }
-        }
-        if (!inicio) {
-            for (let d = 0; d >= -6; d--) {
-                const candidato = new Date(ano, mes - 1, 1 + d);
-                if (candidato.getDay() !== 1) continue;
-                if (calcularSemanaCiclica(candidato) === semanaAlvo) { inicio = candidato; break; }
-            }
-        }
+        const deltaSemanas = ((semanaAlvo - semanaDaPrimeiraSegunda) % 4 + 4) % 4;
+        const inicio = new Date(primeiraSegunda);
+        inicio.setDate(inicio.getDate() + deltaSemanas * 7);
         const fim = new Date(inicio);
         fim.setDate(inicio.getDate() + 6);
         semanas.push({ semana: semanaAlvo, inicio, fim });
