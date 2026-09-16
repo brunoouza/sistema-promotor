@@ -3744,6 +3744,20 @@ async function carregarCardChecklistsConcluidos() {
 // ============================================
 // CALCULAR CUMPRIMENTO DE ROTEIRO (dia a dia, respeitando a semana do mês)
 // ============================================
+
+// Ponto fixo de referência do ciclo de 4 semanas — TEM que ser exatamente a mesma data usada no app.html,
+// senão os dois lados do sistema ficam desalinhados.
+const ANCHOR_SEGUNDA_CICLO = new Date(2026, 0, 5); // segunda-feira, 05/01/2026
+
+function calcularSemanaCiclica(data) {
+    const diaSemanaNum = data.getDay();
+    const offsetParaSegunda = (diaSemanaNum === 0) ? -6 : 1 - diaSemanaNum;
+    const segundaDaSemana = new Date(data.getFullYear(), data.getMonth(), data.getDate() + offsetParaSegunda);
+    const diffDias = Math.round((segundaDaSemana - ANCHOR_SEGUNDA_CICLO) / (1000 * 60 * 60 * 24));
+    const semanaAbsoluta = Math.floor(diffDias / 7);
+    return ((semanaAbsoluta % 4) + 4) % 4 + 1;
+}
+
 async function calcularCumprimentoRoteiro(promotorId, inicio, fim) {
     const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
     const diasNomes = { domingo: 'Dom', segunda: 'Seg', terca: 'Ter', quarta: 'Qua', quinta: 'Qui', sexta: 'Sex', sabado: 'Sáb' };
@@ -3769,11 +3783,8 @@ async function calcularCumprimentoRoteiro(promotorId, inicio, fim) {
             const mes = dataAtual.getMonth() + 1;
             const ano = dataAtual.getFullYear();
 
-            // Calcular a semana do mês (1-4), igual ao resto do sistema
-            const primeiroDia = new Date(ano, mes - 1, 1);
-            const offset = (primeiroDia.getDay() === 0) ? 6 : primeiroDia.getDay() - 1;
-            let semanaDoMes = Math.floor((dataAtual.getDate() + offset - 1) / 7) + 1;
-            if (semanaDoMes >= 5) semanaDoMes = ((semanaDoMes - 1) % 4) + 1;
+            // Calcular a semana do ciclo (1-4), contínua, sem reiniciar por mês
+            const semanaDoMes = calcularSemanaCiclica(dataAtual);
 
 // Roteiro específico daquela semana/mês; senão, cai no recorrente (também filtrando pela semana certa)
             let roteirosDoDia = todosRoteiros.filter(r => r.dia_semana === diaSemana && r.mes === mes && r.ano === ano && r.semana === semanaDoMes);
@@ -4939,16 +4950,28 @@ function montarCardsSemanas(mes, ano, dias) {
     grid.innerHTML = '';
     const diasSemana = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
     const diasNomes = { segunda: 'Segunda', terca: 'Terça', quarta: 'Quarta', quinta: 'Quinta', sexta: 'Sexta', sabado: 'Sábado' };
-    const primeiroDia = new Date(ano, mes - 1, 1);
-    const primeiroDiaSemana = primeiroDia.getDay();
-    const offset = (primeiroDiaSemana === 0) ? 6 : primeiroDiaSemana - 1;
+    // Para cada uma das 4 semanas "verdadeiras" (globais), descobre a data real de início dela
+    // dentro deste mês específico — usando a mesma fórmula cíclica do resto do sistema.
     const semanas = [];
-    for (let s = 0; s < 4; s++) {
-        const inicio = new Date(ano, mes - 1, 1 + s * 7 - offset);
+    for (let semanaAlvo = 1; semanaAlvo <= 4; semanaAlvo++) {
+        let inicio = null;
+        for (let d = 1; d <= 7; d++) {
+            const candidato = new Date(ano, mes - 1, d);
+            if (candidato.getDay() !== 1) continue; // só segundas-feiras
+            if (calcularSemanaCiclica(candidato) === semanaAlvo) { inicio = candidato; break; }
+        }
+        if (!inicio) {
+            for (let d = 0; d >= -6; d--) {
+                const candidato = new Date(ano, mes - 1, 1 + d);
+                if (candidato.getDay() !== 1) continue;
+                if (calcularSemanaCiclica(candidato) === semanaAlvo) { inicio = candidato; break; }
+            }
+        }
         const fim = new Date(inicio);
         fim.setDate(inicio.getDate() + 6);
-        semanas.push({ semana: s + 1, inicio, fim });
+        semanas.push({ semana: semanaAlvo, inicio, fim });
     }
+    semanas.sort((a, b) => a.inicio - b.inicio);
     semanas.forEach((sem) => {
         const card = document.createElement('div');
         card.className = 'week-card';
