@@ -2531,13 +2531,24 @@ function converterArquivoParaBase64(file) {
 // ============================================
 // CALCULAR A SEMANA DO MÊS E BUSCAR O ROTEIRO CERTO
 // ============================================
+// Ponto fixo de referência do ciclo de 4 semanas — NUNCA mude essa data depois de aplicada,
+// senão o ciclo inteiro se desalinha do que já está salvo no banco. Precisa ser IDÊNTICA no admin.html.
+const ANCHOR_SEGUNDA_CICLO = new Date(2026, 0, 5); // segunda-feira, 05/01/2026
+
+function calcularSemanaCiclica(data) {
+    const diaSemanaNum = data.getDay(); // 0=domingo...6=sábado
+    const offsetParaSegunda = (diaSemanaNum === 0) ? -6 : 1 - diaSemanaNum;
+    const segundaDaSemana = new Date(data.getFullYear(), data.getMonth(), data.getDate() + offsetParaSegunda);
+
+    const diffDias = Math.round((segundaDaSemana - ANCHOR_SEGUNDA_CICLO) / (1000 * 60 * 60 * 24));
+    const semanaAbsoluta = Math.floor(diffDias / 7);
+    return ((semanaAbsoluta % 4) + 4) % 4 + 1;
+}
+
 function calcularSemanaDoMes(data) {
     const ano = data.getFullYear();
     const mes = data.getMonth() + 1;
-    const primeiroDia = new Date(ano, mes - 1, 1);
-    const offset = (primeiroDia.getDay() === 0) ? 6 : primeiroDia.getDay() - 1;
-let semana = Math.floor((data.getDate() + offset - 1) / 7) + 1;
-    if (semana >= 5) semana = ((semana - 1) % 4) + 1; // continua o ciclo de 4 semanas, sem travar sempre na mesma
+    const semana = calcularSemanaCiclica(data);
     return { semana, mes, ano };
 }
 
@@ -3801,10 +3812,7 @@ async function carregarRoteiroSemana() {
             return;
         }
 
-        const primeiroDia = new Date(ano, mes - 1, 1);
-        const offset = (primeiroDia.getDay() === 0) ? 6 : primeiroDia.getDay() - 1;
-        let semanaHoje = Math.floor((hoje.getDate() + offset - 1) / 7) + 1;
-        if (semanaHoje >= 5) semanaHoje = ((semanaHoje - 1) % 4) + 1;
+        const semanaHoje = calcularSemanaCiclica(hoje);
 
         const diasSemanaAtual = roteiros.filter(r => r.semana === semanaHoje);
 
