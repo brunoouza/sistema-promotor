@@ -1132,6 +1132,7 @@
     <!-- Espelho Ponto oculto do menu (mantido no código) -->
     <button class="menu-item" onclick="abrirTab('tabRelatorios')"><span class="icon"><i data-lucide="bar-chart-3"></i></span> Relatórios</button>
     <button class="menu-item" onclick="abrirTab('tabChecklistAdmin')"><span class="icon"><i data-lucide="clipboard-list"></i></span> Checklist</button>
+    <button class="menu-item" onclick="abrirTab('tabChatAdmin')"><span class="icon"><i data-lucide="message-circle"></i></span> Chat <span id="badgeChatNaoLidasAdmin" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:6px;">0</span></button>
     <button class="menu-item" onclick="abrirTab('tabProdutos')"><span class="icon"><i data-lucide="package"></i></span> Produtos</button>
     <button class="menu-item" id="menuAdmMaster" style="display:none;" onclick="abrirTab('tabAdmMaster')"><span class="icon"><i data-lucide="crown"></i></span> Adm Master</button>
     <button class="menu-item logout-btn" onclick="logoutAdmin()"><span class="icon"><i data-lucide="log-out"></i></span> Sair</button>
@@ -1310,6 +1311,17 @@
 <!-- ========================================== -->
 <!-- MODAL CARGA HORÁRIA -->
 <!-- ========================================== -->
+<div id="modalNovaConversaAdmin" class="modal-overlay">
+    <div class="modal-content" style="max-width:420px;">
+        <div class="flex-between">
+            <h2>Nova Conversa</h2>
+            <button class="btn btn-danger btn-sm" onclick="fecharModal('modalNovaConversaAdmin')">✕ Fechar</button>
+        </div>
+        <input type="text" id="buscaNovaConversaAdmin" placeholder="Buscar pessoa..." oninput="filtrarListaNovaConversaAdmin()" style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:10px;margin:16px 0 12px;">
+        <div id="listaPessoasNovaConversaAdmin" style="max-height:50vh;overflow-y:auto;"></div>
+    </div>
+</div>
+
 <div id="modalCargaHoraria" class="modal-overlay">
     <div class="modal-content" style="max-width:650px;">
         <div class="flex-between">
@@ -2166,6 +2178,54 @@
         <!-- ========================================== -->
         <!-- TAB: PRODUTOS -->
         <!-- ========================================== -->
+        <!-- ========================================== -->
+        <!-- TAB: CHAT -->
+        <!-- ========================================== -->
+        <div id="tabChatAdmin" class="tab-content">
+            <div class="card">
+                <h2>💬 Chat</h2>
+                <div class="lojas-subtabs" style="margin-bottom:16px;">
+                    <button class="ativo" onclick="abrirSubTabChatAdmin('subChatMinhasConversas')">Minhas Conversas</button>
+                    <button onclick="abrirSubTabChatAdmin('subChatMonitorar')">🔍 Monitorar (Auditoria)</button>
+                </div>
+
+                <div id="subChatMinhasConversas" class="lojas-sub-content active">
+                    <div id="chatAdminListaView">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                            <p style="color:#64748b;font-size:14px;margin:0;">Suas conversas (grupo geral + individuais)</p>
+                            <button class="btn btn-primary btn-sm" onclick="abrirNovaConversaAdmin()">➕ Nova conversa</button>
+                        </div>
+                        <div id="listaConversasAdmin"><div class="loading"><div class="spinner"></div>Carregando...</div></div>
+                    </div>
+
+                    <div id="chatAdminThreadView" style="display:none;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                            <button onclick="fecharThreadChatAdmin()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#2563eb;">←</button>
+                            <div id="chatAdminThreadTitulo" style="font-weight:700;color:#1a1a2e;font-size:15px;"></div>
+                        </div>
+                        <div id="chatAdminMensagens" style="background:#f8fafc;border-radius:12px;padding:12px;height:50vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
+                        <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+                            <button onclick="anexarFotoChatAdmin()" style="background:none;border:none;font-size:22px;cursor:pointer;">📷</button>
+                            <input type="text" id="chatAdminInputTexto" placeholder="Digite uma mensagem..." style="flex:1;padding:10px 14px;border:2px solid #e2e8f0;border-radius:20px;font-size:14px;">
+                            <button onclick="enviarMensagemChatAdmin()" style="background:#2563eb;color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:16px;cursor:pointer;flex-shrink:0;">➤</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="subChatMonitorar" class="lojas-sub-content">
+                    <p style="color:#64748b;font-size:14px;margin-bottom:16px;">Visão apenas de leitura de todas as conversas do sistema, incluindo as individuais entre promotores — use pra auditoria, se algum problema precisar ser investigado.</p>
+                    <div id="chatMonitorarListaView">
+                        <div id="listaConversasMonitorar"><div class="loading"><div class="spinner"></div>Carregando...</div></div>
+                    </div>
+                    <div id="chatMonitorarThreadView" style="display:none;">
+                        <button onclick="fecharThreadMonitorar()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#2563eb;margin-bottom:10px;">← Voltar</button>
+                        <div id="chatMonitorarTitulo" style="font-weight:700;color:#1a1a2e;font-size:15px;margin-bottom:10px;"></div>
+                        <div id="chatMonitorarMensagens" style="background:#f8fafc;border-radius:12px;padding:12px;max-height:60vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="tabProdutos" class="tab-content">
             <div class="card">
                 <div class="flex-between">
@@ -2804,6 +2864,440 @@ async function apiFetch(endpoint, metodo = 'GET', dados = null, retornarRepresen
     return JSON.parse(texto);
 }
 
+function comprimirImagem(file, larguraMax = 1000, qualidade = 0.7) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const reader = new FileReader();
+        reader.onload = (e) => { img.src = e.target.result; };
+        reader.onerror = reject;
+        img.onload = () => {
+            let largura = img.width, altura = img.height;
+            if (largura > larguraMax) { altura = Math.round((altura * larguraMax) / largura); largura = larguraMax; }
+            const canvas = document.createElement('canvas');
+            canvas.width = largura; canvas.height = altura;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, largura, altura);
+            canvas.toBlob((blob) => {
+                if (!blob) { reject(new Error('Falha ao comprimir imagem')); return; }
+                resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+            }, 'image/jpeg', qualidade);
+        };
+        img.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// ============================================
+// CHAT (ADMIN)
+// ============================================
+let conversasAdminCache = [];
+let conversaAdminAbertaId = null;
+let intervalMensagensChatAdmin = null;
+let listaPessoasNovaConversaAdmin = [];
+const grupoGeralCacheAdmin = { id: null };
+
+function abrirSubTabChatAdmin(tabId) {
+    document.querySelectorAll('#tabChatAdmin .lojas-sub-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.querySelectorAll('#tabChatAdmin .lojas-subtabs button').forEach(el => el.classList.remove('ativo'));
+    const btn = document.querySelector(`#tabChatAdmin .lojas-subtabs button[onclick="abrirSubTabChatAdmin('${tabId}')"]`);
+    if (btn) btn.classList.add('ativo');
+    if (tabId === 'subChatMonitorar') carregarConversasMonitorar();
+}
+
+async function obterGrupoGeralIdAdmin() {
+    if (grupoGeralCacheAdmin.id) return grupoGeralCacheAdmin.id;
+    const grupos = await apiFetch('/rest/v1/chat_conversas?tipo=eq.grupo&order=id.asc&limit=1');
+    if (grupos.length > 0) { grupoGeralCacheAdmin.id = grupos[0].id; return grupos[0].id; }
+    return null;
+}
+
+async function garantirParticipacaoNoGrupoAdmin() {
+    const grupoId = await obterGrupoGeralIdAdmin();
+    if (!grupoId) return;
+    const jaParticipa = await apiFetch(`/rest/v1/chat_participantes?conversa_id=eq.${grupoId}&administrador_id=eq.${adminLogado.id}&select=id`);
+    if (jaParticipa.length === 0) {
+        await apiFetch('/rest/v1/chat_participantes', 'POST', { conversa_id: grupoId, administrador_id: adminLogado.id });
+    }
+}
+
+function atualizarBadgeChatAdmin(qtd) {
+    const badge = document.getElementById('badgeChatNaoLidasAdmin');
+    if (!badge) return;
+    if (qtd > 0) { badge.textContent = qtd > 99 ? '99+' : qtd; badge.style.display = 'inline-block'; }
+    else { badge.style.display = 'none'; }
+}
+
+async function verificarChatNaoLidasAdmin() {
+    if (!adminLogado) return;
+    try {
+        await garantirParticipacaoNoGrupoAdmin();
+        const minhasParticipacoes = await apiFetch(`/rest/v1/chat_participantes?administrador_id=eq.${adminLogado.id}&select=conversa_id`);
+        const conversaIds = minhasParticipacoes.map(p => p.conversa_id);
+        if (conversaIds.length === 0) { atualizarBadgeChatAdmin(0); return; }
+
+        let totalNaoLidas = 0;
+        for (const convId of conversaIds) {
+            const leituras = await apiFetch(`/rest/v1/chat_leituras?conversa_id=eq.${convId}&tipo_leitor=eq.admin&leitor_id=eq.${adminLogado.id}&select=ultima_leitura_em`);
+            const desde = leituras.length > 0 ? leituras[0].ultima_leitura_em : '1970-01-01T00:00:00Z';
+            const msgs = await apiFetch(`/rest/v1/chat_mensagens?conversa_id=eq.${convId}&criado_em=gt.${desde}&select=remetente_tipo,remetente_id`);
+            totalNaoLidas += msgs.filter(m => !(m.remetente_tipo === 'admin' && m.remetente_id === adminLogado.id)).length;
+        }
+        atualizarBadgeChatAdmin(totalNaoLidas);
+    } catch (erro) {
+        console.error('Erro ao verificar chat não lidas (admin):', erro);
+    }
+}
+
+async function carregarConversasAdmin() {
+    const div = document.getElementById('listaConversasAdmin');
+    div.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+    try {
+        await garantirParticipacaoNoGrupoAdmin();
+        const minhasParticipacoes = await apiFetch(`/rest/v1/chat_participantes?administrador_id=eq.${adminLogado.id}&select=conversa_id,chat_conversas(id,tipo,nome)`);
+        const conversas = minhasParticipacoes.map(p => p.chat_conversas).filter(c => c);
+
+        const conversasComInfo = [];
+        for (const conv of conversas) {
+            const ultimaMsg = await apiFetch(`/rest/v1/chat_mensagens?conversa_id=eq.${conv.id}&order=criado_em.desc&limit=1`);
+            let nomeExibicao = conv.nome || 'Conversa';
+            if (conv.tipo === 'individual') {
+                const outros = await apiFetch(`/rest/v1/chat_participantes?conversa_id=eq.${conv.id}&administrador_id=neq.${adminLogado.id}&select=promotor_id,administrador_id`);
+                if (outros.length > 0) {
+                    const p = outros[0];
+                    if (p.promotor_id) {
+                        const prom = await apiFetch(`/rest/v1/promotores?id=eq.${p.promotor_id}&select=nome`);
+                        nomeExibicao = prom[0]?.nome || 'Promotor';
+                    } else if (p.administrador_id) {
+                        const adm = await apiFetch(`/rest/v1/administradores?id=eq.${p.administrador_id}&select=nome`);
+                        nomeExibicao = (adm[0]?.nome || 'Admin') + ' (Gestor)';
+                    }
+                } else {
+                    nomeExibicao = 'Conversa';
+                }
+            }
+            conversasComInfo.push({ ...conv, nomeExibicao, ultimaMsg: ultimaMsg[0] || null });
+        }
+
+        conversasAdminCache = conversasComInfo;
+        renderizarListaConversasAdmin();
+    } catch (erro) {
+        div.innerHTML = `<p style="color:#ef4444;text-align:center;">❌ ${erro.message}</p>`;
+    }
+}
+
+function renderizarListaConversasAdmin() {
+    const div = document.getElementById('listaConversasAdmin');
+    if (conversasAdminCache.length === 0) {
+        div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhuma conversa ainda</p>';
+        return;
+    }
+    let html = '';
+    conversasAdminCache.forEach(c => {
+        const icone = c.tipo === 'grupo' ? '👥' : '👤';
+        const preview = c.ultimaMsg ? (c.ultimaMsg.foto_url ? '📷 Foto' : (c.ultimaMsg.texto || '')) : 'Nenhuma mensagem ainda';
+        html += `
+            <div onclick="abrirThreadChatAdmin(${c.id}, '${c.nomeExibicao.replace(/'/g,"\\'")}')" style="display:flex;align-items:center;gap:12px;padding:12px;background:#f8fafc;border-radius:12px;margin-bottom:8px;cursor:pointer;">
+                <div style="width:40px;height:40px;border-radius:50%;background:#2563eb;color:white;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${icone}</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:700;color:#1a1a2e;font-size:14px;">${c.nomeExibicao}</div>
+                    <div style="font-size:12px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${preview}</div>
+                </div>
+            </div>
+        `;
+    });
+    div.innerHTML = html;
+}
+
+async function abrirThreadChatAdmin(conversaId, titulo) {
+    conversaAdminAbertaId = conversaId;
+    document.getElementById('chatAdminListaView').style.display = 'none';
+    document.getElementById('chatAdminThreadView').style.display = 'block';
+    document.getElementById('chatAdminThreadTitulo').textContent = titulo;
+    await carregarMensagensChatAdmin();
+    await marcarComoLidoAdmin();
+    if (intervalMensagensChatAdmin) clearInterval(intervalMensagensChatAdmin);
+    intervalMensagensChatAdmin = setInterval(async () => {
+        await carregarMensagensChatAdmin();
+        await marcarComoLidoAdmin();
+    }, 5000);
+}
+
+function fecharThreadChatAdmin() {
+    document.getElementById('chatAdminThreadView').style.display = 'none';
+    document.getElementById('chatAdminListaView').style.display = 'block';
+    if (intervalMensagensChatAdmin) { clearInterval(intervalMensagensChatAdmin); intervalMensagensChatAdmin = null; }
+    conversaAdminAbertaId = null;
+    carregarConversasAdmin();
+    verificarChatNaoLidasAdmin();
+}
+
+function renderizarBalaoesMensagens(mensagens, souEuFn) {
+    let html = '';
+    mensagens.forEach(m => {
+        const souEu = souEuFn(m);
+        const hora = new Date(m.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        html += `
+            <div style="align-self:${souEu ? 'flex-end' : 'flex-start'};max-width:75%;">
+                <div style="background:${souEu ? '#2563eb' : 'white'};color:${souEu ? 'white' : '#1a1a2e'};padding:8px 12px;border-radius:14px;${souEu ? 'border-bottom-right-radius:4px;' : 'border-bottom-left-radius:4px;border:1px solid #e2e8f0;'}">
+                    ${m.foto_url ? `<img src="${m.foto_url}" style="max-width:100%;border-radius:8px;margin-bottom:${m.texto ? '6px' : '0'};cursor:pointer;" onclick="window.open('${m.foto_url}','_blank')">` : ''}
+                    ${m.texto ? `<div style="font-size:14px;white-space:pre-wrap;word-break:break-word;">${m.texto}</div>` : ''}
+                </div>
+                <div style="font-size:10px;color:#94a3b8;margin-top:2px;text-align:${souEu ? 'right' : 'left'};">${hora}</div>
+            </div>
+        `;
+    });
+    return html || '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhuma mensagem ainda</p>';
+}
+
+async function carregarMensagensChatAdmin() {
+    if (!conversaAdminAbertaId) return;
+    try {
+        const mensagens = await apiFetch(`/rest/v1/chat_mensagens?conversa_id=eq.${conversaAdminAbertaId}&order=criado_em.asc`);
+        const div = document.getElementById('chatAdminMensagens');
+        const jaEstavaNoFim = div.scrollTop + div.clientHeight >= div.scrollHeight - 50;
+        div.innerHTML = renderizarBalaoesMensagens(mensagens, m => m.remetente_tipo === 'admin' && m.remetente_id === adminLogado.id);
+        if (jaEstavaNoFim) div.scrollTop = div.scrollHeight;
+    } catch (erro) {
+        console.error('Erro ao carregar mensagens (admin):', erro);
+    }
+}
+
+async function marcarComoLidoAdmin() {
+    if (!conversaAdminAbertaId) return;
+    try {
+        const existentes = await apiFetch(`/rest/v1/chat_leituras?conversa_id=eq.${conversaAdminAbertaId}&tipo_leitor=eq.admin&leitor_id=eq.${adminLogado.id}&select=id`);
+        if (existentes.length > 0) {
+            await apiFetch(`/rest/v1/chat_leituras?id=eq.${existentes[0].id}`, 'PATCH', { ultima_leitura_em: new Date().toISOString() });
+        } else {
+            await apiFetch('/rest/v1/chat_leituras', 'POST', { conversa_id: conversaAdminAbertaId, tipo_leitor: 'admin', leitor_id: adminLogado.id, ultima_leitura_em: new Date().toISOString() });
+        }
+        verificarChatNaoLidasAdmin();
+    } catch (erro) {
+        console.error('Erro ao marcar como lido (admin):', erro);
+    }
+}
+
+async function enviarMensagemChatAdmin() {
+    const input = document.getElementById('chatAdminInputTexto');
+    const texto = input.value.trim();
+    if (!texto || !conversaAdminAbertaId) return;
+    input.value = '';
+    try {
+        await apiFetch('/rest/v1/chat_mensagens', 'POST', {
+            conversa_id: conversaAdminAbertaId,
+            remetente_tipo: 'admin',
+            remetente_id: adminLogado.id,
+            texto: texto
+        });
+        await carregarMensagensChatAdmin();
+        await marcarComoLidoAdmin();
+    } catch (erro) {
+        showToast('❌ Erro ao enviar: ' + erro.message, 'error');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const inputChatAdmin = document.getElementById('chatAdminInputTexto');
+    if (inputChatAdmin) inputChatAdmin.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensagemChatAdmin(); });
+});
+
+function anexarFotoChatAdmin() {
+    if (!conversaAdminAbertaId) return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png,image/gif,image/webp';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+
+    input.onchange = async function(event) {
+        const file = event.target.files[0];
+        if (!file) { document.body.removeChild(input); return; }
+        if (file.size > 10 * 1024 * 1024) {
+            showToast('⚠️ Arquivo muito grande! Máximo 10MB.', 'error');
+            document.body.removeChild(input);
+            return;
+        }
+        showToast('⏳ Enviando foto...', 'info');
+        try {
+            let fileParaEnviar;
+            try { fileParaEnviar = await comprimirImagem(file); } catch (e) { fileParaEnviar = file; }
+
+            const formData = new FormData();
+            formData.append('file', fileParaEnviar);
+            formData.append('upload_preset', 'promotor_app');
+            const resp = await fetch(`https://api.cloudinary.com/v1_1/zv2yyqo2/image/upload`, { method: 'POST', body: formData });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error?.message || 'Erro no upload');
+
+            await apiFetch('/rest/v1/chat_mensagens', 'POST', {
+                conversa_id: conversaAdminAbertaId,
+                remetente_tipo: 'admin',
+                remetente_id: adminLogado.id,
+                foto_url: data.secure_url
+            });
+            await carregarMensagensChatAdmin();
+            await marcarComoLidoAdmin();
+            showToast('✅ Foto enviada!', 'success');
+        } catch (erro) {
+            showToast('❌ Erro: ' + erro.message, 'error');
+        } finally {
+            document.body.removeChild(input);
+        }
+    };
+    input.click();
+}
+
+// ============================================
+// NOVA CONVERSA (ADMIN)
+// ============================================
+async function abrirNovaConversaAdmin() {
+    document.getElementById('buscaNovaConversaAdmin').value = '';
+    document.getElementById('modalNovaConversaAdmin').classList.add('active');
+    const div = document.getElementById('listaPessoasNovaConversaAdmin');
+    div.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+    try {
+        const promotores = await apiFetch('/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true&order=nome&select=id,nome');
+        const admins = await apiFetch(`/rest/v1/administradores?ativo=eq.true&id=neq.${adminLogado.id}&order=nome&select=id,nome`);
+        listaPessoasNovaConversaAdmin = [
+            ...promotores.map(p => ({ tipo: 'promotor', id: p.id, nome: p.nome })),
+            ...admins.map(a => ({ tipo: 'admin', id: a.id, nome: a.nome + ' (Gestor)' }))
+        ];
+        renderizarListaNovaConversaAdmin(listaPessoasNovaConversaAdmin);
+    } catch (erro) {
+        div.innerHTML = `<p style="color:#ef4444;">❌ ${erro.message}</p>`;
+    }
+}
+
+function renderizarListaNovaConversaAdmin(lista) {
+    const div = document.getElementById('listaPessoasNovaConversaAdmin');
+    if (lista.length === 0) {
+        div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:16px 0;">Ninguém encontrado</p>';
+        return;
+    }
+    let html = '';
+    lista.forEach(p => {
+        html += `<div onclick="iniciarConversaIndividualAdmin('${p.tipo}', ${p.id}, '${p.nome.replace(/'/g,"\\'")}')" style="padding:12px;background:#f8fafc;border-radius:10px;margin-bottom:6px;cursor:pointer;font-size:14px;font-weight:600;color:#1a1a2e;">${p.nome}</div>`;
+    });
+    div.innerHTML = html;
+}
+
+function filtrarListaNovaConversaAdmin() {
+    const termo = document.getElementById('buscaNovaConversaAdmin').value.toLowerCase();
+    renderizarListaNovaConversaAdmin(listaPessoasNovaConversaAdmin.filter(p => p.nome.toLowerCase().includes(termo)));
+}
+
+async function iniciarConversaIndividualAdmin(tipoOutro, idOutro, nomeOutro) {
+    try {
+        const minhasConversas = await apiFetch(`/rest/v1/chat_participantes?administrador_id=eq.${adminLogado.id}&select=conversa_id`);
+        const meusIds = minhasConversas.map(c => c.conversa_id);
+
+        let conversaExistente = null;
+        for (const convId of meusIds) {
+            const participantesDaConversa = await apiFetch(`/rest/v1/chat_participantes?conversa_id=eq.${convId}&select=*,chat_conversas(tipo)`);
+            if (participantesDaConversa.length === 0 || participantesDaConversa[0].chat_conversas?.tipo !== 'individual') continue;
+            const temOutro = participantesDaConversa.some(p =>
+                (tipoOutro === 'promotor' && p.promotor_id === idOutro) ||
+                (tipoOutro === 'admin' && p.administrador_id === idOutro)
+            );
+            if (temOutro) { conversaExistente = convId; break; }
+        }
+
+        let conversaId = conversaExistente;
+        if (!conversaId) {
+            const nova = await apiFetch('/rest/v1/chat_conversas', 'POST', { tipo: 'individual' }, true);
+            conversaId = nova[0].id;
+            await apiFetch('/rest/v1/chat_participantes', 'POST', { conversa_id: conversaId, administrador_id: adminLogado.id });
+            const participanteOutro = tipoOutro === 'promotor' ? { conversa_id: conversaId, promotor_id: idOutro } : { conversa_id: conversaId, administrador_id: idOutro };
+            await apiFetch('/rest/v1/chat_participantes', 'POST', participanteOutro);
+        }
+
+        fecharModal('modalNovaConversaAdmin');
+        await abrirThreadChatAdmin(conversaId, nomeOutro);
+    } catch (erro) {
+        showToast('❌ Erro: ' + erro.message, 'error');
+    }
+}
+
+// ============================================
+// MONITORAR (AUDITORIA — LEITURA DE TODAS AS CONVERSAS)
+// ============================================
+let conversasMonitorarCache = [];
+
+async function carregarConversasMonitorar() {
+    const div = document.getElementById('listaConversasMonitorar');
+    div.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+    try {
+        const todasConversas = await apiFetch('/rest/v1/chat_conversas?order=id.asc');
+        const todosParticipantes = await apiFetch('/rest/v1/chat_participantes?select=*,promotores(nome),administradores(nome)');
+
+        const conversasComInfo = [];
+        for (const conv of todasConversas) {
+            const participantesDaConversa = todosParticipantes.filter(p => p.conversa_id === conv.id);
+            let nomeExibicao = conv.nome || 'Conversa';
+            if (conv.tipo === 'individual') {
+                const nomes = participantesDaConversa.map(p => p.promotores?.nome || (p.administradores ? p.administradores.nome + ' (Gestor)' : null)).filter(Boolean);
+                nomeExibicao = nomes.join(' ↔ ') || 'Conversa';
+            } else {
+                nomeExibicao = `👥 ${conv.nome || 'Grupo Geral'} (${participantesDaConversa.length} participantes)`;
+            }
+            const ultimaMsg = await apiFetch(`/rest/v1/chat_mensagens?conversa_id=eq.${conv.id}&order=criado_em.desc&limit=1`);
+            conversasComInfo.push({ ...conv, nomeExibicao, ultimaMsg: ultimaMsg[0] || null });
+        }
+
+        conversasMonitorarCache = conversasComInfo;
+        renderizarListaConversasMonitorar();
+    } catch (erro) {
+        div.innerHTML = `<p style="color:#ef4444;text-align:center;">❌ ${erro.message}</p>`;
+    }
+}
+
+function renderizarListaConversasMonitorar() {
+    const div = document.getElementById('listaConversasMonitorar');
+    if (conversasMonitorarCache.length === 0) {
+        div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhuma conversa no sistema ainda</p>';
+        return;
+    }
+    let html = '<div class="table-wrapper"><table><thead><tr><th>Conversa</th><th>Tipo</th><th>Última mensagem</th><th>Ações</th></tr></thead><tbody>';
+    conversasMonitorarCache.forEach((c, index) => {
+        const preview = c.ultimaMsg ? (c.ultimaMsg.foto_url ? '📷 Foto' : (c.ultimaMsg.texto || '-')) : '-';
+        html += `<tr>
+            <td><strong>${c.nomeExibicao}</strong></td>
+            <td>${c.tipo === 'grupo' ? 'Grupo' : 'Individual'}</td>
+            <td>${preview}</td>
+            <td><button class="btn btn-primary btn-sm" onclick="verConversaMonitorar(${index})">👁️ Ver</button></td>
+        </tr>`;
+    });
+    html += '</tbody></table></div>';
+    div.innerHTML = html;
+}
+
+async function verConversaMonitorar(index) {
+    const c = conversasMonitorarCache[index];
+    document.getElementById('chatMonitorarListaView').style.display = 'none';
+    document.getElementById('chatMonitorarThreadView').style.display = 'block';
+    document.getElementById('chatMonitorarTitulo').textContent = c.nomeExibicao;
+    const div = document.getElementById('chatMonitorarMensagens');
+    div.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+    try {
+        const mensagens = await apiFetch(`/rest/v1/chat_mensagens?conversa_id=eq.${c.id}&order=criado_em.asc`);
+        div.innerHTML = renderizarBalaoesMensagens(mensagens, m => m.remetente_tipo === 'admin');
+    } catch (erro) {
+        div.innerHTML = `<p style="color:#ef4444;">❌ ${erro.message}</p>`;
+    }
+}
+
+function fecharThreadMonitorar() {
+    document.getElementById('chatMonitorarThreadView').style.display = 'none';
+    document.getElementById('chatMonitorarListaView').style.display = 'block';
+}
+
+setInterval(() => {
+    if (adminLogado) verificarChatNaoLidasAdmin();
+}, 30 * 1000);
+
+
+
 // ============================================
 // TOAST
 // ============================================
@@ -2856,6 +3350,7 @@ function abrirTab(tabId) {
     if (tabId === 'tabProdutos') { carregarProdutos(); }
     if (tabId === 'tabAdmMaster') { carregarAdmMaster(); }
     if (tabId === 'tabAdmMaster') { carregarHistoricoTermos(); carregarTermoParaEdicao(); }
+    if (tabId === 'tabChatAdmin') { document.getElementById('chatAdminListaView').style.display='block'; document.getElementById('chatAdminThreadView').style.display='none'; if (intervalMensagensChatAdmin) { clearInterval(intervalMensagensChatAdmin); intervalMensagensChatAdmin = null; } carregarConversasAdmin(); }
 }
 
 function abrirSubTabVT(tabId) {
