@@ -1126,6 +1126,20 @@
 <!-- ========================================== -->
 <!-- MODAL HISTÓRICO DE EXPOSIÇÕES (navegação) -->
 <!-- ========================================== -->
+<!-- ========================================== -->
+<!-- MODAL NOVA CONVERSA (CHAT) -->
+<!-- ========================================== -->
+<div id="modalNovaConversa" class="modal-mes">
+    <div class="modal-content" style="max-width:420px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="margin:0;">Nova Conversa</h3>
+            <button onclick="document.getElementById('modalNovaConversa').classList.remove('active')" style="background:#ef4444;color:white;border:none;border-radius:8px;padding:6px 14px;cursor:pointer;">Fechar</button>
+        </div>
+        <input type="text" id="buscaNovaConversa" placeholder="Buscar pessoa..." oninput="filtrarListaNovaConversa()" style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:10px;margin-bottom:12px;">
+        <div id="listaPromotoresNovaConversa" style="max-height:50vh;overflow-y:auto;"></div>
+    </div>
+</div>
+
 <div id="modalHistoricoExpo" class="modal-mes">
     <div class="modal-content" style="max-width:500px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -1437,6 +1451,10 @@
     </button>
     <button class="menu-item" onclick="abrirAba('tabProdutos')">
         <span class="icon"><i data-lucide="package"></i></span> Produtos
+    </button>
+    <button class="menu-item" onclick="abrirAba('tabChat')">
+        <span class="icon"><i data-lucide="message-circle"></i></span> Chat
+        <span id="badgeChatNaoLidas" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:6px;">0</span>
     </button>
     <button class="menu-item" onclick="abrirAba('tabValeTransporte')">
         <span class="icon"><i data-lucide="bus"></i></span> Vale Transporte
@@ -1835,6 +1853,32 @@
         <!-- ========================================== -->
         <!-- ABA: VALE TRANSPORTE -->
         <!-- ========================================== -->
+        <!-- ========================================== -->
+        <!-- ABA: CHAT -->
+        <!-- ========================================== -->
+        <div id="tabChat" class="tab-content">
+            <div id="chatListaView">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <h3 style="color:#1a1a2e;margin:0;"><i data-lucide="message-circle" style="width:20px;height:20px;vertical-align:-4px;"></i> Chat</h3>
+                    <button class="btn-justificar" style="background:#2563eb;" onclick="abrirNovaConversa()">➕ Nova conversa</button>
+                </div>
+                <div id="listaConversas"><div class="loading"><div class="spinner"></div>Carregando...</div></div>
+            </div>
+
+            <div id="chatThreadView" style="display:none;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                    <button onclick="fecharThreadChat()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#2563eb;">←</button>
+                    <div id="chatThreadTitulo" style="font-weight:700;color:#1a1a2e;font-size:15px;"></div>
+                </div>
+                <div id="chatMensagens" style="background:#f8fafc;border-radius:12px;padding:12px;height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
+                <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+                    <button onclick="anexarFotoChat()" style="background:none;border:none;font-size:22px;cursor:pointer;">📷</button>
+                    <input type="text" id="chatInputTexto" placeholder="Digite uma mensagem..." style="flex:1;padding:10px 14px;border:2px solid #e2e8f0;border-radius:20px;font-size:14px;">
+                    <button onclick="enviarMensagemChat()" style="background:#2563eb;color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:16px;cursor:pointer;flex-shrink:0;">➤</button>
+                </div>
+            </div>
+        </div>
+
         <div id="tabValeTransporte" class="tab-content">
             <h3 style="color:#1a1a2e;margin-bottom:12px;"><i data-lucide="bus" style="width:20px;height:20px;vertical-align:-4px;"></i> Vale Transporte</h3>
             <p style="color:#64748b;font-size:14px;margin-bottom:16px;">Informe quanto você gasta de ida e volta pra cada loja do seu roteiro. Seu gestor revisa antes de valer para o cálculo final.</p>
@@ -1982,6 +2026,7 @@ function abrirAba(abaId) {
     if (abaId === 'tabMateriais') carregarMateriais();
     if (abaId === 'tabProdutos') { carregarProdutosApp(); }
     if (abaId === 'tabValeTransporte') { carregarValeTransporteApp(); }
+    if (abaId === 'tabChat') { document.getElementById('chatListaView').style.display='block'; document.getElementById('chatThreadView').style.display='none'; if (intervalMensagensChat) { clearInterval(intervalMensagensChat); intervalMensagensChat = null; } carregarConversas(); }
     if (abaId === 'tabPonto') { verificarGPS(); }
 }
 
@@ -2217,6 +2262,7 @@ async function carregarDadosIniciais() {
         verificarChecklistDiarioBanner();
         verificarProdutosNovos();
         verificarAniversarioBanner();
+        verificarChatNaoLidas();
         await Promise.all([
             carregarLojaDoDia(),
             carregarRoteiroSemana(),
@@ -6980,6 +7026,331 @@ async function carregarJustificativas() {
         window.justificativasCache = {};
     }
 }
+
+// ============================================
+// CHAT
+// ============================================
+let conversasCache = [];
+let conversaAbertaId = null;
+let intervalMensagensChat = null;
+let listaPessoasParaConversa = [];
+const grupoGeralCache = { id: null };
+
+async function obterGrupoGeralId() {
+    if (grupoGeralCache.id) return grupoGeralCache.id;
+    const grupos = await apiFetch('/rest/v1/chat_conversas?tipo=eq.grupo&order=id.asc&limit=1');
+    if (grupos.length > 0) { grupoGeralCache.id = grupos[0].id; return grupos[0].id; }
+    return null;
+}
+
+async function garantirParticipacaoNoGrupo() {
+    const grupoId = await obterGrupoGeralId();
+    if (!grupoId) return;
+    const jaParticipa = await apiFetch(`/rest/v1/chat_participantes?conversa_id=eq.${grupoId}&promotor_id=eq.${promotorLogado.id}&select=id`);
+    if (jaParticipa.length === 0) {
+        await apiFetch('/rest/v1/chat_participantes', 'POST', { conversa_id: grupoId, promotor_id: promotorLogado.id });
+    }
+}
+
+function atualizarBadgeChat(qtd) {
+    const badge = document.getElementById('badgeChatNaoLidas');
+    if (!badge) return;
+    if (qtd > 0) { badge.textContent = qtd > 99 ? '99+' : qtd; badge.style.display = 'inline-block'; }
+    else { badge.style.display = 'none'; }
+}
+
+async function verificarChatNaoLidas() {
+    try {
+        await garantirParticipacaoNoGrupo();
+        const minhasParticipacoes = await apiFetch(`/rest/v1/chat_participantes?promotor_id=eq.${promotorLogado.id}&select=conversa_id`);
+        const conversaIds = minhasParticipacoes.map(p => p.conversa_id);
+        if (conversaIds.length === 0) { atualizarBadgeChat(0); return; }
+
+        let totalNaoLidas = 0;
+        for (const convId of conversaIds) {
+            const leituras = await apiFetch(`/rest/v1/chat_leituras?conversa_id=eq.${convId}&tipo_leitor=eq.promotor&leitor_id=eq.${promotorLogado.id}&select=ultima_leitura_em`);
+            const desde = leituras.length > 0 ? leituras[0].ultima_leitura_em : '1970-01-01T00:00:00Z';
+            const msgs = await apiFetch(`/rest/v1/chat_mensagens?conversa_id=eq.${convId}&criado_em=gt.${desde}&select=remetente_tipo,remetente_id`);
+            totalNaoLidas += msgs.filter(m => !(m.remetente_tipo === 'promotor' && m.remetente_id === promotorLogado.id)).length;
+        }
+        atualizarBadgeChat(totalNaoLidas);
+    } catch (erro) {
+        console.error('Erro ao verificar chat não lidas:', erro);
+    }
+}
+
+async function carregarConversas() {
+    const div = document.getElementById('listaConversas');
+    div.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+    try {
+        await garantirParticipacaoNoGrupo();
+        const minhasParticipacoes = await apiFetch(`/rest/v1/chat_participantes?promotor_id=eq.${promotorLogado.id}&select=conversa_id,chat_conversas(id,tipo,nome)`);
+        const conversas = minhasParticipacoes.map(p => p.chat_conversas).filter(c => c);
+
+        const conversasComInfo = [];
+        for (const conv of conversas) {
+            const ultimaMsg = await apiFetch(`/rest/v1/chat_mensagens?conversa_id=eq.${conv.id}&order=criado_em.desc&limit=1`);
+            let nomeExibicao = conv.nome || 'Conversa';
+            if (conv.tipo === 'individual') {
+                const outros = await apiFetch(`/rest/v1/chat_participantes?conversa_id=eq.${conv.id}&promotor_id=neq.${promotorLogado.id}&select=promotor_id,administrador_id`);
+                if (outros.length > 0) {
+                    const p = outros[0];
+                    if (p.promotor_id) {
+                        const prom = await apiFetch(`/rest/v1/promotores?id=eq.${p.promotor_id}&select=nome`);
+                        nomeExibicao = prom[0]?.nome || 'Promotor';
+                    } else if (p.administrador_id) {
+                        const adm = await apiFetch(`/rest/v1/administradores?id=eq.${p.administrador_id}&select=nome`);
+                        nomeExibicao = (adm[0]?.nome || 'Admin') + ' (Gestor)';
+                    }
+                } else {
+                    nomeExibicao = 'Conversa';
+                }
+            }
+            conversasComInfo.push({ ...conv, nomeExibicao, ultimaMsg: ultimaMsg[0] || null });
+        }
+
+        conversasCache = conversasComInfo;
+        renderizarListaConversas();
+    } catch (erro) {
+        div.innerHTML = `<p style="color:#ef4444;text-align:center;">❌ ${erro.message}</p>`;
+    }
+}
+
+function renderizarListaConversas() {
+    const div = document.getElementById('listaConversas');
+    if (conversasCache.length === 0) {
+        div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhuma conversa ainda</p>';
+        return;
+    }
+    let html = '';
+    conversasCache.forEach(c => {
+        const icone = c.tipo === 'grupo' ? '👥' : '👤';
+        const preview = c.ultimaMsg ? (c.ultimaMsg.foto_url ? '📷 Foto' : (c.ultimaMsg.texto || '')) : 'Nenhuma mensagem ainda';
+        html += `
+            <div onclick="abrirThreadChat(${c.id}, '${c.nomeExibicao.replace(/'/g,"\\'")}')" style="display:flex;align-items:center;gap:12px;padding:12px;background:#f8fafc;border-radius:12px;margin-bottom:8px;cursor:pointer;">
+                <div style="width:40px;height:40px;border-radius:50%;background:#2563eb;color:white;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${icone}</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:700;color:#1a1a2e;font-size:14px;">${c.nomeExibicao}</div>
+                    <div style="font-size:12px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${preview}</div>
+                </div>
+            </div>
+        `;
+    });
+    div.innerHTML = html;
+}
+
+async function abrirThreadChat(conversaId, titulo) {
+    conversaAbertaId = conversaId;
+    document.getElementById('chatListaView').style.display = 'none';
+    document.getElementById('chatThreadView').style.display = 'block';
+    document.getElementById('chatThreadTitulo').textContent = titulo;
+    await carregarMensagensChat();
+    await marcarComoLido();
+    if (intervalMensagensChat) clearInterval(intervalMensagensChat);
+    intervalMensagensChat = setInterval(async () => {
+        await carregarMensagensChat();
+        await marcarComoLido();
+    }, 5000);
+}
+
+function fecharThreadChat() {
+    document.getElementById('chatThreadView').style.display = 'none';
+    document.getElementById('chatListaView').style.display = 'block';
+    if (intervalMensagensChat) { clearInterval(intervalMensagensChat); intervalMensagensChat = null; }
+    conversaAbertaId = null;
+    carregarConversas();
+    verificarChatNaoLidas();
+}
+
+async function carregarMensagensChat() {
+    if (!conversaAbertaId) return;
+    try {
+        const mensagens = await apiFetch(`/rest/v1/chat_mensagens?conversa_id=eq.${conversaAbertaId}&order=criado_em.asc`);
+        const div = document.getElementById('chatMensagens');
+        const jaEstavaNoFim = div.scrollTop + div.clientHeight >= div.scrollHeight - 50;
+
+        let html = '';
+        mensagens.forEach(m => {
+            const souEu = m.remetente_tipo === 'promotor' && m.remetente_id === promotorLogado.id;
+            const hora = new Date(m.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            html += `
+                <div style="align-self:${souEu ? 'flex-end' : 'flex-start'};max-width:75%;">
+                    <div style="background:${souEu ? '#2563eb' : 'white'};color:${souEu ? 'white' : '#1a1a2e'};padding:8px 12px;border-radius:14px;${souEu ? 'border-bottom-right-radius:4px;' : 'border-bottom-left-radius:4px;border:1px solid #e2e8f0;'}">
+                        ${m.foto_url ? `<img src="${m.foto_url}" style="max-width:100%;border-radius:8px;margin-bottom:${m.texto ? '6px' : '0'};cursor:pointer;" onclick="window.open('${m.foto_url}','_blank')">` : ''}
+                        ${m.texto ? `<div style="font-size:14px;white-space:pre-wrap;word-break:break-word;">${m.texto}</div>` : ''}
+                    </div>
+                    <div style="font-size:10px;color:#94a3b8;margin-top:2px;text-align:${souEu ? 'right' : 'left'};">${hora}</div>
+                </div>
+            `;
+        });
+        div.innerHTML = html || '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhuma mensagem ainda. Diga oi! 👋</p>';
+        if (jaEstavaNoFim) div.scrollTop = div.scrollHeight;
+    } catch (erro) {
+        console.error('Erro ao carregar mensagens:', erro);
+    }
+}
+
+async function marcarComoLido() {
+    if (!conversaAbertaId) return;
+    try {
+        const existentes = await apiFetch(`/rest/v1/chat_leituras?conversa_id=eq.${conversaAbertaId}&tipo_leitor=eq.promotor&leitor_id=eq.${promotorLogado.id}&select=id`);
+        if (existentes.length > 0) {
+            await apiFetch(`/rest/v1/chat_leituras?id=eq.${existentes[0].id}`, 'PATCH', { ultima_leitura_em: new Date().toISOString() });
+        } else {
+            await apiFetch('/rest/v1/chat_leituras', 'POST', { conversa_id: conversaAbertaId, tipo_leitor: 'promotor', leitor_id: promotorLogado.id, ultima_leitura_em: new Date().toISOString() });
+        }
+        verificarChatNaoLidas();
+    } catch (erro) {
+        console.error('Erro ao marcar como lido:', erro);
+    }
+}
+
+async function enviarMensagemChat() {
+    const input = document.getElementById('chatInputTexto');
+    const texto = input.value.trim();
+    if (!texto || !conversaAbertaId) return;
+    input.value = '';
+    try {
+        await apiFetch('/rest/v1/chat_mensagens', 'POST', {
+            conversa_id: conversaAbertaId,
+            remetente_tipo: 'promotor',
+            remetente_id: promotorLogado.id,
+            texto: texto
+        });
+        await carregarMensagensChat();
+        await marcarComoLido();
+    } catch (erro) {
+        showToast('❌ Erro ao enviar: ' + erro.message, 'error');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const inputChat = document.getElementById('chatInputTexto');
+    if (inputChat) inputChat.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensagemChat(); });
+});
+
+function anexarFotoChat() {
+    if (!conversaAbertaId) return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png,image/gif,image/webp';
+    input.capture = 'environment';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+
+    input.onchange = async function(event) {
+        const file = event.target.files[0];
+        if (!file) { document.body.removeChild(input); return; }
+        if (file.size > 10 * 1024 * 1024) {
+            showToast('⚠️ Arquivo muito grande! Máximo 10MB.', 'error');
+            document.body.removeChild(input);
+            return;
+        }
+        showToast('⏳ Enviando foto...', 'info');
+        try {
+            let fileParaEnviar;
+            try { fileParaEnviar = await comprimirImagem(file); } catch (e) { fileParaEnviar = file; }
+
+            const formData = new FormData();
+            formData.append('file', fileParaEnviar);
+            formData.append('upload_preset', 'promotor_app');
+            const resp = await fetch(`https://api.cloudinary.com/v1_1/zv2yyqo2/image/upload`, { method: 'POST', body: formData });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error?.message || 'Erro no upload');
+
+            await apiFetch('/rest/v1/chat_mensagens', 'POST', {
+                conversa_id: conversaAbertaId,
+                remetente_tipo: 'promotor',
+                remetente_id: promotorLogado.id,
+                foto_url: data.secure_url
+            });
+            await carregarMensagensChat();
+            await marcarComoLido();
+            showToast('✅ Foto enviada!', 'success');
+        } catch (erro) {
+            showToast('❌ Erro: ' + erro.message, 'error');
+        } finally {
+            document.body.removeChild(input);
+        }
+    };
+    input.click();
+}
+
+// ============================================
+// NOVA CONVERSA
+// ============================================
+async function abrirNovaConversa() {
+    document.getElementById('buscaNovaConversa').value = '';
+    document.getElementById('modalNovaConversa').classList.add('active');
+    const div = document.getElementById('listaPromotoresNovaConversa');
+    div.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+    try {
+        const promotores = await apiFetch(`/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true&id=neq.${promotorLogado.id}&order=nome&select=id,nome`);
+        const admins = await apiFetch('/rest/v1/administradores?ativo=eq.true&order=nome&select=id,nome');
+        listaPessoasParaConversa = [
+            ...promotores.map(p => ({ tipo: 'promotor', id: p.id, nome: p.nome })),
+            ...admins.map(a => ({ tipo: 'admin', id: a.id, nome: a.nome + ' (Gestor)' }))
+        ];
+        renderizarListaNovaConversa(listaPessoasParaConversa);
+    } catch (erro) {
+        div.innerHTML = `<p style="color:#ef4444;">❌ ${erro.message}</p>`;
+    }
+}
+
+function renderizarListaNovaConversa(lista) {
+    const div = document.getElementById('listaPromotoresNovaConversa');
+    if (lista.length === 0) {
+        div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:16px 0;">Ninguém encontrado</p>';
+        return;
+    }
+    let html = '';
+    lista.forEach(p => {
+        html += `<div onclick="iniciarConversaIndividual('${p.tipo}', ${p.id}, '${p.nome.replace(/'/g,"\\'")}')" style="padding:12px;background:#f8fafc;border-radius:10px;margin-bottom:6px;cursor:pointer;font-size:14px;font-weight:600;color:#1a1a2e;">${p.nome}</div>`;
+    });
+    div.innerHTML = html;
+}
+
+function filtrarListaNovaConversa() {
+    const termo = document.getElementById('buscaNovaConversa').value.toLowerCase();
+    renderizarListaNovaConversa(listaPessoasParaConversa.filter(p => p.nome.toLowerCase().includes(termo)));
+}
+
+async function iniciarConversaIndividual(tipoOutro, idOutro, nomeOutro) {
+    try {
+        const minhasConversas = await apiFetch(`/rest/v1/chat_participantes?promotor_id=eq.${promotorLogado.id}&select=conversa_id`);
+        const meusIds = minhasConversas.map(c => c.conversa_id);
+
+        let conversaExistente = null;
+        for (const convId of meusIds) {
+            const participantesDaConversa = await apiFetch(`/rest/v1/chat_participantes?conversa_id=eq.${convId}&select=*,chat_conversas(tipo)`);
+            if (participantesDaConversa.length === 0 || participantesDaConversa[0].chat_conversas?.tipo !== 'individual') continue;
+            const temOutro = participantesDaConversa.some(p =>
+                (tipoOutro === 'promotor' && p.promotor_id === idOutro) ||
+                (tipoOutro === 'admin' && p.administrador_id === idOutro)
+            );
+            if (temOutro) { conversaExistente = convId; break; }
+        }
+
+        let conversaId = conversaExistente;
+        if (!conversaId) {
+            const nova = await apiFetch('/rest/v1/chat_conversas', 'POST', { tipo: 'individual' }, true);
+            conversaId = nova[0].id;
+            await apiFetch('/rest/v1/chat_participantes', 'POST', { conversa_id: conversaId, promotor_id: promotorLogado.id });
+            const participanteOutro = tipoOutro === 'promotor' ? { conversa_id: conversaId, promotor_id: idOutro } : { conversa_id: conversaId, administrador_id: idOutro };
+            await apiFetch('/rest/v1/chat_participantes', 'POST', participanteOutro);
+        }
+
+        document.getElementById('modalNovaConversa').classList.remove('active');
+        await abrirThreadChat(conversaId, nomeOutro);
+    } catch (erro) {
+        showToast('❌ Erro: ' + erro.message, 'error');
+    }
+}
+
+// Checagem periódica de mensagens não lidas, mesmo fora da aba Chat
+setInterval(() => {
+    if (promotorLogado) verificarChatNaoLidas();
+}, 30 * 1000);
 
 // ============================================
 // SINCRONIZAÇÃO AUTOMÁTICA AO VOLTAR A INTERNET
