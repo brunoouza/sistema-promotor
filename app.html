@@ -1534,7 +1534,7 @@
             </div>
             <div class="user">
                 <span id="headerNome">Carregando...</span>
-                <div class="avatar" id="headerAvatar">J</div>
+                <div class="avatar" id="headerAvatar" onclick="trocarFotoPerfil()" style="cursor:pointer;overflow:hidden;padding:0;" title="Toque para trocar sua foto">J</div>
             </div>
         </div>
 
@@ -1871,10 +1871,14 @@
                     <div id="chatThreadTitulo" style="font-weight:700;color:#1a1a2e;font-size:15px;"></div>
                 </div>
                 <div id="chatMensagens" style="background:#f8fafc;border-radius:12px;padding:12px;height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
-                <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
-                    <button onclick="anexarFotoChat()" style="background:none;border:none;font-size:22px;cursor:pointer;">📷</button>
-                    <input type="text" id="chatInputTexto" placeholder="Digite uma mensagem..." style="flex:1;padding:10px 14px;border:2px solid #e2e8f0;border-radius:20px;font-size:14px;">
-                    <button onclick="enviarMensagemChat()" style="background:#2563eb;color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:16px;cursor:pointer;flex-shrink:0;">➤</button>
+                <div style="position:relative;">
+                    <div id="painelEmojiChat" style="display:none;position:absolute;bottom:52px;left:0;right:0;background:white;border:1px solid #e2e8f0;border-radius:12px;padding:8px;max-height:160px;overflow-y:auto;grid-template-columns:repeat(8,1fr);gap:4px;box-shadow:0 -2px 8px rgba(0,0,0,0.08);z-index:10;"></div>
+                    <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+                        <button onclick="toggleEmojiChat()" style="background:none;border:none;font-size:22px;cursor:pointer;">😀</button>
+                        <button onclick="anexarFotoChat()" style="background:none;border:none;font-size:22px;cursor:pointer;">📷</button>
+                        <input type="text" id="chatInputTexto" placeholder="Digite uma mensagem..." style="flex:1;padding:10px 14px;border:2px solid #e2e8f0;border-radius:20px;font-size:14px;">
+                        <button onclick="enviarMensagemChat()" style="background:#2563eb;color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:16px;cursor:pointer;flex-shrink:0;">➤</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2117,7 +2121,7 @@ promotorLogado = promotor;
         }
         document.getElementById('painelPrincipal').classList.remove('hidden');
         document.getElementById('headerNome').textContent = promotor.nome;
-        document.getElementById('headerAvatar').textContent = promotor.nome.charAt(0).toUpperCase();
+        exibirAvatarUsuario(promotor.nome, promotor.foto_perfil);
         document.getElementById('sidebarNome').textContent = promotor.nome;
         document.getElementById('sidebarEmail').textContent = promotor.email;
 
@@ -6669,7 +6673,7 @@ promotorLogado = dados[0];
 
         document.getElementById('painelPrincipal').classList.remove('hidden');
         document.getElementById('headerNome').textContent = promotorLogado.nome;
-        document.getElementById('headerAvatar').textContent = promotorLogado.nome.charAt(0).toUpperCase();
+        exibirAvatarUsuario(promotorLogado.nome, promotorLogado.foto_perfil);
         document.getElementById('sidebarNome').textContent = promotorLogado.nome;
         document.getElementById('sidebarEmail').textContent = promotorLogado.email;
 
@@ -7032,6 +7036,71 @@ async function carregarJustificativas() {
 // ============================================
 let conversasCache = [];
 let conversaAbertaId = null;
+let cacheUsuariosChat = { promotor: {}, admin: {} };
+
+async function carregarCacheUsuariosChat() {
+    try {
+        const promotoresList = await apiFetch('/rest/v1/promotores?select=id,nome,foto_perfil');
+        promotoresList.forEach(p => { cacheUsuariosChat.promotor[p.id] = p; });
+        const adminsList = await apiFetch('/rest/v1/administradores?select=id,nome,foto_perfil');
+        adminsList.forEach(a => { cacheUsuariosChat.admin[a.id] = a; });
+    } catch (erro) {
+        console.error('Erro ao carregar cache de usuários do chat:', erro);
+    }
+}
+
+function fotoRemetenteChat(m) {
+    const u = cacheUsuariosChat[m.remetente_tipo] && cacheUsuariosChat[m.remetente_tipo][m.remetente_id];
+    return u ? u.foto_perfil : null;
+}
+
+function exibirAvatarUsuario(nome, fotoUrl) {
+    const el = document.getElementById('headerAvatar');
+    if (fotoUrl) {
+        el.innerHTML = `<img src="${fotoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    } else {
+        el.innerHTML = '';
+        el.textContent = (nome || '?').charAt(0).toUpperCase();
+    }
+}
+
+function trocarFotoPerfil() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png,image/gif,image/webp';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+    input.onchange = async function(event) {
+        const file = event.target.files[0];
+        if (!file) { document.body.removeChild(input); return; }
+        if (file.size > 10 * 1024 * 1024) {
+            showToast('⚠️ Arquivo muito grande! Máximo 10MB.', 'error');
+            document.body.removeChild(input);
+            return;
+        }
+        showToast('⏳ Enviando foto...', 'info');
+        try {
+            let fileParaEnviar;
+            try { fileParaEnviar = await comprimirImagem(file); } catch (e) { fileParaEnviar = file; }
+            const formData = new FormData();
+            formData.append('file', fileParaEnviar);
+            formData.append('upload_preset', 'promotor_app');
+            const resp = await fetch(`https://api.cloudinary.com/v1_1/zv2yyqo2/image/upload`, { method: 'POST', body: formData });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error?.message || 'Erro no upload');
+            await apiFetch(`/rest/v1/promotores?id=eq.${promotorLogado.id}`, 'PATCH', { foto_perfil: data.secure_url });
+            promotorLogado.foto_perfil = data.secure_url;
+            exibirAvatarUsuario(promotorLogado.nome, data.secure_url);
+            if (cacheUsuariosChat.promotor[promotorLogado.id]) cacheUsuariosChat.promotor[promotorLogado.id].foto_perfil = data.secure_url;
+            showToast('✅ Foto de perfil atualizada!', 'success');
+        } catch (erro) {
+            showToast('❌ Erro: ' + erro.message, 'error');
+        } finally {
+            document.body.removeChild(input);
+        }
+    };
+    input.click();
+}
 let intervalMensagensChat = null;
 let listaPessoasParaConversa = [];
 const grupoGeralCache = { id: null };
@@ -7144,6 +7213,7 @@ async function abrirThreadChat(conversaId, titulo) {
     document.getElementById('chatListaView').style.display = 'none';
     document.getElementById('chatThreadView').style.display = 'block';
     document.getElementById('chatThreadTitulo').textContent = titulo;
+    await carregarCacheUsuariosChat();
     await carregarMensagensChat();
     await marcarComoLido();
     if (intervalMensagensChat) clearInterval(intervalMensagensChat);
@@ -7173,13 +7243,21 @@ async function carregarMensagensChat() {
         mensagens.forEach(m => {
             const souEu = m.remetente_tipo === 'promotor' && m.remetente_id === promotorLogado.id;
             const hora = new Date(m.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            const avatarUrl = fotoRemetenteChat(m);
+            const avatarHtml = souEu ? '' : (avatarUrl
+                ? `<img src="${avatarUrl}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+                : `<div style="width:26px;height:26px;border-radius:50%;background:#94a3b8;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">${(m.remetente_nome || '?').charAt(0).toUpperCase()}</div>`);
             html += `
-                <div style="align-self:${souEu ? 'flex-end' : 'flex-start'};max-width:75%;">
-                    <div style="background:${souEu ? '#2563eb' : 'white'};color:${souEu ? 'white' : '#1a1a2e'};padding:8px 12px;border-radius:14px;${souEu ? 'border-bottom-right-radius:4px;' : 'border-bottom-left-radius:4px;border:1px solid #e2e8f0;'}">
-                        ${m.foto_url ? `<img src="${m.foto_url}" style="max-width:100%;border-radius:8px;margin-bottom:${m.texto ? '6px' : '0'};cursor:pointer;" onclick="window.open('${m.foto_url}','_blank')">` : ''}
-                        ${m.texto ? `<div style="font-size:14px;white-space:pre-wrap;word-break:break-word;">${m.texto}</div>` : ''}
+                <div style="align-self:${souEu ? 'flex-end' : 'flex-start'};max-width:75%;display:flex;gap:6px;align-items:flex-end;flex-direction:${souEu ? 'row-reverse' : 'row'};">
+                    ${avatarHtml}
+                    <div>
+                        ${souEu ? '' : `<div style="font-size:11px;color:#2563eb;font-weight:700;margin-bottom:2px;">${m.remetente_nome || (m.remetente_tipo === 'admin' ? 'Gestor' : 'Promotor')}</div>`}
+                        <div style="background:${souEu ? '#2563eb' : 'white'};color:${souEu ? 'white' : '#1a1a2e'};padding:8px 12px;border-radius:14px;${souEu ? 'border-bottom-right-radius:4px;' : 'border-bottom-left-radius:4px;border:1px solid #e2e8f0;'}">
+                            ${m.foto_url ? `<img src="${m.foto_url}" style="max-width:100%;border-radius:8px;margin-bottom:${m.texto ? '6px' : '0'};cursor:pointer;" onclick="window.open('${m.foto_url}','_blank')">` : ''}
+                            ${m.texto ? `<div style="font-size:14px;white-space:pre-wrap;word-break:break-word;">${m.texto}</div>` : ''}
+                        </div>
+                        <div style="font-size:10px;color:#94a3b8;margin-top:2px;text-align:${souEu ? 'right' : 'left'};">${hora}</div>
                     </div>
-                    <div style="font-size:10px;color:#94a3b8;margin-top:2px;text-align:${souEu ? 'right' : 'left'};">${hora}</div>
                 </div>
             `;
         });
@@ -7215,6 +7293,7 @@ async function enviarMensagemChat() {
             conversa_id: conversaAbertaId,
             remetente_tipo: 'promotor',
             remetente_id: promotorLogado.id,
+            remetente_nome: promotorLogado.nome,
             texto: texto
         });
         await carregarMensagensChat();
@@ -7228,6 +7307,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputChat = document.getElementById('chatInputTexto');
     if (inputChat) inputChat.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensagemChat(); });
 });
+
+const EMOJIS_CHAT = ['😀','😁','😂','🤣','😊','😍','😘','😉','😎','🤔','😅','😢','😭','😡','👍','👎','👏','🙏','💪','🔥','✅','❌','⚠️','❤️','💙','🎉','👋','🙌','😴','🤝','🙁','😱'];
+
+function toggleEmojiChat() {
+    const p = document.getElementById('painelEmojiChat');
+    if (p.style.display === 'grid') { p.style.display = 'none'; return; }
+    p.innerHTML = EMOJIS_CHAT.map(e => `<button onclick="inserirEmojiChat('${e}')" style="border:none;background:none;font-size:22px;cursor:pointer;padding:4px;">${e}</button>`).join('');
+    p.style.display = 'grid';
+}
+
+function inserirEmojiChat(emoji) {
+    const input = document.getElementById('chatInputTexto');
+    input.value += emoji;
+    input.focus();
+}
 
 function anexarFotoChat() {
     if (!conversaAbertaId) return;
@@ -7262,6 +7356,7 @@ function anexarFotoChat() {
                 conversa_id: conversaAbertaId,
                 remetente_tipo: 'promotor',
                 remetente_id: promotorLogado.id,
+                remetente_nome: promotorLogado.nome,
                 foto_url: data.secure_url
             });
             await carregarMensagensChat();
