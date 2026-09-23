@@ -4900,7 +4900,7 @@ async function carregarLojasAdmin() {
         lojasAdminCache = dados;
 if (dados.length === 0) { tbody.innerHTML = `<tr><td colspan="12" class="empty-state">Nenhuma loja cadastrada</td></tr>`; return; }
 
-        const roteiros = await apiFetch('/rest/v1/roteiros?select=loja_id,roteiro_recorrente');
+        const roteiros = await apiFetch('/rest/v1/roteiros?select=loja_id,roteiro_recorrente,dia_semana,semana');
         window._roteirosParaCoberturaCache = roteiros;
 
         renderizarTabelaLojas();
@@ -4926,7 +4926,7 @@ function renderizarTabelaLojas() {
 
     // Quantas vezes cada loja é visitada dentro do ciclo de 4 semanas (conta as linhas do roteiro recorrente)
     const visitasPorLoja = {};
-    roteirosCache.filter(r => r.roteiro_recorrente).forEach(r => {
+    roteirosCache.filter(r => r.roteiro_recorrente && r.dia_semana && r.semana >= 1 && r.semana <= 4).forEach(r => {
         if (!r.loja_id) return;
         visitasPorLoja[r.loja_id] = (visitasPorLoja[r.loja_id] || 0) + 1;
     });
@@ -4953,7 +4953,7 @@ function renderizarTabelaLojas() {
             const cobertura = lojasComRoteiro.has(l.id) ? '<span class="badge badge-success">✅ Sim</span>' : '<span class="badge badge-danger">⚠️ Sem promotor</span>';
             const classe = badgeClasseABC(classificacaoABC[l.id]);
             const qtdVisitas = visitasPorLoja[l.id] || 0;
-            const visitasHtml = qtdVisitas > 0 ? `<span class="badge badge-info">${qtdVisitas}x / 4 sem.</span>` : `<span class="badge badge-gray">0x</span>`;
+            const visitasHtml = `<span class="badge badge-info">${qtdVisitas}</span>`;
             const btnToggleLoja = souMaster ? `<button class="btn btn-warning btn-sm" onclick="toggleLoja(${l.id}, ${l.ativo === false})">${l.ativo !== false ? '🔴' : '🟢'}</button>` : '';
 html += `<tr><td>${l.id}</td><td><strong>${l.nome}</strong></td><td>${l.endereco || '-'}</td><td>${l.cidade || '-'}</td><td><span class="badge badge-info">${l.estado || '-'}</span></td><td><span class="loja-tipo ${tipoClass}">${l.tipo === 'rua' ? '🏪 Rua' : '🛍️ Shopping'}</span></td><td style="font-size:12px;">${coords}</td><td>${status}</td><td>${cobertura}</td><td>${classe}</td><td>${visitasHtml}</td><td style="white-space:nowrap;"><div style="display:flex;gap:4px;"><button class="btn btn-primary btn-sm" onclick="editarLoja(${l.id})">Editar</button>${btnToggleLoja}</div></td></tr>`;
     });
