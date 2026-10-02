@@ -1452,10 +1452,7 @@
     <button class="menu-item" onclick="abrirAba('tabProdutos')">
         <span class="icon"><i data-lucide="package"></i></span> Produtos
     </button>
-    <button class="menu-item" onclick="abrirAba('tabChat')">
-        <span class="icon"><i data-lucide="message-circle"></i></span> Chat
-        <span id="badgeChatNaoLidas" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:6px;">0</span>
-    </button>
+<!-- Chat oculto do menu (mantido no código — a equipe preferiu usar o WhatsApp) -->
     <button class="menu-item" onclick="abrirAba('tabValeTransporte')">
         <span class="icon"><i data-lucide="bus"></i></span> Vale Transporte
     </button>
@@ -1534,7 +1531,7 @@
             </div>
             <div class="user">
                 <span id="headerNome">Carregando...</span>
-                <div class="avatar" id="headerAvatar" onclick="trocarFotoPerfil()" style="cursor:pointer;overflow:hidden;padding:0;" title="Toque para trocar sua foto">J</div>
+                <div class="avatar" id="headerAvatar">J</div>
             </div>
         </div>
 
@@ -1543,12 +1540,28 @@
         <!-- ========================================== -->
         <div id="tabPonto" class="tab-content active">
 
+<!-- FRASE DO DIA -->
+            <div id="cardFraseDoDia" style="background:linear-gradient(135deg,#1e293b,#334155);border-radius:14px;padding:18px 20px;margin-bottom:16px;position:relative;overflow:hidden;">
+                <div style="position:absolute;top:-10px;right:-6px;font-size:60px;opacity:0.08;line-height:1;">❝</div>
+                <div style="font-size:11px;font-weight:700;color:#93c5fd;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">✨ Frase do dia</div>
+                <div id="textoFraseDoDia" style="font-size:15px;color:#f1f5f9;font-weight:600;line-height:1.4;">Carregando...</div>
+            </div>
+
 <!-- ALERTA DE ANIVERSÁRIO -->
             <div id="alertaAniversario" style="display:none;background:linear-gradient(135deg,#fce7f3,#fbcfe8);border:2px solid #ec4899;border-radius:12px;padding:16px;margin-bottom:16px;align-items:center;gap:12px;text-align:center;">
                 <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
                     <i data-lucide="cake" style="width:36px;height:36px;color:#db2777;"></i>
                     <div style="font-weight:700;color:#9d174d;font-size:16px;">🎉 Feliz Aniversário, <span id="nomeAniversarioBanner"></span>! 🎉</div>
                     <div style="font-size:13px;color:#9d174d;">A equipe deseja um dia incrível pra você!</div>
+                </div>
+            </div>
+
+<!-- ALERTA DE ANIVERSÁRIO DE COLEGA -->
+            <div id="alertaAniversarioColega" style="display:none;background:linear-gradient(135deg,#fce7f3,#fbcfe8);border:2px solid #ec4899;border-radius:12px;padding:16px;margin-bottom:16px;align-items:center;gap:12px;text-align:center;">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                    <i data-lucide="cake" style="width:36px;height:36px;color:#db2777;"></i>
+                    <div id="textoAniversarioColega" style="font-weight:700;color:#9d174d;font-size:15px;">🎂 Hoje é aniversário de alguém da equipe!</div>
+                    <div style="font-size:13px;color:#9d174d;">Não esqueça de parabenizar! 🎉</div>
                 </div>
             </div>
 
@@ -1593,6 +1606,7 @@
                     <i data-lucide="alarm-clock" style="width:24px;height:24px;color:#c2410c;flex-shrink:0;"></i>
                     <div style="flex:1;">
                         <div id="textoReuniaoProxima" style="font-weight:700;color:#c2410c;font-size:14px;">Faltam X dias para sua reunião</div>
+                        <div id="textoLojaTardeReuniaoProxima" style="font-size:12px;color:#c2410c;font-weight:600;display:none;margin-top:2px;"></div>
                         <div style="font-size:12px;color:#c2410c;">Toque para ver os detalhes</div>
                     </div>
                 </div>
@@ -1871,14 +1885,10 @@
                     <div id="chatThreadTitulo" style="font-weight:700;color:#1a1a2e;font-size:15px;"></div>
                 </div>
                 <div id="chatMensagens" style="background:#f8fafc;border-radius:12px;padding:12px;height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
-                <div style="position:relative;">
-                    <div id="painelEmojiChat" style="display:none;position:absolute;bottom:52px;left:0;right:0;background:white;border:1px solid #e2e8f0;border-radius:12px;padding:8px;max-height:160px;overflow-y:auto;grid-template-columns:repeat(8,1fr);gap:4px;box-shadow:0 -2px 8px rgba(0,0,0,0.08);z-index:10;"></div>
-                    <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
-                        <button onclick="toggleEmojiChat()" style="background:none;border:none;font-size:22px;cursor:pointer;">😀</button>
-                        <button onclick="anexarFotoChat()" style="background:none;border:none;font-size:22px;cursor:pointer;">📷</button>
-                        <input type="text" id="chatInputTexto" placeholder="Digite uma mensagem..." style="flex:1;padding:10px 14px;border:2px solid #e2e8f0;border-radius:20px;font-size:14px;">
-                        <button onclick="enviarMensagemChat()" style="background:#2563eb;color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:16px;cursor:pointer;flex-shrink:0;">➤</button>
-                    </div>
+                <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+                    <button onclick="anexarFotoChat()" style="background:none;border:none;font-size:22px;cursor:pointer;">📷</button>
+                    <input type="text" id="chatInputTexto" placeholder="Digite uma mensagem..." style="flex:1;padding:10px 14px;border:2px solid #e2e8f0;border-radius:20px;font-size:14px;">
+                    <button onclick="enviarMensagemChat()" style="background:#2563eb;color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:16px;cursor:pointer;flex-shrink:0;">➤</button>
                 </div>
             </div>
         </div>
@@ -2121,7 +2131,7 @@ promotorLogado = promotor;
         }
         document.getElementById('painelPrincipal').classList.remove('hidden');
         document.getElementById('headerNome').textContent = promotor.nome;
-        exibirAvatarUsuario(promotor.nome, promotor.foto_perfil);
+        document.getElementById('headerAvatar').textContent = promotor.nome.charAt(0).toUpperCase();
         document.getElementById('sidebarNome').textContent = promotor.nome;
         document.getElementById('sidebarEmail').textContent = promotor.email;
 
@@ -2256,6 +2266,7 @@ showToast('✅ GPS ativado com sucesso!', 'success');
 async function carregarDadosIniciais() {
     if (!promotorLogado) return;
     try {
+        exibirFraseDoDia();
         verificarGPS();
         atualizarIndicadorPendentes();
         if (navigator.onLine) sincronizarPontosOffline();
@@ -2266,6 +2277,7 @@ async function carregarDadosIniciais() {
         verificarChecklistDiarioBanner();
         verificarProdutosNovos();
         verificarAniversarioBanner();
+        verificarAniversarioColegasBanner();
         verificarChatNaoLidas();
         await Promise.all([
             carregarLojaDoDia(),
@@ -2851,20 +2863,37 @@ async function verificarReuniaoProximaBanner() {
             const participacoes = await apiFetch(`/rest/v1/reuniao_participantes?feriado_id=eq.${reuniao.id}&promotor_id=eq.${promotorLogado.id}`);
             if (participacoes.length > 0) {
                 const lojas = await apiFetch(`/rest/v1/lojas?id=eq.${reuniao.loja_id}`);
-                encontrada = { reuniao, loja: lojas[0], participacao: participacoes[0].participacao };
+                encontrada = { reuniao, loja: lojas[0], participacao: participacoes[0].participacao, lojaTarde: null };
+                // Busca se já existe uma loja da tarde sugerida/confirmada pelo admin para o dia da reunião
+                if (participacoes[0].participacao === 'presencial') {
+                    try {
+                        const excecoes = await apiFetch(`/rest/v1/roteiro_excecoes?promotor_id=eq.${promotorLogado.id}&data=eq.${reuniao.data}&turno=eq.tarde&select=*,lojas(*)`);
+                        if (excecoes.length > 0) {
+                            encontrada.lojaTarde = excecoes[0].lojas;
+                        }
+                    } catch (e) { console.error('Erro ao buscar loja da tarde:', e); }
+                }
                 break;
             }
         }
 
         const banner = document.getElementById('alertaReuniaoProxima');
+        const textoLojaTarde = document.getElementById('textoLojaTardeReuniaoProxima');
         if (encontrada) {
             reuniaoProximaCacheApp = encontrada;
             const dataReuniao = new Date(encontrada.reuniao.data + 'T00:00:00');
             const diffDias = Math.round((dataReuniao - new Date(hojeStr + 'T00:00:00')) / (1000*60*60*24));
             document.getElementById('textoReuniaoProxima').textContent = diffDias === 1 ? 'Falta 1 dia para sua reunião' : `Faltam ${diffDias} dias para sua reunião`;
+            if (encontrada.lojaTarde) {
+                textoLojaTarde.textContent = `🏪 Depois da reunião, visite: ${encontrada.lojaTarde.nome}`;
+                textoLojaTarde.style.display = 'block';
+            } else {
+                textoLojaTarde.style.display = 'none';
+            }
             banner.style.display = 'flex';
         } else {
             reuniaoProximaCacheApp = null;
+            textoLojaTarde.style.display = 'none';
             banner.style.display = 'none';
         }
     } catch (erro) {
@@ -2888,6 +2917,7 @@ function abrirModalReuniaoProxima() {
                 <div style="font-size:14px;color:#64748b;margin-bottom:4px;"><strong>🕐 Horário:</strong> ${reuniaoProximaCacheApp.reuniao.horario_inicio || '-'} às ${reuniaoProximaCacheApp.reuniao.horario_fim || '-'}</div>
                 <div style="font-size:14px;color:#64748b;margin-bottom:4px;"><strong>📍 Local:</strong> ${reuniaoProximaCacheApp.loja?.nome || '-'}</div>
                 <div style="font-size:14px;color:#64748b;margin-bottom:4px;"><strong>👤 Sua participação:</strong> ${participacaoLabel}</div>
+                ${reuniaoProximaCacheApp.lojaTarde ? `<div style="font-size:14px;color:#c2410c;font-weight:600;margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0;">🏪 Depois da reunião, você deve visitar: ${reuniaoProximaCacheApp.lojaTarde.nome}<br><span style="font-size:12px;color:#94a3b8;font-weight:400;">Nesse dia, não siga o roteiro normal — esta loja substitui a visita do período da tarde.</span></div>` : ''}
                 ${descricaoExtra ? `<div style="font-size:14px;color:#64748b;margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0;">${descricaoExtra}</div>` : ''}
             </div>
         `;
@@ -3212,6 +3242,142 @@ function verificarAniversarioBanner() {
         }
     } catch (erro) {
         console.error('Erro ao verificar aniversário:', erro);
+    }
+}
+
+// ============================================
+// ANIVERSÁRIO DE COLEGAS (avisa a equipe toda, pra parabenizar)
+// ============================================
+async function verificarAniversarioColegasBanner() {
+    const banner = document.getElementById('alertaAniversarioColega');
+    try {
+        const hoje = new Date();
+        const mes = hoje.getMonth() + 1;
+        const dia = hoje.getDate();
+        const dados = await apiFetch('/rest/v1/promotores?ativo=eq.true&tipo=eq.promotor&select=id,nome,data_nascimento');
+        const aniversariantes = dados.filter(p => {
+            if (!p.data_nascimento) return false;
+            if (p.id === promotorLogado.id) return false; // esse já tem o próprio banner
+            const nasc = new Date(p.data_nascimento + 'T00:00:00');
+            return nasc.getMonth() + 1 === mes && nasc.getDate() === dia;
+        });
+
+        if (aniversariantes.length === 0) {
+            banner.style.display = 'none';
+            return;
+        }
+
+        const nomes = aniversariantes.map(p => (p.nome || '').split(' ')[0]).join(', ');
+        const texto = aniversariantes.length === 1
+            ? `🎂 Hoje é aniversário de ${nomes}!`
+            : `🎂 Hoje é aniversário de: ${nomes}!`;
+        document.getElementById('textoAniversarioColega').textContent = texto;
+        banner.style.display = 'flex';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    } catch (erro) {
+        console.error('Erro ao verificar aniversário de colegas:', erro);
+        banner.style.display = 'none';
+    }
+}
+
+// ============================================
+// FRASE DO DIA (lista fixa, sem API — mesma frase pra todo mundo no mesmo dia)
+// ============================================
+const FRASES_DO_DIA = [
+    "Você não precisa ver a escada toda, só o primeiro passo.",
+    "Dias difíceis também fazem parte de uma boa história.",
+    "Rir de si mesmo é a melhor forma de nunca ficar sem motivo pra rir.",
+    "Ninguém disciplinado nasceu assim — todo mundo treinou isso um dia.",
+    "Café bom e meta clara: já é meio caminho andado.",
+    "Se hoje foi corrido, lembre: toda maratona tem trecho de subida.",
+    "Pequenos progressos ainda são progresso. Comemore do mesmo jeito.",
+    "A vida é 10% o que acontece e 90% como você reage.",
+    "Quem cuida dos detalhes de olhos fechados, no fim das contas, vê melhor que todo mundo.",
+    "Ter paciência com você mesmo também é produtividade.",
+    "Um dia ruim não cancela os bons que vieram antes.",
+    "A pressa é inimiga da perfeição, mas também é prima da procrastinação. Equilíbrio, sempre.",
+    "Toda jornada longa parece curta quando você olha pra trás.",
+    "Sorria pra estranhos hoje — às vezes é o único sorriso que a pessoa recebe no dia.",
+    "Você é mais resiliente do que imaginava ser há um ano.",
+    "Trabalho bem feito não precisa de testemunha pra valer a pena.",
+    "Hidrate-se, respire, e lembre que nem tudo precisa ser resolvido agora.",
+    "O segredo não é ter tempo, é decidir o que fazer com o tempo que se tem.",
+    "Às vezes o maior ato de coragem é simplesmente continuar.",
+    "Quem planta constância, colhe confiança.",
+    "Ninguém é 100% motivado todo santo dia — e está tudo bem continuar mesmo assim.",
+    "A gentileza que você oferece hoje pode ser exatamente o que alguém precisava.",
+    "Troque 'tenho que' por 'eu escolho', e o dia já fica mais leve.",
+    "Até os relógios pausam de vez em quando — você também pode.",
+    "O que parece repetitivo hoje é treino pra quando a oportunidade grande aparecer.",
+    "Não existe café que resolva tudo, mas ajuda muito a começar.",
+    "Você não controla o trânsito, o clima nem o humor dos outros — só a sua resposta a tudo isso.",
+    "Quem se cobra demais esquece de se dar os parabéns de vez em quando. Hoje é um bom dia pra isso.",
+    "Às vezes o avanço é invisível por fora, mas gigante por dentro.",
+    "Ser gentil com quem te atende também é parte do seu trabalho bem feito.",
+    "Uma meta sem prazo é só um desejo. Mas um desejo com prazo já é plano.",
+    "Admita: você já superou dias que pareciam impossíveis antes de começarem.",
+    "A persistência tem um jeito engraçado de parecer sorte pra quem está de fora.",
+    "Organize o caos de hoje em uma lista — amanhã ele parece bem menor.",
+    "Quem ri no trânsito chega no mesmo horário, só que de bom humor.",
+    "Descansar não é trair a produtividade, é dar manutenção nela.",
+    "O dia que você quase desistiu e não desistiu também conta na sua história.",
+    "Boas ideias geralmente aparecem no banho porque é o único momento em que você para de se cobrar.",
+    "Antes de reclamar do roteiro de hoje, lembre: ele também é o seu caminho de aprender a improvisar.",
+    "A régua que você usa pra se cobrar deveria ser a mesma que usa pra se elogiar.",
+    "Toda loja visitada é também uma conversa, uma troca, uma chance de fazer diferença no dia de alguém.",
+    "Nem todo progresso cabe numa planilha, mas todo progresso vale.",
+    "Quem se organiza na véspera dorme melhor na manhã seguinte.",
+    "Um 'bom dia' sincero já muda o tom de qualquer visita.",
+    "A diferença entre tentar e desistir geralmente é só mais uma tentativa.",
+    "Hoje também é um ótimo dia pra ser gentil com você mesmo nas pequenas falhas.",
+    "Ninguém lembra do dia perfeito. Todo mundo lembra de quem continuou nos dias imperfeitos.",
+    "Se puder resolver com um sorriso, resolva com um sorriso.",
+    "Tempo bem gerenciado é, na prática, respeito com você mesmo e com os outros.",
+    "Fazer bem feito custa um pouco mais de tempo e economiza um bocado de retrabalho.",
+    "Toda meta grande começa parecendo grande demais — isso é normal.",
+    "Você não precisa ser rápido, precisa ser constante.",
+    "Um problema bem entendido já está metade resolvido.",
+    "Às vezes a melhor estratégia do dia é simplesmente respirar e recomeçar a lista.",
+    "Celebrar as pequenas vitórias também treina você pra aguentar as grandes derrotas.",
+    "Cuide da sua energia como cuida da sua agenda — os dois acabam se esgotando sem manutenção.",
+    "O profissionalismo que ninguém vê é o que mais constrói reputação.",
+    "Você só sabe o tamanho da sua capacidade depois que ela é testada.",
+    "Rir do próprio erro de digitação é um dos pequenos prazeres gratuitos da vida adulta.",
+    "Nem todo dia precisa ser o melhor — só precisa ser mais um dia em que você apareceu.",
+    "A sua constância de hoje é o currículo que fala por você no futuro.",
+    "Tratar bem quem te atende no caminho também é parte do seu profissionalismo.",
+    "Quando o dia está difícil, lembre que ele também vai passar — como todos os outros passaram.",
+    "A organização de hoje é o tempo livre de amanhã.",
+    "Ter um plano B não é pessimismo, é experiência.",
+    "O que incomoda também ensina — só não avisa antes.",
+    "Fazer o simples muito bem já coloca você na frente da maioria.",
+    "Encare o imprevisto como parte do roteiro, não como desvio dele.",
+    "Metas claras deixam qualquer dia corrido um pouco mais leve de carregar.",
+    "O seu melhor de hoje já é suficiente — ajuste e siga amanhã.",
+    "Aquele cafézinho entre uma loja e outra também é autocuidado.",
+    "Nem toda pressa é progresso, e nem toda calma é atraso. Leia o momento.",
+    "Reconhecer o próprio cansaço também é um tipo de inteligência.",
+    "Você é a pessoa que mais passa tempo com você — trate-se bem.",
+    "Dias chuvosos também fazem o jardim crescer.",
+    "No fim, o que fica não é a pressa do dia, é a qualidade de como ele foi vivido.",
+    "Um sorriso genuíno ainda é a ferramenta de trabalho mais subestimada que existe."
+];
+
+function obterFraseDoDia() {
+    const hoje = new Date();
+    const inicioAno = new Date(hoje.getFullYear(), 0, 0);
+    const diffMs = hoje - inicioAno;
+    const diaDoAno = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const indice = diaDoAno % FRASES_DO_DIA.length;
+    return FRASES_DO_DIA[indice];
+}
+
+function exibirFraseDoDia() {
+    try {
+        const el = document.getElementById('textoFraseDoDia');
+        if (el) el.textContent = `“${obterFraseDoDia()}”`;
+    } catch (erro) {
+        console.error('Erro ao exibir frase do dia:', erro);
     }
 }
 
@@ -4712,6 +4878,36 @@ async function sugerirCoordenada(lojaId) {
         return;
     }
 
+    // ===== VERIFICA SE O GPS INDICA UMA LOJA DIFERENTE DA QUE ESTÁ RECEBENDO A SUGESTÃO =====
+    let lojaRealId = null;
+    try {
+        const todasLojas = await apiFetch('/rest/v1/lojas?ativo=eq.true&select=id,nome,latitude,longitude');
+        let maisProxima = null;
+        let menorDist = Infinity;
+        todasLojas.forEach(l => {
+            if (!l.latitude || !l.longitude) return;
+            const dist = calcularDistancia(localizacaoAtual.lat, localizacaoAtual.lon, parseFloat(l.latitude), parseFloat(l.longitude));
+            if (dist < menorDist) { menorDist = dist; maisProxima = l; }
+        });
+
+        // Só avisa se a loja mais próxima do GPS for claramente outra (diferente da loja clicada) e estiver num raio plausível (até 1km)
+        if (maisProxima && maisProxima.id !== lojaId && menorDist <= 1000) {
+            const lojaClicada = todasLojas.find(l => l.id === lojaId);
+            const confirmaMesmoAssim = confirm(
+                `⚠️ Atenção!\n\n` +
+                `Pela sua localização atual, você parece estar na loja:\n"${maisProxima.nome}"\n\n` +
+                `Mas está sugerindo uma coordenada para:\n"${lojaClicada?.nome || 'loja selecionada'}"\n\n` +
+                `Isso vai gravar a SUA posição atual como se fosse a localização de "${lojaClicada?.nome || 'loja selecionada'}", o que pode ficar errado.\n\n` +
+                `Deseja continuar mesmo assim?`
+            );
+            if (!confirmaMesmoAssim) return;
+            lojaRealId = maisProxima.id;
+        }
+    } catch (erro) {
+        console.error('Erro ao verificar loja mais próxima:', erro);
+        // se der erro na checagem, segue o fluxo normal sem bloquear o promotor
+    }
+
     if (!confirm(
         `📍 Sugerir coordenada para esta loja?\n\n` +
         `Posição atual:\n` +
@@ -4726,7 +4922,8 @@ async function sugerirCoordenada(lojaId) {
             loja_id: lojaId,
             latitude_sugerida: localizacaoAtual.lat,
             longitude_sugerida: localizacaoAtual.lon,
-            status: 'pendente'
+            status: 'pendente',
+            loja_real_id: lojaRealId
         };
 
         await apiFetch('/rest/v1/sugestoes_coordenadas', 'POST', dados);
@@ -6673,7 +6870,7 @@ promotorLogado = dados[0];
 
         document.getElementById('painelPrincipal').classList.remove('hidden');
         document.getElementById('headerNome').textContent = promotorLogado.nome;
-        exibirAvatarUsuario(promotorLogado.nome, promotorLogado.foto_perfil);
+        document.getElementById('headerAvatar').textContent = promotorLogado.nome.charAt(0).toUpperCase();
         document.getElementById('sidebarNome').textContent = promotorLogado.nome;
         document.getElementById('sidebarEmail').textContent = promotorLogado.email;
 
@@ -7036,71 +7233,6 @@ async function carregarJustificativas() {
 // ============================================
 let conversasCache = [];
 let conversaAbertaId = null;
-let cacheUsuariosChat = { promotor: {}, admin: {} };
-
-async function carregarCacheUsuariosChat() {
-    try {
-        const promotoresList = await apiFetch('/rest/v1/promotores?select=id,nome,foto_perfil');
-        promotoresList.forEach(p => { cacheUsuariosChat.promotor[p.id] = p; });
-        const adminsList = await apiFetch('/rest/v1/administradores?select=id,nome,foto_perfil');
-        adminsList.forEach(a => { cacheUsuariosChat.admin[a.id] = a; });
-    } catch (erro) {
-        console.error('Erro ao carregar cache de usuários do chat:', erro);
-    }
-}
-
-function fotoRemetenteChat(m) {
-    const u = cacheUsuariosChat[m.remetente_tipo] && cacheUsuariosChat[m.remetente_tipo][m.remetente_id];
-    return u ? u.foto_perfil : null;
-}
-
-function exibirAvatarUsuario(nome, fotoUrl) {
-    const el = document.getElementById('headerAvatar');
-    if (fotoUrl) {
-        el.innerHTML = `<img src="${fotoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-    } else {
-        el.innerHTML = '';
-        el.textContent = (nome || '?').charAt(0).toUpperCase();
-    }
-}
-
-function trocarFotoPerfil() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/jpeg,image/png,image/gif,image/webp';
-    input.style.display = 'none';
-    document.body.appendChild(input);
-    input.onchange = async function(event) {
-        const file = event.target.files[0];
-        if (!file) { document.body.removeChild(input); return; }
-        if (file.size > 10 * 1024 * 1024) {
-            showToast('⚠️ Arquivo muito grande! Máximo 10MB.', 'error');
-            document.body.removeChild(input);
-            return;
-        }
-        showToast('⏳ Enviando foto...', 'info');
-        try {
-            let fileParaEnviar;
-            try { fileParaEnviar = await comprimirImagem(file); } catch (e) { fileParaEnviar = file; }
-            const formData = new FormData();
-            formData.append('file', fileParaEnviar);
-            formData.append('upload_preset', 'promotor_app');
-            const resp = await fetch(`https://api.cloudinary.com/v1_1/zv2yyqo2/image/upload`, { method: 'POST', body: formData });
-            const data = await resp.json();
-            if (!resp.ok) throw new Error(data.error?.message || 'Erro no upload');
-            await apiFetch(`/rest/v1/promotores?id=eq.${promotorLogado.id}`, 'PATCH', { foto_perfil: data.secure_url });
-            promotorLogado.foto_perfil = data.secure_url;
-            exibirAvatarUsuario(promotorLogado.nome, data.secure_url);
-            if (cacheUsuariosChat.promotor[promotorLogado.id]) cacheUsuariosChat.promotor[promotorLogado.id].foto_perfil = data.secure_url;
-            showToast('✅ Foto de perfil atualizada!', 'success');
-        } catch (erro) {
-            showToast('❌ Erro: ' + erro.message, 'error');
-        } finally {
-            document.body.removeChild(input);
-        }
-    };
-    input.click();
-}
 let intervalMensagensChat = null;
 let listaPessoasParaConversa = [];
 const grupoGeralCache = { id: null };
@@ -7213,7 +7345,6 @@ async function abrirThreadChat(conversaId, titulo) {
     document.getElementById('chatListaView').style.display = 'none';
     document.getElementById('chatThreadView').style.display = 'block';
     document.getElementById('chatThreadTitulo').textContent = titulo;
-    await carregarCacheUsuariosChat();
     await carregarMensagensChat();
     await marcarComoLido();
     if (intervalMensagensChat) clearInterval(intervalMensagensChat);
@@ -7243,21 +7374,13 @@ async function carregarMensagensChat() {
         mensagens.forEach(m => {
             const souEu = m.remetente_tipo === 'promotor' && m.remetente_id === promotorLogado.id;
             const hora = new Date(m.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-            const avatarUrl = fotoRemetenteChat(m);
-            const avatarHtml = souEu ? '' : (avatarUrl
-                ? `<img src="${avatarUrl}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
-                : `<div style="width:26px;height:26px;border-radius:50%;background:#94a3b8;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">${(m.remetente_nome || '?').charAt(0).toUpperCase()}</div>`);
             html += `
-                <div style="align-self:${souEu ? 'flex-end' : 'flex-start'};max-width:75%;display:flex;gap:6px;align-items:flex-end;flex-direction:${souEu ? 'row-reverse' : 'row'};">
-                    ${avatarHtml}
-                    <div>
-                        ${souEu ? '' : `<div style="font-size:11px;color:#2563eb;font-weight:700;margin-bottom:2px;">${m.remetente_nome || (m.remetente_tipo === 'admin' ? 'Gestor' : 'Promotor')}</div>`}
-                        <div style="background:${souEu ? '#2563eb' : 'white'};color:${souEu ? 'white' : '#1a1a2e'};padding:8px 12px;border-radius:14px;${souEu ? 'border-bottom-right-radius:4px;' : 'border-bottom-left-radius:4px;border:1px solid #e2e8f0;'}">
-                            ${m.foto_url ? `<img src="${m.foto_url}" style="max-width:100%;border-radius:8px;margin-bottom:${m.texto ? '6px' : '0'};cursor:pointer;" onclick="window.open('${m.foto_url}','_blank')">` : ''}
-                            ${m.texto ? `<div style="font-size:14px;white-space:pre-wrap;word-break:break-word;">${m.texto}</div>` : ''}
-                        </div>
-                        <div style="font-size:10px;color:#94a3b8;margin-top:2px;text-align:${souEu ? 'right' : 'left'};">${hora}</div>
+                <div style="align-self:${souEu ? 'flex-end' : 'flex-start'};max-width:75%;">
+                    <div style="background:${souEu ? '#2563eb' : 'white'};color:${souEu ? 'white' : '#1a1a2e'};padding:8px 12px;border-radius:14px;${souEu ? 'border-bottom-right-radius:4px;' : 'border-bottom-left-radius:4px;border:1px solid #e2e8f0;'}">
+                        ${m.foto_url ? `<img src="${m.foto_url}" style="max-width:100%;border-radius:8px;margin-bottom:${m.texto ? '6px' : '0'};cursor:pointer;" onclick="window.open('${m.foto_url}','_blank')">` : ''}
+                        ${m.texto ? `<div style="font-size:14px;white-space:pre-wrap;word-break:break-word;">${m.texto}</div>` : ''}
                     </div>
+                    <div style="font-size:10px;color:#94a3b8;margin-top:2px;text-align:${souEu ? 'right' : 'left'};">${hora}</div>
                 </div>
             `;
         });
@@ -7293,7 +7416,6 @@ async function enviarMensagemChat() {
             conversa_id: conversaAbertaId,
             remetente_tipo: 'promotor',
             remetente_id: promotorLogado.id,
-            remetente_nome: promotorLogado.nome,
             texto: texto
         });
         await carregarMensagensChat();
@@ -7307,21 +7429,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputChat = document.getElementById('chatInputTexto');
     if (inputChat) inputChat.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensagemChat(); });
 });
-
-const EMOJIS_CHAT = ['😀','😁','😂','🤣','😊','😍','😘','😉','😎','🤔','😅','😢','😭','😡','👍','👎','👏','🙏','💪','🔥','✅','❌','⚠️','❤️','💙','🎉','👋','🙌','😴','🤝','🙁','😱'];
-
-function toggleEmojiChat() {
-    const p = document.getElementById('painelEmojiChat');
-    if (p.style.display === 'grid') { p.style.display = 'none'; return; }
-    p.innerHTML = EMOJIS_CHAT.map(e => `<button onclick="inserirEmojiChat('${e}')" style="border:none;background:none;font-size:22px;cursor:pointer;padding:4px;">${e}</button>`).join('');
-    p.style.display = 'grid';
-}
-
-function inserirEmojiChat(emoji) {
-    const input = document.getElementById('chatInputTexto');
-    input.value += emoji;
-    input.focus();
-}
 
 function anexarFotoChat() {
     if (!conversaAbertaId) return;
@@ -7356,7 +7463,6 @@ function anexarFotoChat() {
                 conversa_id: conversaAbertaId,
                 remetente_tipo: 'promotor',
                 remetente_id: promotorLogado.id,
-                remetente_nome: promotorLogado.nome,
                 foto_url: data.secure_url
             });
             await carregarMensagensChat();
