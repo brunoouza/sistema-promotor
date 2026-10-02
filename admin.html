@@ -4077,14 +4077,38 @@ async function carregarCardReunioesMes() {
             const isHoje = r.data === hojeStr;
             const lojaNome = r.lojas?.nome || 'Matriz';
 
-            html += `<div class="item">
-                <span class="nome" style="${jaPassou ? 'color:#94a3b8;' : ''}">${isHoje ? '🔔 ' : ''}${titulo} — ${lojaNome}</span>
-                <span class="valor ${isHoje ? 'destaque' : ''}" style="${jaPassou && !isHoje ? 'color:#94a3b8;' : ''}">${dataFormat}</span>
+            let botaoEncerrar = '';
+            if (isHoje) {
+                if (r.encerrada_manualmente) {
+                    botaoEncerrar = `<div style="margin-top:4px;"><span style="font-size:11px;color:#16a34a;font-weight:700;">✅ Reunião encerrada</span></div>`;
+                } else {
+                    botaoEncerrar = `<div style="margin-top:4px;"><button class="btn btn-warning btn-sm" onclick="encerrarReuniaoManualmente(${r.id})">🔔 Encerrar reunião</button></div>`;
+                }
+            }
+
+            html += `<div class="item" style="flex-direction:column;align-items:flex-start;">
+                <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+                    <span class="nome" style="${jaPassou ? 'color:#94a3b8;' : ''}">${isHoje ? '🔔 ' : ''}${titulo} — ${lojaNome}</span>
+                    <span class="valor ${isHoje ? 'destaque' : ''}" style="${jaPassou && !isHoje ? 'color:#94a3b8;' : ''}">${dataFormat}</span>
+                </div>
+                ${botaoEncerrar}
             </div>`;
         });
         div.innerHTML = html;
     } catch (erro) {
         div.innerHTML = `<div class="card-vazio">❌ ${erro.message}</div>`;
+        console.error(erro);
+    }
+}
+
+async function encerrarReuniaoManualmente(feriadoId) {
+    if (!confirm('Encerrar esta reunião agora?\n\nOs promotores presenciais vão poder ver a loja da tarde imediatamente, sem precisar esperar o horário de término previsto.')) return;
+    try {
+        await apiFetch(`/rest/v1/feriados?id=eq.${feriadoId}`, 'PATCH', { encerrada_manualmente: true });
+        showToast('✅ Reunião encerrada! Os promotores já podem ver a loja da tarde.', 'success');
+        carregarCardReunioesMes();
+    } catch (erro) {
+        showToast('❌ Erro: ' + erro.message, 'error');
         console.error(erro);
     }
 }
