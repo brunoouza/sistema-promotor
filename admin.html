@@ -4095,7 +4095,7 @@ async function carregarCardReunioesMes() {
 async function carregarCardSugestoesCoordenadas() {
     const div = document.getElementById('cardSugestoesCoordenadas');
     try {
-        const dados = await apiFetch(`/rest/v1/sugestoes_coordenadas?status=eq.pendente&select=*,promotores(nome),lojas(nome)`);
+        const dados = await apiFetch(`/rest/v1/sugestoes_coordenadas?status=eq.pendente&select=*,promotores(nome),lojas!loja_id(nome)`);
 
         if (dados.length === 0) {
             div.innerHTML = '<div class="card-vazio">✅ Nenhuma sugestão pendente</div>';
@@ -6174,7 +6174,7 @@ async function toggleValidador(promotorId) {
 async function carregarSolicitacoes() {
     const div = document.getElementById('listaSolicitacoes');
     try {
-        const dados = await apiFetch(`/rest/v1/sugestoes_coordenadas?status=eq.pendente&select=*,promotores(nome),lojas(nome)`);
+        const dados = await apiFetch(`/rest/v1/sugestoes_coordenadas?status=eq.pendente&select=*,promotores(nome),lojas!loja_id(nome)`);
         if (dados.length === 0) { div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhuma solicitação pendente</p>'; return; }
 
         // Busca nomes das "lojas reais" (onde o GPS indicou que o promotor realmente estava), quando houver
