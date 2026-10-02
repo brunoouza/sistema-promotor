@@ -1132,7 +1132,7 @@
     <!-- Espelho Ponto oculto do menu (mantido no código) -->
     <button class="menu-item" onclick="abrirTab('tabRelatorios')"><span class="icon"><i data-lucide="bar-chart-3"></i></span> Relatórios</button>
     <button class="menu-item" onclick="abrirTab('tabChecklistAdmin')"><span class="icon"><i data-lucide="clipboard-list"></i></span> Checklist</button>
-    <button class="menu-item" onclick="abrirTab('tabChatAdmin')"><span class="icon"><i data-lucide="message-circle"></i></span> Chat <span id="badgeChatNaoLidasAdmin" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:6px;">0</span></button>
+    <!-- Chat oculto do menu (mantido no código — a equipe preferiu usar o WhatsApp) -->
     <button class="menu-item" onclick="abrirTab('tabProdutos')"><span class="icon"><i data-lucide="package"></i></span> Produtos</button>
     <button class="menu-item" id="menuAdmMaster" style="display:none;" onclick="abrirTab('tabAdmMaster')"><span class="icon"><i data-lucide="crown"></i></span> Adm Master</button>
     <button class="menu-item logout-btn" onclick="logoutAdmin()"><span class="icon"><i data-lucide="log-out"></i></span> Sair</button>
@@ -1228,7 +1228,7 @@
 <div class="cards-gestao" id="cardsGestao">
                     <!-- Cumprimento do Roteiro, Índice de Atrasos, Marcações Fora do Raio e Promotores em Alerta ocultos (mantidos no código) -->
 <div class="card-gestao">
-                        <div class="card-titulo">💰 Lojas Classe A sem Cobertura</div>
+                        <div class="card-titulo">💰 Lojas AAA/AA/A sem Cobertura</div>
                         <div class="card-conteudo" id="cardLojasClasseA"><div class="card-vazio">Carregando...</div></div>
                     </div>
                     <div class="card-gestao">
@@ -3646,34 +3646,40 @@ async function carregarDashboard() {
         const promotorId = document.getElementById('filtroPromotorDashboard').value;
         let filtroPromotor = promotorId !== 'todos' ? `&promotor_id=eq.${promotorId}` : '';
 
-        // ===== PROMOTORES =====
-        const promotores = await apiFetch(`/rest/v1/promotores?tipo=eq.promotor&select=id${promotorId !== 'todos' ? `&id=eq.${promotorId}` : ''}`);
+        // ===== PROMOTORES (somente ativos) =====
+        const promotores = await apiFetch(`/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true&select=id${promotorId !== 'todos' ? `&id=eq.${promotorId}` : ''}`);
         document.getElementById('totalPromotores').textContent = promotores.length || 0;
+        const idsPromotoresAtivos = new Set(promotores.map(p => p.id));
 
-        // ===== LOJAS =====
-        const lojas = await apiFetch('/rest/v1/lojas?select=id');
+        // ===== LOJAS (somente ativas) =====
+        const lojas = await apiFetch('/rest/v1/lojas?ativo=eq.true&select=id');
         document.getElementById('totalLojas').textContent = lojas.length || 0;
+        const idsLojasAtivas = new Set(lojas.map(l => l.id));
 
-        // ===== COBERTURA DE VISITAS (lojas com pelo menos um roteiro fixo) =====
-        const roteirosParaCobertura = await apiFetch('/rest/v1/roteiros?select=loja_id');
-        const lojasComRoteiro = new Set(roteirosParaCobertura.map(r => r.loja_id).filter(id => id));
+        // ===== COBERTURA DE VISITAS (lojas ativas com pelo menos um roteiro fixo de promotor ativo) =====
+        const roteirosParaCobertura = await apiFetch('/rest/v1/roteiros?select=loja_id,promotor_id');
+        const lojasComRoteiro = new Set(
+            roteirosParaCobertura
+                .filter(r => r.loja_id && idsLojasAtivas.has(r.loja_id) && idsPromotoresAtivos.has(r.promotor_id))
+                .map(r => r.loja_id)
+        );
         document.getElementById('coberturaVisitas').textContent = `${lojasComRoteiro.size}/${lojas.length || 0}`;
 
-        // ===== ROTEIROS (AGRUPADOS POR roteiro_id) =====
+        // ===== ROTEIROS (AGRUPADOS POR roteiro_id, somente de promotores e lojas ativos) =====
         // Buscar todos os roteiros do ano
-        const roteirosData = await apiFetch(`/rest/v1/roteiros?ano=eq.${ano}${filtroPromotor}&select=roteiro_id`);
-        
-        // 🔥 CONTAR ROTEIROS ÚNICOS (agrupar por roteiro_id)
+        const roteirosData = await apiFetch(`/rest/v1/roteiros?ano=eq.${ano}${filtroPromotor}&select=roteiro_id,promotor_id,loja_id`);
+
+        // 🔥 CONTAR ROTEIROS ÚNICOS (agrupar por roteiro_id), ignorando promotor/loja inativos
         const roteirosUnicos = new Set();
         roteirosData.forEach(r => {
-            if (r.roteiro_id) {
+            if (r.roteiro_id && idsPromotoresAtivos.has(r.promotor_id) && idsLojasAtivas.has(r.loja_id)) {
                 roteirosUnicos.add(r.roteiro_id);
             }
         });
         const totalRoteiros = roteirosUnicos.size;
         document.getElementById('totalRoteiros').textContent = totalRoteiros || 0;
 
-console.log(`📊 Dashboard: ${totalRoteiros} roteiros únicos`);
+console.log(`📊 Dashboard: ${totalRoteiros} roteiros únicos (ativos)`);
 
     } catch (erro) { 
         console.error('Erro no dashboard:', erro);
@@ -3733,17 +3739,20 @@ async function carregarCardLojasClasseA() {
         const lojasComRoteiro = new Set(roteiros.map(r => r.loja_id).filter(id => id));
         const classificacao = calcularCurvaABC(lojas.map(l => ({ id: l.id, faturamento: l.faturamento })));
 
-        const semCobertura = lojas.filter(l => classificacao[l.id] === 'A' && !lojasComRoteiro.has(l.id));
+        const classesPrioritarias = ['AAA', 'AA', 'A'];
+        const semCobertura = lojas.filter(l => classesPrioritarias.includes(classificacao[l.id]) && !lojasComRoteiro.has(l.id));
+        // Prioriza mostrar AAA primeiro, depois AA, depois A
+        semCobertura.sort((a, b) => classesPrioritarias.indexOf(classificacao[a.id]) - classesPrioritarias.indexOf(classificacao[b.id]));
 
         if (semCobertura.length === 0) {
-            div.innerHTML = '<div class="card-vazio">✅ Todas as lojas Classe A têm cobertura</div>';
+            div.innerHTML = '<div class="card-vazio">✅ Todas as lojas AAA, AA e A têm cobertura</div>';
             return;
         }
 
 let html = '';
         semCobertura.forEach(l => {
             html += `<div class="item">
-                <span class="nome" onclick="abrirTab('tabLojas')" style="cursor:pointer;">🟢 ${l.nome}</span>
+                <span class="nome" onclick="abrirTab('tabLojas')" style="cursor:pointer;">🟢 [${classificacao[l.id]}] ${l.nome}</span>
                 <span class="valor negativo">Sem promotor</span>
             </div>`;
         });
@@ -4096,7 +4105,7 @@ async function carregarCardSugestoesCoordenadas() {
         let html = '';
         dados.forEach(s => {
             html += `<div class="item">
-                <span class="nome" onclick="abrirTab('tabValidador')" style="cursor:pointer;">${s.lojas?.nome || 'Loja'}</span>
+                <span class="nome" onclick="abrirTab('tabValidador')" style="cursor:pointer;">${s.loja_real_id ? '⚠️ ' : ''}${s.lojas?.nome || 'Loja'}</span>
                 <span class="valor atencao">👤 ${s.promotores?.nome || 'N/A'}</span>
             </div>`;
         });
@@ -6167,12 +6176,23 @@ async function carregarSolicitacoes() {
     try {
         const dados = await apiFetch(`/rest/v1/sugestoes_coordenadas?status=eq.pendente&select=*,promotores(nome),lojas(nome)`);
         if (dados.length === 0) { div.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px 0;">Nenhuma solicitação pendente</p>'; return; }
+
+        // Busca nomes das "lojas reais" (onde o GPS indicou que o promotor realmente estava), quando houver
+        const idsLojaReal = [...new Set(dados.map(s => s.loja_real_id).filter(id => id))];
+        let mapaLojaReal = {};
+        if (idsLojaReal.length > 0) {
+            const lojasReais = await apiFetch(`/rest/v1/lojas?id=in.(${idsLojaReal.join(',')})&select=id,nome`);
+            lojasReais.forEach(l => { mapaLojaReal[l.id] = l.nome; });
+        }
+
         let html = '';
         dados.forEach(s => {
-            html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#f8fafc;border-radius:12px;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+            const temDivergencia = s.loja_real_id && mapaLojaReal[s.loja_real_id];
+            html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:${temDivergencia ? '#fef3c7' : '#f8fafc'};border-radius:12px;margin-bottom:8px;flex-wrap:wrap;gap:8px;${temDivergencia ? 'border:2px solid #f59e0b;' : ''}">
                 <div>
                     <div style="font-weight:600;">${s.lojas?.nome || 'Loja'}</div>
                     <div style="font-size:12px;color:#64748b;">👤 ${s.promotores?.nome || 'N/A'} • 📍 ${s.latitude_sugerida}, ${s.longitude_sugerida}</div>
+                    ${temDivergencia ? `<div style="font-size:12px;color:#b45309;font-weight:700;margin-top:4px;">⚠️ Promotor fora do roteiro — deveria estar em ${s.lojas?.nome || 'loja do roteiro'}, estava em ${mapaLojaReal[s.loja_real_id]}</div>` : ''}
                 </div>
                 <div style="display:flex;gap:6px;">
                     <button class="btn btn-info btn-sm" onclick="abrirMapaValidador(${s.id}, ${s.loja_id}, ${s.latitude_sugerida}, ${s.longitude_sugerida})">🗺️ Ver Mapa</button>
