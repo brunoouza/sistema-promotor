@@ -3508,7 +3508,8 @@ const reuniaoHoje = await buscarReuniaoHoje();
         if (reuniaoHoje && reuniaoHoje.participacao !== 'online') {
             const agora = hoje.toTimeString().slice(0, 5); // "HH:MM"
             const horarioFimReuniao = reuniaoHoje.reuniao.horario_fim;
-            const reuniaoJaTerminou = horarioFimReuniao && agora > horarioFimReuniao;
+            // Considera encerrada tanto se passou do horário previsto quanto se o admin encerrou manualmente mais cedo
+            const reuniaoJaTerminou = reuniaoHoje.reuniao.encerrada_manualmente === true || (horarioFimReuniao && agora > horarioFimReuniao);
 
             if (reuniaoJaTerminou) {
                 const dataHojeStr = hoje.toISOString().split('T')[0];
@@ -7554,6 +7555,12 @@ async function iniciarConversaIndividual(tipoOutro, idOutro, nomeOutro) {
 setInterval(() => {
     if (promotorLogado) verificarChatNaoLidas();
 }, 30 * 1000);
+
+// Recarrega a "Loja do Dia" periodicamente — importante pra quem está em dia de reunião:
+// assim que o admin encerra a reunião manualmente (ou o horário passa), o promotor vê a troca pra loja da tarde sem precisar reabrir o app
+setInterval(() => {
+    if (promotorLogado) carregarLojaDoDia();
+}, 2 * 60 * 1000);
 
 // ============================================
 // SINCRONIZAÇÃO AUTOMÁTICA AO VOLTAR A INTERNET
