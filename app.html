@@ -3503,7 +3503,9 @@ async function carregarLojaDoDia() {
         }
 
 const reuniaoHoje = await buscarReuniaoHoje();
-        if (reuniaoHoje) {
+        // Participante ONLINE não se desloca pra reunião, então segue o roteiro normal do dia o tempo todo
+        // (a reunião em si continua aparecendo nos banners/alertas de reunião, só não troca a loja do dia)
+        if (reuniaoHoje && reuniaoHoje.participacao !== 'online') {
             const agora = hoje.toTimeString().slice(0, 5); // "HH:MM"
             const horarioFimReuniao = reuniaoHoje.reuniao.horario_fim;
             const reuniaoJaTerminou = horarioFimReuniao && agora > horarioFimReuniao;
