@@ -8468,6 +8468,18 @@ const statusProduto = p.ativo !== false ? '<span class="badge badge-success">Ati
     atualizarContadorSelecionados();
 }
 
+// Preço que o cliente efetivamente paga: a promoção, se existir e ainda estiver válida; senão o preço de venda normal
+function calcularPrecoEfetivo(precoVenda, precoPromocional, promocaoValidade) {
+    const vendaNum = parseFloat(precoVenda) || 0;
+    const promoNum = parseFloat(precoPromocional) || 0;
+    if (promoNum > 0) {
+        const hojeStr = new Date().toISOString().split('T')[0];
+        const promoValida = !promocaoValidade || promocaoValidade >= hojeStr;
+        if (promoValida) return promoNum;
+    }
+    return vendaNum;
+}
+
 // ATUALIZAR PREÇO (com efeito visual de confirmação)
 async function atualizarPrecoProduto(id, campo, valor, inputEl) {
     let novoValor;
@@ -8494,11 +8506,31 @@ try {
 
         const dados = {};
         dados[campo] = novoValor;
-        if (mudou && campo !== 'promocao_validade') {
-            dados.preco_atualizado_em = new Date().toISOString();
-            const antigoNum = parseFloat(valorAntigo) || 0;
-            const novoNum = parseFloat(novoValor) || 0;
-            dados.preco_atualizado_tipo = novoNum > antigoNum ? 'aumento' : 'baixa';
+
+        // Pra decidir "aumento" ou "baixa" não olha só o campo que mudou isoladamente — compara o
+        // PREÇO EFETIVO (o que o cliente realmente paga) antes e depois, lendo o estado atual dos
+        // outros campos de preço dessa mesma linha (mesmo que ainda não salvos). Isso evita marcar
+        // como "baixa" o simples cancelamento de uma promoção, quando na prática o preço final subiu.
+        if (mudou && campo !== 'promocao_validade' && produtoAtual) {
+            const linha = inputEl ? inputEl.closest('tr') : null;
+            const lerCampoLinha = (nomeCampo, valorSeNaoAchar) => {
+                if (campo === nomeCampo) return novoValor;
+                const input = linha ? linha.querySelector(`.preco-edit[data-campo="${nomeCampo}"]`) : null;
+                if (!input) return valorSeNaoAchar;
+                return nomeCampo === 'promocao_validade' ? (input.value || null) : (input.value === '' ? null : parseFloat(input.value));
+            };
+
+            const vendaLinha = lerCampoLinha('preco_venda', produtoAtual.preco_venda);
+            const promoLinha = lerCampoLinha('preco_promocional', produtoAtual.preco_promocional);
+            const validadeLinha = lerCampoLinha('promocao_validade', produtoAtual.promocao_validade);
+
+            const efetivoAntigo = calcularPrecoEfetivo(produtoAtual.preco_venda, produtoAtual.preco_promocional, produtoAtual.promocao_validade);
+            const efetivoNovo = calcularPrecoEfetivo(vendaLinha, promoLinha, validadeLinha);
+
+            if (efetivoNovo !== efetivoAntigo) {
+                dados.preco_atualizado_em = new Date().toISOString();
+                dados.preco_atualizado_tipo = efetivoNovo > efetivoAntigo ? 'aumento' : 'baixa';
+            }
         }
         await apiFetch(`/rest/v1/produtos?id=eq.${id}`, 'PATCH', dados);
         showToast(`✅ ${campo === 'preco_venda' ? 'Preço de venda' : 'Preço promocional'} atualizado!`, 'success');
