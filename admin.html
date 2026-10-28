@@ -1650,6 +1650,14 @@
         <div id="tabPromotores" class="tab-content">
             <div class="card">
                 <div class="flex-between"><h2>👤 Gerenciar Promotores</h2><button class="btn btn-success" onclick="abrirModalPromotor()">+ Novo Promotor</button></div>
+                <div style="margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+                    <label style="font-size:13px;font-weight:600;color:#475569;">Mostrar:</label>
+                    <select id="filtroPromotorStatus" onchange="carregarPromotores()" style="padding:6px 10px;border:2px solid #e2e8f0;border-radius:8px;font-size:13px;">
+                        <option value="ativos" selected>Somente ativos</option>
+                        <option value="inativos">Somente inativos</option>
+                        <option value="todos">Todos</option>
+                    </select>
+                </div>
                 <div class="table-wrapper"><table><thead><tr><th>ID</th><th>Nome</th><th>Email</th><th>Estado</th><th>Status</th><th>Termo</th><th>Ações</th></tr></thead><tbody id="tabelaPromotores"><tr><td colspan="7" class="loading">Carregando...</td></tr></tbody></table></div>
             </div>
         </div>
@@ -4718,8 +4726,19 @@ let statusTermoPorPromotorCache = {};
 async function carregarPromotores() {
     const tbody = document.getElementById('tabelaPromotores');
     try {
-        const dados = await apiFetch('/rest/v1/promotores?tipo=eq.promotor&order=id&select=id,nome,email,estado,ativo,ctps,pis,matricula,admissao,data_nascimento,funcao,departamento,ferias_inicio,ferias_fim,logo_url,banco_horas');
-        if (dados.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Nenhum promotor cadastrado</td></tr>`; return; }
+        let dados = await apiFetch('/rest/v1/promotores?tipo=eq.promotor&order=id&select=id,nome,email,estado,ativo,ctps,pis,matricula,admissao,data_nascimento,funcao,departamento,ferias_inicio,ferias_fim,logo_url,banco_horas');
+
+        const filtroStatusEl = document.getElementById('filtroPromotorStatus');
+        const filtroStatus = filtroStatusEl ? filtroStatusEl.value : 'ativos';
+        if (filtroStatus === 'ativos') dados = dados.filter(p => p.ativo !== false);
+        else if (filtroStatus === 'inativos') dados = dados.filter(p => p.ativo === false);
+        // 'todos' não filtra nada
+
+        if (dados.length === 0) {
+            const msgVazio = filtroStatus === 'ativos' ? 'Nenhum promotor ativo' : (filtroStatus === 'inativos' ? 'Nenhum promotor inativo' : 'Nenhum promotor cadastrado');
+            tbody.innerHTML = `<tr><td colspan="7" class="empty-state">${msgVazio}</td></tr>`;
+            return;
+        }
 
         statusTermoPorPromotorCache = {};
         const termosAtivos = await apiFetch('/rest/v1/termos?ativo=eq.true&order=versao.desc&limit=1');
