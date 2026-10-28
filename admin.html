@@ -1130,6 +1130,7 @@
     <button class="menu-item" onclick="abrirTab('tabValidador')"><span class="icon"><i data-lucide="map-pin"></i></span> Validador</button>
     <button class="menu-item" onclick="abrirTab('tabMateriais')"><span class="icon"><i data-lucide="folder"></i></span> Materiais</button>
     <!-- Espelho Ponto oculto do menu (mantido no código) -->
+    <button class="menu-item" onclick="abrirTab('tabAtestados')"><span class="icon"><i data-lucide="file-text"></i></span> Atestados</button>
     <button class="menu-item" onclick="abrirTab('tabRelatorios')"><span class="icon"><i data-lucide="bar-chart-3"></i></span> Relatórios</button>
     <button class="menu-item" onclick="abrirTab('tabChecklistAdmin')"><span class="icon"><i data-lucide="clipboard-list"></i></span> Checklist</button>
     <!-- Chat oculto do menu (mantido no código — a equipe preferiu usar o WhatsApp) -->
@@ -2050,6 +2051,35 @@
         <!-- ========================================== -->
         <!-- TAB: RELATÓRIOS (COM RESPOSTAS DO CHECKLIST) -->
         <!-- ========================================== -->
+        <div id="tabAtestados" class="tab-content">
+            <div class="card">
+                <h2>📄 Atestados</h2>
+
+                <div style="background:#f8fafc;padding:16px;border-radius:12px;margin-bottom:16px;">
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:end;">
+                        <div class="form-group" style="min-width:180px;flex:1;">
+                            <label>👤 Promotor</label>
+                            <select id="filtroAtestadoPromotor"><option value="">Todos</option></select>
+                        </div>
+                        <div class="form-group" style="min-width:120px;">
+                            <label>📅 Início</label>
+                            <input type="date" id="filtroAtestadoInicio">
+                        </div>
+                        <div class="form-group" style="min-width:120px;">
+                            <label>📅 Fim</label>
+                            <input type="date" id="filtroAtestadoFim">
+                        </div>
+                        <div class="form-group" style="min-width:120px;flex:0;">
+                            <label>&nbsp;</label>
+                            <button class="btn btn-primary btn-sm" onclick="aplicarFiltroAtestados()">🔍 Filtrar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="atestadosResultado"><div class="loading">⏳ Carregando...</div></div>
+            </div>
+        </div>
+
         <div id="tabRelatorios" class="tab-content">
             <div class="card">
                 <h2>📈 Relatórios</h2>
@@ -3353,6 +3383,7 @@ function abrirTab(tabId) {
     if (tabId === 'tabFeriados') carregarFeriados();
     if (tabId === 'tabValidador') { carregarValidadorPromotores(); carregarSolicitacoes(); }
     if (tabId === 'tabMateriais') carregarMateriaisAdmin();
+    if (tabId === 'tabAtestados') { carregarFiltrosAtestados(); aplicarFiltroAtestados(); }
     if (tabId === 'tabEspelhoAdmin') { carregarSelectsEspelhoAdmin(); carregarEspelhoAdmin(); }
     if (tabId === 'tabRelatorios') { carregarSelectsExpo(); carregarFiltrosRespostas(); }
     if (tabId === 'tabChecklistAdmin') { carregarChecklistsAdmin(); }
@@ -6707,12 +6738,12 @@ async function carregarRelatorio(tipo) {
     const filtrosRespostas = document.getElementById('filtrosRespostas');
     const filtrosForaRaio = document.getElementById('filtrosForaRaio');
     const resultadoDiv = document.getElementById('relatorioResultado');
-    
+
     // Resetar filtros
     filtrosExpo.style.display = 'none';
     filtrosRespostas.style.display = 'none';
     filtrosForaRaio.style.display = 'none';
-    
+
 if (tipo === 'exposicoes') {
         filtrosExpo.style.display = 'block';
         await carregarSelectsExpo();
@@ -6767,6 +6798,62 @@ if (tipo === 'pontos_hoje') {
         html += '</tbody></table></div>';
         resultadoDiv.innerHTML = html;
     } catch (erro) { resultadoDiv.innerHTML = `<div class="loading">❌ ${erro.message}</div>`; }
+}
+
+// ============================================
+// ATESTADOS (ABA PRÓPRIA)
+// ============================================
+async function carregarFiltrosAtestados() {
+    try {
+        const promotores = await apiFetch('/rest/v1/promotores?ativo=eq.true&tipo=eq.promotor&order=nome&select=id,nome');
+        const sel = document.getElementById('filtroAtestadoPromotor');
+        sel.innerHTML = '<option value="">Todos</option>';
+        promotores.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nome}</option>`; });
+    } catch (erro) { console.error('Erro ao carregar filtros de atestados:', erro); }
+}
+
+async function aplicarFiltroAtestados() {
+    const resultadoDiv = document.getElementById('atestadosResultado');
+    resultadoDiv.innerHTML = '<div class="loading">⏳ Carregando...</div>';
+
+    const promotorId = document.getElementById('filtroAtestadoPromotor').value;
+    const inicio = document.getElementById('filtroAtestadoInicio').value;
+    const fim = document.getElementById('filtroAtestadoFim').value;
+
+    try {
+        let url = '/rest/v1/atestados?select=*,promotores(nome)&order=data.desc';
+        if (promotorId) url += `&promotor_id=eq.${promotorId}`;
+        if (inicio) url += `&data=gte.${inicio}`;
+        if (fim) url += `&data=lte.${fim}`;
+
+        const dados = await apiFetch(url);
+
+        if (dados.length === 0) {
+            resultadoDiv.innerHTML = `<div class="empty-state"><div class="icon">📭</div>Nenhum atestado encontrado</div>`;
+            return;
+        }
+
+        let html = `<div class="table-wrapper"><table><thead><tr><th>Promotor</th><th>Data da ausência</th><th>Descrição</th><th>Arquivo</th></tr></thead><tbody>`;
+        dados.forEach(a => {
+            const dataFormat = new Date(a.data + 'T00:00:00').toLocaleDateString('pt-BR');
+            html += `<tr>
+                <td><strong>${a.promotores?.nome || 'N/A'}</strong></td>
+                <td>${dataFormat}</td>
+                <td>${a.descricao || '-'}</td>
+                <td><button class="btn btn-info btn-sm" onclick="visualizarAtestadoAdmin('${a.arquivo_url}')">👁️ Ver</button></td>
+            </tr>`;
+        });
+        html += '</tbody></table></div>';
+        resultadoDiv.innerHTML = html;
+    } catch (erro) {
+        resultadoDiv.innerHTML = `<div class="loading">❌ ${erro.message}</div>`;
+        console.error(erro);
+    }
+}
+
+function visualizarAtestadoAdmin(url) {
+    if (url) window.open(url, '_blank');
+    else showToast('📄 Atestado não disponível', 'info');
 }
 
 // ============================================
