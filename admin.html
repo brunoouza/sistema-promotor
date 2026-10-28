@@ -9946,8 +9946,9 @@ const todasLojasParaClasse = await apiFetch('/rest/v1/lojas?select=id,faturament
         // Lojas sugeridas (sem cobertura), se marcado
         if (mostrarSugeridas) {
             const todasLojasAtivas = await apiFetch('/rest/v1/lojas?ativo=eq.true&select=id,nome,latitude,longitude,faturamento');
-            const todosRoteiros = await apiFetch('/rest/v1/roteiros?select=loja_id');
-            const lojasComCobertura = new Set(todosRoteiros.map(r => r.loja_id).filter(id => id));
+            const idsAtivosParaMapa = new Set((await apiFetch('/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true&select=id')).map(p => p.id));
+            const todosRoteiros = await apiFetch('/rest/v1/roteiros?select=loja_id,promotor_id');
+            const lojasComCobertura = new Set(todosRoteiros.filter(r => r.loja_id && idsAtivosParaMapa.has(r.promotor_id)).map(r => r.loja_id));
 
 todasLojasAtivas
                 .filter(l => l.latitude && l.longitude && !lojasComCobertura.has(l.id))
@@ -9987,6 +9988,7 @@ async function carregarSugestaoGeral() {
     try {
         const promotores = await apiFetch('/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true&select=id,nome,latitude_residencial,longitude_residencial');
         const promotoresComCoords = promotores.filter(p => p.latitude_residencial && p.longitude_residencial);
+        const idsPromotoresAtivos = new Set(promotores.map(p => p.id));
 
         if (promotoresComCoords.length === 0) {
             div.innerHTML = '<div class="empty-state"><div class="icon">📍</div><p>Nenhum promotor com endereço/coordenadas cadastradas ainda.</p></div>';
@@ -10001,6 +10003,7 @@ async function carregarSugestaoGeral() {
         const coberturaPorLoja = new Map();
         roteiros.forEach(r => {
             if (!r.loja_id) return;
+            if (!idsPromotoresAtivos.has(r.promotor_id)) return; // ignora roteiros de promotores inativos/desligados
             if (!coberturaPorLoja.has(r.loja_id)) coberturaPorLoja.set(r.loja_id, new Map());
             coberturaPorLoja.get(r.loja_id).set(r.promotor_id, r.promotores?.nome || 'N/A');
         });
@@ -10125,11 +10128,14 @@ async function carregarSugestaoLojas() {
         const lojasComCoords = lojas.filter(l => l.latitude && l.longitude);
         const classificacaoABCSugestao = calcularCurvaABC(lojas.map(l => ({ id: l.id, faturamento: l.faturamento })));
 
-        // Quem é o promotor responsável por cada loja (via roteiros)
-        const roteiros = await apiFetch('/rest/v1/roteiros?select=loja_id,promotores(nome)');
+        // Quem é o promotor responsável por cada loja (via roteiros) — só conta promotor ativo
+        const idsAtivosRes = await apiFetch('/rest/v1/promotores?tipo=eq.promotor&ativo=eq.true&select=id');
+        const idsPromotoresAtivosSugestao = new Set(idsAtivosRes.map(p => p.id));
+        const roteiros = await apiFetch('/rest/v1/roteiros?select=loja_id,promotor_id,promotores(nome)');
         const responsavelPorLoja = {};
         roteiros.forEach(r => {
             if (!r.loja_id || !r.promotores) return;
+            if (!idsPromotoresAtivosSugestao.has(r.promotor_id)) return; // ignora roteiros de promotores inativos/desligados
             if (!responsavelPorLoja[r.loja_id]) responsavelPorLoja[r.loja_id] = new Set();
             responsavelPorLoja[r.loja_id].add(r.promotores.nome);
         });
